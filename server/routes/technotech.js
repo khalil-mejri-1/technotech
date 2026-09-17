@@ -39,8 +39,9 @@ router.post('/upload', upload.array('images', 20), (req, res) => {
       return res.status(400).json({ error: 'Aucun fichier reçu' });
     }
     const host = req.get('host');
-    const protocol = req.protocol;
-    const urls = req.files.map((file) => `${protocol}://${host}/uploads/${file.filename}`);
+    const protocol = req.headers['x-forwarded-proto'] || (host && host.includes('vercel.app') ? 'https' : req.protocol);
+    const baseUrl = process.env.BASE_URL || `${protocol}://${host}`;
+    const urls = req.files.map((file) => `${baseUrl}/uploads/${file.filename}`);
     res.json({ urls, files: req.files.map((f) => `/uploads/${f.filename}`) });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -76,8 +77,9 @@ router.post('/upload-base64', (req, res) => {
     fs.writeFileSync(filePath, buffer);
 
     const host = req.get('host');
-    const protocol = req.protocol;
-    const url = `${protocol}://${host}/uploads/${finalName}`;
+    const protocol = req.headers['x-forwarded-proto'] || (host && host.includes('vercel.app') ? 'https' : req.protocol);
+    const baseUrl = process.env.BASE_URL || `${protocol}://${host}`;
+    const url = `${baseUrl}/uploads/${finalName}`;
 
     res.json({ url, path: `/uploads/${finalName}` });
   } catch (err) {

@@ -1,4 +1,5 @@
 // Products Data and LocalStorage Manager for TechnoTech (French Edition)
+import { getImageUrl } from '../config/api.js';
 
 export const INITIAL_PRODUCTS = [
   {
@@ -126,7 +127,10 @@ export const getStoredProducts = () => {
     if (data) {
       const parsed = JSON.parse(data);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        return parsed.map((p) => ({
+          ...p,
+          images: Array.isArray(p.images) ? p.images.map(getImageUrl) : [],
+        }));
       }
     }
   } catch (err) {
@@ -206,15 +210,15 @@ export const getStoredHeroSlides = (availableProducts = []) => {
       if (Array.isArray(parsed) && parsed.length > 0) {
         // Re-hydrate any compact slides if image was stored as reference
         return parsed.map((slide) => {
+          let img = slide.image;
           if (slide.image === '__product_image_ref__' || slide.isCompactRef) {
             const prod = availableProducts.find((p) => (p._id || p.id) === slide.productId);
-            const resolvedImg =
+            img =
               prod?.images?.[slide.selectedImageIndex || 0] ||
               prod?.images?.[0] ||
               '/images/logo.png';
-            return { ...slide, image: resolvedImg };
           }
-          return slide;
+          return { ...slide, image: getImageUrl(img) };
         });
       }
     }

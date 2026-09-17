@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { INITIAL_PRODUCTS } from '../data/productsData.js';
 import { productService } from '../services/productService.js';
+import { getImageUrl } from '../config/api.js';
 
 export default function AdminDashboard({
   products,
@@ -853,7 +854,7 @@ export default function AdminDashboard({
                   const displayCurrentPrice = matchingProd?.price !== undefined ? matchingProd.price : slide.price;
                   const displayOrigPrice = matchingProd?.originalPrice !== undefined ? matchingProd.originalPrice : slide.originalPrice;
                   const displayDescription = matchingProd ? (matchingProd.description || '') : (slide.description || 'Sans description');
-                  const displayImg = slide.image || (matchingProd?.images && matchingProd.images[0]) || '/images/logo.png';
+                  const displayImg = getImageUrl(slide.image || (matchingProd?.images && matchingProd.images[0]) || '/images/logo.png');
 
                   return (
                     <div key={slide.id || index} className="hero-slide-card">
@@ -1014,7 +1015,7 @@ export default function AdminDashboard({
                       </tr>
                     ) : (
                       filteredProducts.map((product) => {
-                        const primaryImg = product.images?.[0] || '/images/logo.png';
+                        const primaryImg = getImageUrl(product.images?.[0] || '/images/logo.png');
                         const productId = product._id || product.id;
                         return (
                           <tr key={productId}>
@@ -1367,7 +1368,7 @@ export default function AdminDashboard({
                   <div className="images-preview-grid">
                     {formData.images.map((imgSrc, idx) => (
                       <div key={idx} className="preview-thumb-card">
-                        <img src={imgSrc} alt={`Aperçu ${idx + 1}`} className="preview-img" />
+                        <img src={getImageUrl(imgSrc)} alt={`Aperçu ${idx + 1}`} className="preview-img" />
                         <button
                           type="button"
                           className="remove-img-btn"
@@ -1613,7 +1614,7 @@ export default function AdminDashboard({
                               role="button"
                               tabIndex={0}
                             >
-                              <img src={imgUrl} alt={`Option ${imgIdx + 1}`} className="choice-thumb-img" />
+                              <img src={getImageUrl(imgUrl)} alt={`Option ${imgIdx + 1}`} className="choice-thumb-img" />
                               {isChosen ? (
                                 <span className="choice-active-badge">
                                   <Check size={12} />
@@ -1630,7 +1631,7 @@ export default function AdminDashboard({
                       <div className="hero-single-image-preview">
                         <img
                           key={`single-prev-${heroForm.image ? heroForm.image.slice(-20) : ''}`}
-                          src={heroForm.image || '/images/logo.png'}
+                          src={getImageUrl(heroForm.image || '/images/logo.png')}
                           alt="Image du produit"
                           className="single-preview-img"
                         />
