@@ -14,35 +14,35 @@
   --text-secondary: rgba(255, 255, 255, 0.84);
   --text-muted: rgba(255, 255, 255, 0.52);
 
-  --glass-bg: rgba(15, 23, 42, 0.6);
-  --glass-bg-hover: rgba(255, 255, 255, 0.12);
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --glass-border-hover: rgba(255, 255, 255, 0.25);
+  --glass-bg: rgba(35, 12, 4, 0.45);
+  --glass-bg-hover: rgba(50, 18, 6, 0.65);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-border-hover: rgba(255, 255, 255, 0.22);
 
   --button-active-bg: #ffffff;
-  --button-active-text: #0b0f19;
+  --button-active-text: #1a0802;
 
   --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-serif: 'Cinzel', 'Playfair Display', Georgia, serif;
 
-  /* Neon Accent RGB & Blurry Frosted Glass */
-  --neon-rgb: 255, 120, 40;
-  --nav-blur-bg: rgba(10, 15, 29, 0.65);
+  /* Neon Accent RGB & Blurry Frosted Glass matching Section 1 */
+  --neon-rgb: 226, 88, 22;
+  --nav-blur-bg: rgba(18, 12, 10, 0.65);
 }
 
 .theme-orange {
-  --neon-rgb: 255, 120, 40;
-  --nav-blur-bg: rgba(10, 15, 29, 0.65);
+  --neon-rgb: 226, 88, 22;
+  --nav-blur-bg: rgba(18, 12, 10, 0.65);
 }
 
 .theme-black {
-  --neon-rgb: 255, 120, 40;
-  --nav-blur-bg: rgba(10, 15, 29, 0.65);
+  --neon-rgb: 165, 95, 55;
+  --nav-blur-bg: rgba(14, 12, 16, 0.65);
 }
 
 .theme-cream {
-  --neon-rgb: 255, 120, 40;
-  --nav-blur-bg: rgba(10, 15, 29, 0.65);
+  --neon-rgb: 217, 132, 68;
+  --nav-blur-bg: rgba(20, 14, 10, 0.65);
 }
 
 * {
@@ -73,7 +73,7 @@ body {
 #root {
   width: 100%;
   max-width: 100vw;
-  overflow-x: hidden;
+  overflow-x: clip;
   position: relative;
 }
 
@@ -86,7 +86,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  overflow-x: hidden;
+  overflow-x: clip;
   background-color: #0d0401;
 }
 
@@ -186,6 +186,7 @@ body {
   height: 90px;
   padding-top: 0;
   padding-bottom: 0;
+  position: static;
 }
 
 /* Base Navbar */
@@ -206,32 +207,32 @@ body {
   position: fixed;
   top: 1.25rem;
   left: 50%;
-  transform: translate3d(-50%, 0, 0);
+  transform: translateX(-50%);
   width: min(1200px, calc(100% - 3rem));
   z-index: 99999;
-  padding: 0.55rem 1.6rem;
-  min-height: 56px;
+  padding: 0.65rem 1.6rem;
   border-radius: 9999px;
-  background: rgba(10, 15, 29, 0.65) !important;
-  backdrop-filter: blur(24px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  background: var(--nav-blur-bg, rgba(18, 12, 10, 0.65));
+  -webkit-backdrop-filter: blur(28px) saturate(190%) contrast(95%);
+  backdrop-filter: blur(28px) saturate(190%) contrast(95%);
 
   /* Unified, Soft & Light Neon Glow Effect */
-  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   box-shadow:
-    0 10px 32px -4px rgba(0, 0, 0, 0.55),
-    0 0 16px rgba(var(--neon-rgb, 255, 120, 40), 0.18) !important;
+    0 12px 36px rgba(0, 0, 0, 0.45),
+    0 0 16px rgba(var(--neon-rgb, 226, 88, 22), 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
 
   animation: navNeonSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .navbar.navbar-floating-neon .brand-logo-img {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
 }
 
 .navbar.navbar-floating-neon .brand-name {
-  font-size: 1.3rem;
+  font-size: 1.35rem;
 }
 
 .navbar.navbar-floating-neon .nav-pill-menu {
@@ -245,19 +246,17 @@ body {
 .navbar.navbar-floating-neon .circle-btn {
   width: 38px;
   height: 38px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
 }
 
 @keyframes navNeonSlideDown {
   from {
-    transform: translate3d(-50%, -100%, 0);
+    top: -2.5rem;
+    opacity: 0;
   }
 
   to {
-    transform: translate3d(-50%, 0, 0);
+    top: 1.25rem;
+    opacity: 1;
   }
 }
 
@@ -320,7 +319,7 @@ body {
   font-weight: 700;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  padding: 0.45rem 1.15rem;
+  padding: 0.6rem 1.25rem;
   border-radius: 9999px;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
