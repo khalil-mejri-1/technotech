@@ -14,35 +14,35 @@
   --text-secondary: rgba(255, 255, 255, 0.84);
   --text-muted: rgba(255, 255, 255, 0.52);
 
-  --glass-bg: rgba(35, 12, 4, 0.45);
-  --glass-bg-hover: rgba(50, 18, 6, 0.65);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-border-hover: rgba(255, 255, 255, 0.22);
+  --glass-bg: rgba(15, 23, 42, 0.6);
+  --glass-bg-hover: rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-hover: rgba(255, 255, 255, 0.25);
 
   --button-active-bg: #ffffff;
-  --button-active-text: #1a0802;
+  --button-active-text: #0b0f19;
 
   --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-serif: 'Cinzel', 'Playfair Display', Georgia, serif;
 
-  /* Neon Accent RGB & Blurry Frosted Glass matching Section 1 */
-  --neon-rgb: 226, 88, 22;
-  --nav-blur-bg: rgba(48, 15, 4, 0.62);
+  /* Neon Accent RGB & Blurry Frosted Glass */
+  --neon-rgb: 255, 120, 40;
+  --nav-blur-bg: rgba(10, 15, 29, 0.65);
 }
 
 .theme-orange {
-  --neon-rgb: 226, 88, 22;
-  --nav-blur-bg: rgba(48, 15, 4, 0.62);
+  --neon-rgb: 255, 120, 40;
+  --nav-blur-bg: rgba(10, 15, 29, 0.65);
 }
 
 .theme-black {
-  --neon-rgb: 165, 95, 55; /* Warm brown/bronze glow matching Section 1 background */
-  --nav-blur-bg: rgba(38, 20, 14, 0.65);
+  --neon-rgb: 255, 120, 40;
+  --nav-blur-bg: rgba(10, 15, 29, 0.65);
 }
 
 .theme-cream {
-  --neon-rgb: 217, 132, 68;
-  --nav-blur-bg: rgba(52, 24, 10, 0.62);
+  --neon-rgb: 255, 120, 40;
+  --nav-blur-bg: rgba(10, 15, 29, 0.65);
 }
 
 * {
@@ -206,31 +206,32 @@ body {
   position: fixed;
   top: 1.25rem;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate3d(-50%, 0, 0);
   width: min(1200px, calc(100% - 3rem));
   z-index: 99999;
-  padding: 0.65rem 1.6rem;
+  padding: 0.55rem 1.6rem;
+  min-height: 56px;
   border-radius: 9999px;
-  background: var(--nav-blur-bg);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: rgba(10, 15, 29, 0.65) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
 
   /* Unified, Soft & Light Neon Glow Effect */
-  border: 1px solid rgba(var(--neon-rgb, 255, 107, 0), 0.38);
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
   box-shadow:
-    0 0 14px rgba(var(--neon-rgb, 255, 107, 0), 0.22),
-    0 0 24px rgba(0, 0, 0, 0.28);
+    0 10px 32px -4px rgba(0, 0, 0, 0.55),
+    0 0 16px rgba(var(--neon-rgb, 255, 120, 40), 0.18) !important;
 
-  animation: navNeonSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: navNeonSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .navbar.navbar-floating-neon .brand-logo-img {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
 }
 
 .navbar.navbar-floating-neon .brand-name {
-  font-size: 1.35rem;
+  font-size: 1.3rem;
 }
 
 .navbar.navbar-floating-neon .nav-pill-menu {
@@ -244,17 +245,19 @@ body {
 .navbar.navbar-floating-neon .circle-btn {
   width: 38px;
   height: 38px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 @keyframes navNeonSlideDown {
   from {
-    transform: translate(-50%, -100%);
-    opacity: 0;
+    transform: translate3d(-50%, -100%, 0);
   }
 
   to {
-    transform: translate(-50%, 0);
-    opacity: 1;
+    transform: translate3d(-50%, 0, 0);
   }
 }
 
@@ -317,7 +320,7 @@ body {
   font-weight: 700;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  padding: 0.6rem 1.25rem;
+  padding: 0.45rem 1.15rem;
   border-radius: 9999px;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
