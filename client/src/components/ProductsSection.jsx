@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ShoppingBag, ChevronLeft, ChevronRight, Check, Zap, ShieldCheck } from 'lucide-react';
+import { getImageUrl } from '../config/api.js';
 
 export default function ProductsSection({ products, onAddToCart }) {
   // Store selected duration plan for each product ID
@@ -69,7 +70,7 @@ export default function ProductsSection({ products, onAddToCart }) {
           {/* Side-by-Side Products Grid */}
           <div className="products-cards-grid">
             {products.map((product) => {
-              const images = product.images && product.images.length > 0 ? product.images : ['/images/logo.png'];
+              const images = product.images && product.images.length > 0 ? product.images.map(getImageUrl) : ['/images/logo.png'];
               const currentImgIndex = activeImageIndexes[product.id] || 0;
               const activeImage = images[currentImgIndex] || images[0];
 

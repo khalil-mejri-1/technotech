@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, ChevronRight as ArrowRight, Check, Zap, ShieldCheck, Sparkles } from 'lucide-react';
 import { INITIAL_HERO_SLIDES } from '../data/productsData.js';
+import { getImageUrl } from '../config/api.js';
 
 export default function Hero({
   slides = [],
@@ -52,7 +53,7 @@ export default function Hero({
   const displayOriginalPrice = currentProduct?.originalPrice !== undefined ? currentProduct.originalPrice : currentSlide.originalPrice;
   const displayName = currentProduct?.name || currentSlide.name;
   const displayDesc = currentProduct?.description || currentSlide.description;
-  const displayImage = currentSlide.image || (currentProduct?.images && currentProduct.images[0]) || '/images/logo.png';
+  const displayImage = getImageUrl(currentSlide.image || (currentProduct?.images && currentProduct.images[0]) || '/images/logo.png');
 
   const discountPercent =
     displayOriginalPrice && displayOriginalPrice > displayPrice
@@ -206,7 +207,7 @@ export default function Hero({
             {isTransitioning && outgoingSlide && (
               <img
                 key={`outgoing-${outgoingSlide.id || outgoingSlide.name}`}
-                src={outgoingSlide.image}
+                src={getImageUrl(outgoingSlide.image)}
                 alt={outgoingSlide.name}
                 className="hero-jacket-img jacket-fade-exit"
                 draggable="false"
@@ -399,7 +400,7 @@ export default function Hero({
                 );
                 const rawName = matchingProd?.name || slide.name;
                 const thumbTitle = getThumbnailLabel(rawName);
-                const thumbImg = slide.image || (matchingProd?.images && matchingProd.images[0]) || '/images/logo.png';
+                const thumbImg = getImageUrl(slide.image || (matchingProd?.images && matchingProd.images[0]) || '/images/logo.png');
                 const isActive = index === safeIndex;
                 const cardAccent = slide.bgColor || '#ff5e00';
 

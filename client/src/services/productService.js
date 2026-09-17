@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../config/api.js';
+import { API_BASE_URL, getImageUrl } from '../config/api.js';
 
 export const productService = {
   /**
@@ -11,7 +11,11 @@ export const productService = {
         throw new Error(`Erreur serveur (${response.status})`);
       }
       const data = await response.json();
-      return Array.isArray(data) ? data : [];
+      if (!Array.isArray(data)) return [];
+      return data.map((prod) => ({
+        ...prod,
+        images: Array.isArray(prod.images) ? prod.images.map(getImageUrl) : [],
+      }));
     } catch (error) {
       console.warn('Impossible de joindre le serveur MongoDB, utilisation du cache local :', error.message);
       throw error;
@@ -33,7 +37,7 @@ export const productService = {
       throw new Error(err.error || `Erreur chargement image (${response.status})`);
     }
     const data = await response.json();
-    return data.urls?.[0] || data.files?.[0];
+    return getImageUrl(data.urls?.[0] || data.files?.[0]);
   },
 
   /**
@@ -53,7 +57,7 @@ export const productService = {
       throw new Error(err.error || `Erreur chargement images (${response.status})`);
     }
     const data = await response.json();
-    return data.urls || [];
+    return (data.urls || []).map(getImageUrl);
   },
 
   /**
@@ -70,7 +74,7 @@ export const productService = {
       throw new Error(err.error || `Erreur sauvegarde image (${response.status})`);
     }
     const data = await response.json();
-    return data.url || data.path;
+    return getImageUrl(data.url || data.path);
   },
 
   /**
@@ -90,7 +94,11 @@ export const productService = {
       throw new Error(err.error || `Erreur création produit (${response.status})`);
     }
 
-    return await response.json();
+    const created = await response.json();
+    return {
+      ...created,
+      images: Array.isArray(created.images) ? created.images.map(getImageUrl) : [],
+    };
   },
 
   /**
@@ -108,7 +116,11 @@ export const productService = {
       throw new Error(err.error || `Erreur modification produit (${response.status})`);
     }
 
-    return await response.json();
+    const updated = await response.json();
+    return {
+      ...updated,
+      images: Array.isArray(updated.images) ? updated.images.map(getImageUrl) : [],
+    };
   },
 
   /**
@@ -142,7 +154,12 @@ export const productService = {
       throw new Error(err.error || `Erreur réinitialisation produits (${response.status})`);
     }
 
-    return await response.json();
+    const seeded = await response.json();
+    if (!Array.isArray(seeded)) return [];
+    return seeded.map((prod) => ({
+      ...prod,
+      images: Array.isArray(prod.images) ? prod.images.map(getImageUrl) : [],
+    }));
   },
 
   /**
@@ -155,7 +172,11 @@ export const productService = {
         throw new Error(`Erreur serveur (${response.status})`);
       }
       const data = await response.json();
-      return Array.isArray(data) ? data : [];
+      if (!Array.isArray(data)) return [];
+      return data.map((slide) => ({
+        ...slide,
+        image: getImageUrl(slide.image),
+      }));
     } catch (error) {
       console.warn('Impossible de joindre les slides Hero distants, utilisation du cache local :', error.message);
       throw error;
@@ -177,7 +198,11 @@ export const productService = {
       throw new Error(err.error || `Erreur sauvegarde carrousel (${response.status})`);
     }
 
-    return await response.json();
+    const saved = await response.json();
+    if (!Array.isArray(saved)) return [];
+    return saved.map((slide) => ({
+      ...slide,
+      image: getImageUrl(slide.image),
+    }));
   },
 };
-

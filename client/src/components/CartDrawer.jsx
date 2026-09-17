@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
+import { getImageUrl } from '../config/api.js';
 
 export default function CartDrawer({
   isOpen,
@@ -91,7 +92,7 @@ export default function CartDrawer({
               <div key={`${item.id}-${item.size}`} className="cart-item-card">
                 <div className="cart-item-img-wrap">
                   <img
-                    src={item.image}
+                    src={getImageUrl(item.image)}
                     alt={item.name}
                     className="cart-item-img"
                   />
