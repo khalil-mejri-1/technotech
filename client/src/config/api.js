@@ -15,7 +15,7 @@ export const BACKEND_URL =
  * دالة لتصحيح روابط الصور تلقائياً بالاعتماد على رابط السيرفر المحدد في .env
  */
 export function getImageUrl(url) {
-  if (!url || typeof url !== 'string') return '/images/logo.png';
+  if (!url || typeof url !== 'string') return '';
   if (url.startsWith('data:') || url.startsWith('/images/')) return url;
 
   const backend = BACKEND_URL ? BACKEND_URL.replace(/\/+$/, '') : '';

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ShoppingBag, ChevronLeft, ChevronRight, Check, Zap, ShieldCheck } from 'lucide-react';
 import { getImageUrl } from '../config/api.js';
+import CardImageWithSkeleton from './CardImageWithSkeleton.jsx';
 
 export default function ProductsSection({ products, onAddToCart }) {
   // Store selected duration plan for each product ID
@@ -70,9 +71,11 @@ export default function ProductsSection({ products, onAddToCart }) {
           {/* Side-by-Side Products Grid */}
           <div className="products-cards-grid">
             {products.map((product) => {
-              const images = product.images && product.images.length > 0 ? product.images.map(getImageUrl) : ['/images/logo.png'];
+              const images = product.images && product.images.length > 0
+                ? product.images.map(getImageUrl).filter(Boolean)
+                : [];
               const currentImgIndex = activeImageIndexes[product.id] || 0;
-              const activeImage = images[currentImgIndex] || images[0];
+              const activeImage = images[currentImgIndex] || images[0] || '';
 
               // Determine active plan and dynamic price
               const activePlan =
@@ -89,16 +92,12 @@ export default function ProductsSection({ products, onAddToCart }) {
 
               return (
                 <article key={productId} className="white-product-card full-card-image-card">
-                  {/* Full background image layer */}
-                  <div className="card-bg-image-wrapper">
-                    <img
-                      src={activeImage}
-                      alt={product.name}
-                      className="card-featured-img"
-                      loading="lazy"
-                    />
-                    <div className="card-bg-overlay" />
-                  </div>
+                  {/* Full background image layer with professional skeleton loader */}
+                  <CardImageWithSkeleton
+                    src={activeImage}
+                    alt={product.name}
+                    className="card-featured-img"
+                  />
 
                   {/* Top Floating Controls: Badge and Carousel Navigation */}
                   <div className="card-top-controls">
