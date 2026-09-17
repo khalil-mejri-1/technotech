@@ -32,8 +32,33 @@ const upload = multer({
   limits: { fileSize: 30 * 1024 * 1024 }, // 30MB
 });
 
+const IMGBB_API_KEY = process.env.IMGBB_API_KEY || 'e684619df3cc8614b21e1b4f826b7fff';
+
+async function uploadBufferToImgBB(buffer, filename) {
+  try {
+    const blob = new Blob([buffer]);
+    const fd = new FormData();
+    fd.append('image', blob, filename || 'image.png');
+    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+      method: 'POST',
+      body: fd,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Origin': 'https://imgbb.com',
+      },
+    });
+    const json = await res.json();
+    if (json.success && json.data) {
+      return json.data.display_url || json.data.url;
+    }
+  } catch (err) {
+    console.warn('ImgBB upload error:', err.message);
+  }
+  return null;
+}
+
 // Multipart File Upload Endpoint (Images)
-router.post('/upload', upload.array('images', 20), (req, res) => {
+router.post('/upload', upload.array('images', 20), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'Aucun fichier reçu' });
@@ -41,7 +66,20 @@ router.post('/upload', upload.array('images', 20), (req, res) => {
     const host = req.get('host');
     const protocol = req.headers['x-forwarded-proto'] || (host && host.includes('vercel.app') ? 'https' : req.protocol);
     const baseUrl = process.env.BASE_URL || `${protocol}://${host}`;
-    const urls = req.files.map((file) => `${baseUrl}/uploads/${file.filename}`);
+
+    const urls = await Promise.all(
+      req.files.map(async (file) => {
+        try {
+          const fileBuffer = fs.readFileSync(file.path);
+          const imgbbUrl = await uploadBufferToImgBB(fileBuffer, file.originalname);
+          if (imgbbUrl) return imgbbUrl;
+        } catch (e) {
+          console.warn('Fallback local pour', file.filename);
+        }
+        return `${baseUrl}/uploads/${file.filename}`;
+      })
+    );
+
     res.json({ urls, files: req.files.map((f) => `/uploads/${f.filename}`) });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -49,7 +87,7 @@ router.post('/upload', upload.array('images', 20), (req, res) => {
 });
 
 // Base64 Image Upload Endpoint (Preserving transparency for PNG/WebP)
-router.post('/upload-base64', (req, res) => {
+router.post('/upload-base64', async (req, res) => {
   try {
     const { base64, filename } = req.body;
     if (!base64) {
@@ -74,12 +112,20 @@ router.post('/upload-base64', (req, res) => {
     const finalName = filename || `img-${uniqueSuffix}${ext}`;
     const filePath = path.join(uploadsDir, finalName);
 
-    fs.writeFileSync(filePath, buffer);
+    try {
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      fs.writeFileSync(filePath, buffer);
+    } catch (e) {
+      // Ignored if read-only filesystem on serverless
+    }
 
+    const imgbbUrl = await uploadBufferToImgBB(buffer, finalName);
     const host = req.get('host');
     const protocol = req.headers['x-forwarded-proto'] || (host && host.includes('vercel.app') ? 'https' : req.protocol);
     const baseUrl = process.env.BASE_URL || `${protocol}://${host}`;
-    const url = `${baseUrl}/uploads/${finalName}`;
+    const url = imgbbUrl || `${baseUrl}/uploads/${finalName}`;
 
     res.json({ url, path: `/uploads/${finalName}` });
   } catch (err) {

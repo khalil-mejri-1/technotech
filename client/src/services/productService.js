@@ -1,5 +1,45 @@
 import { API_BASE_URL, getImageUrl } from '../config/api.js';
 
+const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY || 'e684619df3cc8614b21e1b4f826b7fff';
+const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
+
+/**
+ * Envoie un fichier image ou une chaîne base64 directement vers l'API ImgBB.
+ * Retourne le lien direct HTTPS permanent (ex: https://i.ibb.co/...)
+ * Ce lien est ensuite enregistré dans la base de données MongoDB Atlas.
+ */
+async function uploadToImgBB(fileOrBase64, filename) {
+  const formData = new FormData();
+  formData.append('key', IMGBB_API_KEY);
+
+  if (typeof fileOrBase64 === 'string') {
+    // Si c'est une chaîne base64 (ex: data:image/png;base64,...), extraire les données pures
+    const base64Clean = fileOrBase64.replace(/^data:image\/[a-zA-Z+]+;base64,/, '');
+    formData.append('image', base64Clean);
+    if (filename) formData.append('name', filename);
+  } else {
+    formData.append('image', fileOrBase64);
+    if (fileOrBase64.name) formData.append('name', fileOrBase64.name);
+  }
+
+  const response = await fetch(IMGBB_UPLOAD_URL, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error?.message || `Erreur ImgBB (${response.status})`);
+  }
+
+  const result = await response.json();
+  if (result.success && result.data) {
+    // Lien direct CDN de l'image prête à être enregistrée en base de données
+    return result.data.display_url || result.data.url;
+  }
+  throw new Error('Réponse invalide reçue de ImgBB');
+}
+
 export const productService = {
   /**
    * Fetch all products from MongoDB Atlas
@@ -23,58 +63,69 @@ export const productService = {
   },
 
   /**
-   * Upload a single image file to backend server
+   * Upload a single image file to ImgBB and return direct CDN link
    */
   async uploadImage(file) {
-    const formData = new FormData();
-    formData.append('images', file);
-    const response = await fetch(`${API_BASE_URL}/upload`, {
-      method: 'POST',
-      body: formData,
-    });
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.error || `Erreur chargement image (${response.status})`);
+    try {
+      return await uploadToImgBB(file);
+    } catch (err) {
+      console.warn('Téléversement ImgBB direct échoué, tentative via le serveur :', err.message);
+      const formData = new FormData();
+      formData.append('images', file);
+      const response = await fetch(`${API_BASE_URL}/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) throw err;
+      const data = await response.json();
+      return getImageUrl(data.urls?.[0] || data.files?.[0]);
     }
-    const data = await response.json();
-    return getImageUrl(data.urls?.[0] || data.files?.[0]);
   },
 
   /**
-   * Upload multiple image files to backend server
+   * Upload multiple image files to ImgBB and return array of direct CDN links
    */
   async uploadMultipleImages(files) {
-    const formData = new FormData();
-    for (const file of files) {
-      formData.append('images', file);
+    try {
+      const urls = [];
+      for (const file of files) {
+        const url = await uploadToImgBB(file);
+        urls.push(url);
+      }
+      return urls;
+    } catch (err) {
+      console.warn('Téléversement ImgBB multiple échoué, fallback serveur :', err.message);
+      const formData = new FormData();
+      for (const file of files) {
+        formData.append('images', file);
+      }
+      const response = await fetch(`${API_BASE_URL}/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) throw err;
+      const data = await response.json();
+      return (data.urls || []).map(getImageUrl);
     }
-    const response = await fetch(`${API_BASE_URL}/upload`, {
-      method: 'POST',
-      body: formData,
-    });
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.error || `Erreur chargement images (${response.status})`);
-    }
-    const data = await response.json();
-    return (data.urls || []).map(getImageUrl);
   },
 
   /**
-   * Upload a base64 image (e.g. transparent PNG) to backend server
+   * Upload a base64 image (e.g. transparent PNG) to ImgBB
    */
   async uploadBase64(base64String, filename) {
-    const response = await fetch(`${API_BASE_URL}/upload-base64`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ base64: base64String, filename }),
-    });
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.error || `Erreur sauvegarde image (${response.status})`);
+    try {
+      return await uploadToImgBB(base64String, filename);
+    } catch (err) {
+      console.warn('Téléversement ImgBB base64 échoué, fallback serveur :', err.message);
+      const response = await fetch(`${API_BASE_URL}/upload-base64`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64: base64String, filename }),
+      });
+      if (!response.ok) throw err;
+      const data = await response.json();
+      return getImageUrl(data.url || data.path);
     }
-    const data = await response.json();
-    return getImageUrl(data.url || data.path);
   },
 
   /**
