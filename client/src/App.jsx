@@ -6,6 +6,8 @@ import AdminDashboard from './components/AdminDashboard.jsx';
 import Footer from './components/Footer.jsx';
 import CartDrawer from './components/CartDrawer.jsx';
 import CheckoutModal from './components/CheckoutModal.jsx';
+import AboutPage from './components/AboutPage.jsx';
+import ContactPage from './components/ContactPage.jsx';
 import { Sparkles } from 'lucide-react';
 import { getStoredProducts, saveStoredProducts, INITIAL_PRODUCTS, getStoredHeroSlides, saveStoredHeroSlides } from './data/productsData.js';
 import { productService } from './services/productService.js';
@@ -69,12 +71,6 @@ function App() {
       isMounted = false;
     };
   }, []);
-
-  const navigateTo = (path) => {
-    window.history.pushState({}, '', path);
-    setCurrentPath(path);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
 
   const handleUpdateProducts = (newProducts) => {
@@ -166,6 +162,12 @@ function App() {
     setIsCheckoutOpen(true);
   };
 
+  const navigateTo = (path) => {
+    window.history.pushState({}, '', path);
+    setCurrentPath(path);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleOrderSuccess = (order) => {
     setCartItems([]);
     showToast(`Commande #${order.orderNumber} enregistrée avec succès ! 🎉`);
@@ -196,11 +198,14 @@ function App() {
     );
   }
 
-  // Otherwise, display the Luxury Storefront
+  // Otherwise, display the Luxury Storefront (Home, About, or Contact)
+  const isAboutPage = currentPath === '/about' || currentPath === '/a-propos';
+  const isContactPage = currentPath === '/contact';
+
   return (
     <div className="app-container">
       {/* Smoothly cross-fading dynamic background color layers for each hero product */}
-      {heroSlides.map((slide, idx) => (
+      {!isAboutPage && !isContactPage && heroSlides.map((slide, idx) => (
         <div
           key={slide.id || slide._id || idx}
           className={`bg-theme-layer ${idx === activeSlideIndex ? 'active' : ''}`}
@@ -224,30 +229,41 @@ function App() {
         activeCategory={activeCategory}
         setActiveCategory={setActiveCategory}
         onNavigateAdmin={() => navigateTo('/admin')}
+        currentPath={currentPath}
+        onNavigate={navigateTo}
       />
 
-      <div className="content-layer">
-        {/* Hero Section with Dynamic Slides & Customized Backgrounds */}
-        <Hero
-          slides={heroSlides}
-          activeSlideIndex={activeSlideIndex}
-          onSlideChange={(index) => {
-            setActiveSlideIndex(index);
-          }}
-          products={products}
-          onAddToCart={handleAddToCart}
-        />
-      </div>
+      {/* Main Page Routing Switch */}
+      {isAboutPage ? (
+        <AboutPage onNavigate={navigateTo} />
+      ) : isContactPage ? (
+        <ContactPage onNavigate={navigateTo} showToast={showToast} />
+      ) : (
+        <>
+          <div className="content-layer">
+            {/* Hero Section with Dynamic Slides & Customized Backgrounds */}
+            <Hero
+              slides={heroSlides}
+              activeSlideIndex={activeSlideIndex}
+              onSlideChange={(index) => {
+                setActiveSlideIndex(index);
+              }}
+              products={products}
+              onAddToCart={handleAddToCart}
+            />
+          </div>
 
-      {/* New Products Section with White Background & Gradient Transition */}
-      <ProductsSection
-        products={products}
-        onAddToCart={handleAddToCart}
-      />
+          {/* Products Section with White Background & Gradient Transition */}
+          <ProductsSection
+            products={products}
+            onAddToCart={handleAddToCart}
+          />
+        </>
+      )}
 
       <div className="content-layer-bottom">
         {/* Bottom Footer */}
-        <Footer />
+        <Footer onNavigate={navigateTo} />
       </div>
 
       {/* Slide-over Cart Drawer */}

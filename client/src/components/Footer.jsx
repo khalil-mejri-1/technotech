@@ -19,20 +19,22 @@ function FacebookIcon({ size = 17 }) {
   );
 }
 
-export default function Footer() {
+export default function Footer({ onNavigate }) {
   return (
     <footer className="footer" id="footer-section">
       {/* Bottom Left Social & Portfolio Icons */}
       <div className="footer-socials">
         <a
-          href="https://instagram.com"
+          href="https://wa.me/21696086581"
           target="_blank"
           rel="noopener noreferrer"
           className="social-link"
-          aria-label="Instagram"
-          title="Instagram"
+          aria-label="WhatsApp"
+          title="WhatsApp Support"
         >
-          <InstagramIcon size={17} />
+          <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+          </svg>
         </a>
         <a
           href="https://facebook.com"
@@ -45,33 +47,46 @@ export default function Footer() {
           <FacebookIcon size={17} />
         </a>
         <a
-          href="https://technotech.com"
+          href="https://instagram.com"
           target="_blank"
           rel="noopener noreferrer"
           className="social-link"
-          aria-label="Website"
-          title="technotech.com"
+          aria-label="Instagram"
+          title="Instagram"
         >
-          <Globe size={17} strokeWidth={2} />
+          <InstagramIcon size={17} />
         </a>
-        <a
-          href="https://behance.net"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="social-link"
-          aria-label="Behance Portfolio"
-          title="Behance Profile"
+      </div>
+
+      {/* Footer Navigation Links */}
+      <div className="footer-nav-links">
+        <button
+          type="button"
+          className="footer-nav-btn"
+          onClick={() => onNavigate ? onNavigate('/') : window.scrollTo({ top: 0, behavior: 'smooth' })}
         >
-        </a>
+          Boutique
+        </button>
+        <button
+          type="button"
+          className="footer-nav-btn"
+          onClick={() => onNavigate && onNavigate('/about')}
+        >
+          À Propos
+        </button>
+        <button
+          type="button"
+          className="footer-nav-btn"
+          onClick={() => onNavigate && onNavigate('/contact')}
+        >
+          Contact
+        </button>
       </div>
 
       {/* Centered Slogan / Tagline */}
       <div className="footer-tagline">
-        TechnoTech &bull; Produits Digitaux & Abonnements &bull; Tous droits réservés &copy; {new Date().getFullYear()}
+        TechnoTech &bull; Produits Digitaux &amp; Abonnements Officiels &bull; &copy; {new Date().getFullYear()}
       </div>
-
-      {/* Empty right spacer to keep perfect balance */}
-      <div className="footer-spacer" />
     </footer>
   );
 }

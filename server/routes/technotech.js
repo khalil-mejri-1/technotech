@@ -6,6 +6,8 @@ import { fileURLToPath } from 'url';
 import Technotech from '../models/Technotech.js';
 import HeroSlide from '../models/HeroSlide.js';
 import Order from '../models/Order.js';
+import AdminPushToken from '../models/AdminPushToken.js';
+import { sendExpoPushNotification } from '../utils/pushNotification.js';
 
 const router = express.Router();
 
@@ -172,6 +174,84 @@ router.delete('/hero-slides/:slideId', async (req, res) => {
 // Orders Management Endpoints (Gestion de commande)
 // (Placed BEFORE /:id to prevent routing collisions)
 // ==========================================
+
+// Create new order with strict validation
+
+// ==========================================
+// Push Notifications Endpoints for Mobile Admin
+// ==========================================
+
+// Register or update Admin Expo Push Token
+router.post('/push-token', async (req, res) => {
+  try {
+    const { token, deviceName, platform } = req.body;
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ error: 'Token push invalide ou manquant' });
+    }
+
+    const updated = await AdminPushToken.findOneAndUpdate(
+      { token },
+      {
+        token,
+        deviceName: deviceName || 'Mobile Admin',
+        platform: platform || 'unknown',
+        isActive: true,
+        lastUsedAt: new Date(),
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    console.log('📱 [Push] Token admin enregistré :', token, 'Appareil :', deviceName);
+    res.json({ success: true, message: 'Token push enregistré avec succès', data: updated });
+  } catch (err) {
+    console.error('Erreur enregistrement token push :', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all active push tokens count & info
+router.get('/push-token/status', async (req, res) => {
+  try {
+    const activeTokens = await AdminPushToken.find({ isActive: true });
+    res.json({
+      count: activeTokens.length,
+      devices: activeTokens.map((t) => ({
+        token: t.token,
+        deviceName: t.deviceName,
+        platform: t.platform,
+        lastUsedAt: t.lastUsedAt,
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete / Deactivate Push Token (Logout from mobile)
+router.delete('/push-token', async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) return res.status(400).json({ error: 'Token requis' });
+    await AdminPushToken.findOneAndDelete({ token });
+    res.json({ success: true, message: 'Token push supprimé' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Test Push Notification from Mobile Admin Settings
+router.post('/push-test', async (req, res) => {
+  try {
+    const result = await sendExpoPushNotification({
+      title: '🧪 Test Notification TechnoTech',
+      body: '🎉 Votre téléphone est bien configuré pour recevoir les commandes en direct !',
+      data: { type: 'test', timestamp: Date.now() },
+    });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Create new order with strict validation
 router.post('/orders', async (req, res) => {
