@@ -8,7 +8,9 @@ export default function Navbar({
   onToggleWishlist, 
   activeCategory, 
   setActiveCategory, 
-  onNavigateAdmin 
+  onNavigateAdmin,
+  currentPath = '/',
+  onNavigate,
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -57,29 +59,36 @@ export default function Navbar({
   }, []);
 
   const navItems = [
-    { id: 'puffer', label: 'DOUDOUNES' },
-    { id: 'all', label: 'TOUS LES PRODUITS' },
-    { id: 'about', label: 'À PROPOS' },
-    { id: 'contact', label: 'CONTACT' },
+    { id: 'home', label: 'BOUTIQUE', path: '/' },
+    { id: 'catalog', label: 'CATALOGUE', path: '/' },
+    { id: 'about', label: 'À PROPOS', path: '/about' },
+    { id: 'contact', label: 'CONTACT', path: '/contact' },
   ];
 
-  const handleNavClick = (itemId) => {
-    setActiveCategory(itemId);
-    if (itemId === 'all') {
-      const el = document.getElementById('store-products-section');
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
-      }
-    } else if (itemId === 'contact' || itemId === 'about') {
-      const el = document.getElementById('footer-section');
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth' });
+  const handleNavClick = (item) => {
+    if (item.id === 'catalog') {
+      if (currentPath !== '/') {
+        if (onNavigate) onNavigate('/');
+        setTimeout(() => {
+          const el = document.getElementById('store-products-section');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }, 200);
       } else {
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        const el = document.getElementById('store-products-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
       }
-    } else if (itemId === 'puffer') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      if (onNavigate) {
+        onNavigate(item.path);
+      }
     }
+  };
+
+  const isItemActive = (item) => {
+    if (item.id === 'about') return currentPath === '/about' || currentPath === '/a-propos';
+    if (item.id === 'contact') return currentPath === '/contact';
+    if (item.id === 'home') return currentPath === '/';
+    return false;
   };
 
   return (
@@ -87,7 +96,14 @@ export default function Navbar({
       <div className={`navbar-placeholder ${isScrolled ? 'is-scrolled' : ''}`}>
         <header className={`navbar ${isScrolled ? 'navbar-floating-neon' : ''}`}>
           {/* Brand / Logo */}
-          <div className="brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <div
+            className="brand"
+            onClick={() => {
+              if (onNavigate) onNavigate('/');
+              else window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            style={{ cursor: 'pointer' }}
+          >
             <img
               src="/images/logo.png"
               alt="Logo TechnoTech"
@@ -102,8 +118,8 @@ export default function Navbar({
               <button
                 key={item.id}
                 type="button"
-                className={`nav-link ${activeCategory === item.id ? 'active' : ''}`}
-                onClick={() => handleNavClick(item.id)}
+                className={`nav-link ${isItemActive(item) ? 'active' : ''}`}
+                onClick={() => handleNavClick(item)}
               >
                 {item.label}
               </button>
@@ -183,14 +199,14 @@ export default function Navbar({
           <span className="mobile-nav-badge-label">Navigation</span>
           <nav className="mobile-nav-links" aria-label="Liens mobiles">
             {navItems.map((item) => {
-              const isActive = activeCategory === item.id;
+              const isActive = isItemActive(item);
               return (
                 <button
                   key={item.id}
                   type="button"
                   className={`mobile-nav-link-btn ${isActive ? 'active' : ''}`}
                   onClick={() => {
-                    handleNavClick(item.id);
+                    handleNavClick(item);
                     setMobileMenuOpen(false);
                   }}
                 >
