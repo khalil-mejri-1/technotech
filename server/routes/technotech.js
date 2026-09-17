@@ -5,6 +5,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import Technotech from '../models/Technotech.js';
 import HeroSlide from '../models/HeroSlide.js';
+import Order from '../models/Order.js';
 
 const router = express.Router();
 
@@ -163,6 +164,162 @@ router.delete('/hero-slides/:slideId', async (req, res) => {
     await HeroSlide.findByIdAndDelete(req.params.slideId);
     res.json({ message: 'Slide deleted', id: req.params.slideId });
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// Orders Management Endpoints (Gestion de commande)
+// (Placed BEFORE /:id to prevent routing collisions)
+// ==========================================
+
+// Create new order with strict validation
+router.post('/orders', async (req, res) => {
+  try {
+    const {
+      customerName,
+      customerPhone,
+      customerCity = '',
+      customerAddress = '',
+      customerNotes = '',
+      items = [],
+      totalAmount,
+      paymentMethod = 'Paiement à la livraison',
+    } = req.body;
+
+    // 1. Validate Customer Name (Required, NO digits allowed)
+    if (!customerName || typeof customerName !== 'string' || customerName.trim().length < 2) {
+      return res.status(400).json({
+        error: 'Le nom complet est obligatoire (au moins 2 lettres).',
+      });
+    }
+
+    if (/\d/.test(customerName)) {
+      return res.status(400).json({
+        error: 'Le nom ne doit contenir aucun chiffre (lettres uniquement).',
+      });
+    }
+
+    // 2. Validate Customer Phone (Required, exactly 8 digits)
+    if (!customerPhone) {
+      return res.status(400).json({
+        error: 'Le numéro de téléphone est obligatoire.',
+      });
+    }
+
+    const phoneDigits = String(customerPhone).replace(/\D/g, '');
+    if (phoneDigits.length !== 8) {
+      return res.status(400).json({
+        error: 'Le numéro de téléphone doit comporter exactement 8 chiffres.',
+      });
+    }
+
+    // 3. Validate Items
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        error: 'Votre commande doit contenir au moins un article.',
+      });
+    }
+
+    // 4. Calculate total amount if missing or verify
+    const computedTotal = items.reduce(
+      (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
+      0
+    );
+    const finalTotal = totalAmount !== undefined ? Number(totalAmount) : computedTotal;
+
+    // 5. Generate unique clean human-friendly Order ID
+    const datePart = Date.now().toString().slice(-6);
+    const randomSuffix = Math.floor(100 + Math.random() * 900);
+    const orderNumber = `CMD-${datePart}-${randomSuffix}`;
+
+    const newOrder = new Order({
+      orderNumber,
+      customerName: customerName.trim(),
+      customerPhone: phoneDigits,
+      customerCity: customerCity.trim(),
+      customerAddress: customerAddress.trim(),
+      customerNotes: customerNotes.trim(),
+      items: items.map((it) => ({
+        id: it.id || '',
+        name: it.name || 'Produit',
+        image: it.image || '/images/logo.png',
+        size: it.size || 'Standard',
+        price: Number(it.price) || 0,
+        quantity: Number(it.quantity) || 1,
+      })),
+      totalAmount: finalTotal,
+      status: 'en_attente',
+      paymentMethod,
+    });
+
+    const savedOrder = await newOrder.save();
+    res.status(201).json(savedOrder);
+  } catch (err) {
+    console.error('Erreur création commande :', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all orders (newest first)
+router.get('/orders', async (req, res) => {
+  try {
+    const orders = await Order.find().sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) {
+    console.error('Erreur lecture commandes :', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update order status
+router.patch('/orders/:id/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const validStatuses = ['en_attente', 'confirmee', 'livree', 'annulee'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Statut de commande non valide' });
+    }
+
+    const updated = await Order.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+    if (!updated) {
+      return res.status(404).json({ error: 'Commande introuvable' });
+    }
+    res.json(updated);
+  } catch (err) {
+    console.error('Erreur mise à jour statut commande :', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Mark order as read
+router.patch('/orders/:id/read', async (req, res) => {
+  try {
+    const updated = await Order.findByIdAndUpdate(
+      req.params.id,
+      { isRead: true },
+      { new: true }
+    );
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete order
+router.delete('/orders/:id', async (req, res) => {
+  try {
+    const deleted = await Order.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Commande introuvable' });
+    }
+    res.json({ message: 'Commande supprimée avec succès', id: req.params.id });
+  } catch (err) {
+    console.error('Erreur suppression commande :', err);
     res.status(500).json({ error: err.message });
   }
 });

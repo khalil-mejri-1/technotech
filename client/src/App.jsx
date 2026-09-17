@@ -5,6 +5,7 @@ import ProductsSection from './components/ProductsSection.jsx';
 import AdminDashboard from './components/AdminDashboard.jsx';
 import Footer from './components/Footer.jsx';
 import CartDrawer from './components/CartDrawer.jsx';
+import CheckoutModal from './components/CheckoutModal.jsx';
 import { Sparkles } from 'lucide-react';
 import { getStoredProducts, saveStoredProducts, INITIAL_PRODUCTS, getStoredHeroSlides, saveStoredHeroSlides } from './data/productsData.js';
 import { productService } from './services/productService.js';
@@ -19,6 +20,7 @@ function App() {
   const [activeCategory, setActiveCategory] = useState('puffer');
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [cartItems, setCartItems] = useState([]);
   const [toastMessage, setToastMessage] = useState(null);
 
@@ -160,11 +162,13 @@ function App() {
   };
 
   const handleCheckout = () => {
-    showToast('Redirection vers le paiement sécurisé...');
-    setTimeout(() => {
-      setIsCartOpen(false);
-      showToast('Merci pour votre commande chez TechnoTech !');
-    }, 1800);
+    setIsCartOpen(false);
+    setIsCheckoutOpen(true);
+  };
+
+  const handleOrderSuccess = (order) => {
+    setCartItems([]);
+    showToast(`Commande #${order.orderNumber} enregistrée avec succès ! 🎉`);
   };
 
   const totalCartCount = cartItems.reduce(
@@ -254,6 +258,14 @@ function App() {
         onUpdateQuantity={handleUpdateQuantity}
         onRemoveItem={handleRemoveItem}
         onCheckout={handleCheckout}
+      />
+
+      {/* Luxury Checkout & Order Modal */}
+      <CheckoutModal
+        isOpen={isCheckoutOpen}
+        onClose={() => setIsCheckoutOpen(false)}
+        items={cartItems}
+        onOrderSuccess={handleOrderSuccess}
       />
 
       {/* Interactive Toast Notification */}

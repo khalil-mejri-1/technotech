@@ -21,11 +21,13 @@ import {
   Package,
   Palette,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  ShoppingBag
 } from 'lucide-react';
 import { INITIAL_PRODUCTS } from '../data/productsData.js';
 import { productService } from '../services/productService.js';
 import { getImageUrl } from '../config/api.js';
+import OrdersManager from './OrdersManager.jsx';
 
 export default function AdminDashboard({
   products,
@@ -787,6 +789,15 @@ export default function AdminDashboard({
             <span>Carrousel de la Page d'Accueil (Hero 3D)</span>
             <span className="tab-count-badge hero-badge">{heroSlides.length}</span>
           </button>
+
+          <button
+            type="button"
+            className={`admin-tab-item ${activeTab === 'orders' ? 'active' : ''}`}
+            onClick={() => setActiveTab('orders')}
+          >
+            <ShoppingBag size={17} />
+            <span>Gestion de commande</span>
+          </button>
         </div>
       </div>
 
@@ -955,6 +966,13 @@ export default function AdminDashboard({
             )}
             </div>
           </div>
+        )}
+
+        {/* ================================================================
+            ORDERS MANAGEMENT VIEW (GESTION DE COMMANDE)
+            ================================================================ */}
+        {activeTab === 'orders' && (
+          <OrdersManager notify={notify} />
         )}
 
         {/* ================================================================
