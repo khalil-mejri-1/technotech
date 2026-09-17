@@ -2878,7 +2878,9 @@ body {
   border-color: rgba(255, 255, 255, 0.28);
 }
 
-/* Background image wrapper spanning the entire card */
+/* ==========================================================================
+   CARD BACKGROUND IMAGE & PROFESSIONAL SKELETON LOADER
+   ========================================================================== */
 .card-bg-image-wrapper {
   position: absolute;
   inset: 0;
@@ -2886,38 +2888,149 @@ body {
   height: 100%;
   z-index: 0;
   overflow: hidden;
-  background: #0f172a;
+  background: #090e1a;
 }
 
-.white-product-card .card-featured-img {
-  width: 100%;
-  height: 100%;
-  max-width: none;
-  max-height: none;
-  object-fit: cover;
-  object-position: center top;
-  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease;
-  filter: brightness(0.92);
-  user-select: none;
-}
-
-.white-product-card:hover .card-featured-img {
-  transform: scale(1.06);
-  filter: brightness(0.98);
-}
-
-/* Background image wrapper spanning the entire card */
-.card-bg-image-wrapper {
+/* 1. Luxurious Animated Skeleton Shimmer Layer */
+.card-skeleton-layer {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 38%, rgba(22, 33, 62, 0.96) 0%, rgba(10, 16, 32, 0.98) 100%);
   overflow: hidden;
-  background: #0f172a;
+  pointer-events: none;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.luxury-product-card .card-featured-img,
+.card-skeleton-layer.skeleton-error {
+  background: radial-gradient(circle at 50% 38%, rgba(35, 20, 20, 0.95) 0%, rgba(16, 10, 10, 0.98) 100%);
+}
+
+/* Diagonal animated metallic shimmer wave */
+.skeleton-shimmer-sweep {
+  position: absolute;
+  inset: 0;
+  width: 200%;
+  height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.03) 38%,
+    rgba(255, 125, 45, 0.16) 50%,
+    rgba(255, 255, 255, 0.05) 62%,
+    transparent 80%
+  );
+  animation: skeletonShimmerSweep 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform: translateX(-100%) skewX(-15deg);
+  pointer-events: none;
+}
+
+@keyframes skeletonShimmerSweep {
+  0% {
+    transform: translateX(-100%) skewX(-15deg);
+  }
+  100% {
+    transform: translateX(100%) skewX(-15deg);
+  }
+}
+
+/* Center Emblem with Pulsing Neon Orb */
+.skeleton-center-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  position: relative;
+}
+
+.skeleton-glowing-orb {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 120, 40, 0.24) 0%, rgba(255, 120, 40, 0.04) 70%, transparent 100%);
+  border: 1px solid rgba(255, 140, 50, 0.4);
+  box-shadow: 0 0 24px rgba(255, 120, 40, 0.25), inset 0 0 12px rgba(255, 140, 50, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: skeletonPulseOrb 2s ease-in-out infinite alternate;
+}
+
+.skeleton-sparkle-glow {
+  color: #ff8e43;
+  filter: drop-shadow(0 0 8px rgba(255, 140, 50, 0.6));
+  animation: skeletonRotateSparkle 6s linear infinite;
+}
+
+.skeleton-brand-title {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: rgba(255, 255, 255, 0.72);
+  text-transform: uppercase;
+  margin-top: 14px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+}
+
+.skeleton-pulse-bar {
+  width: 72px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  margin-top: 10px;
+  position: relative;
+}
+
+.skeleton-progress-indeterminate {
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(90deg, #ff6b00, #ff9a51);
+  border-radius: 999px;
+  animation: skeletonProgressIndeterminate 1.4s ease-in-out infinite;
+}
+
+@keyframes skeletonPulseOrb {
+  0% {
+    transform: scale(0.92);
+    box-shadow: 0 0 16px rgba(255, 120, 40, 0.18);
+  }
+  100% {
+    transform: scale(1.05);
+    box-shadow: 0 0 32px rgba(255, 120, 40, 0.42);
+  }
+}
+
+@keyframes skeletonRotateSparkle {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes skeletonProgressIndeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(110%);
+  }
+  100% {
+    transform: translateX(240%);
+  }
+}
+
+/* 2. Featured Image Loading and Revealed States */
 .white-product-card .card-featured-img {
   width: 100%;
   height: 100%;
@@ -2925,15 +3038,28 @@ body {
   max-height: none;
   object-fit: cover;
   object-position: center top;
-  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1), filter 0.4s ease;
-  filter: brightness(0.92);
   user-select: none;
 }
 
-.luxury-product-card:hover .card-featured-img,
-.white-product-card:hover .card-featured-img {
-  transform: scale(1.06);
-  filter: brightness(0.98);
+.card-featured-img.image-hidden {
+  opacity: 0 !important;
+  transform: scale(1.05) !important;
+  filter: blur(8px) brightness(0.8) !important;
+  pointer-events: none;
+}
+
+.card-featured-img.image-visible {
+  opacity: 1 !important;
+  transform: scale(1) !important;
+  filter: brightness(0.92) blur(0) !important;
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.5s ease !important;
+}
+
+.white-product-card:hover .card-featured-img.image-visible {
+  transform: scale(1.06) !important;
+  filter: brightness(0.98) blur(0) !important;
 }
 
 /* Rich dark gradient overlay for crystal-clear readability and glassmorphism */
