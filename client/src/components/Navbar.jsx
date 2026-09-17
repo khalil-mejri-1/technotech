@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Menu, X, Shield, ChevronRight, Sparkles } from 'lucide-react';
+import { ShoppingBag, Menu, X, ChevronRight, Sparkles } from 'lucide-react';
 
 export default function Navbar({ 
   cartCount, 
@@ -112,16 +112,6 @@ export default function Navbar({
 
           {/* Quick Action Icons */}
           <div className="nav-actions">
-            {/* Admin Dashboard Quick Access Button */}
-            <button
-              type="button"
-              className="circle-btn admin-badge-btn"
-              onClick={onNavigateAdmin}
-              aria-label="Panneau d'Administration"
-              title="Panneau d'Administration / Admin"
-            >
-              <Shield size={18} strokeWidth={2.2} />
-            </button>
 
             {/* Shopping Bag */}
             <button
@@ -214,17 +204,6 @@ export default function Navbar({
 
         {/* Drawer Footer: Admin Shortcut & Trust Badge */}
         <div className="mobile-nav-footer">
-          <button
-            type="button"
-            className="mobile-admin-btn"
-            onClick={() => {
-              setMobileMenuOpen(false);
-              onNavigateAdmin();
-            }}
-          >
-            <Shield size={18} />
-            <span>Panneau d'Administration</span>
-          </button>
 
           <div className="mobile-nav-trust-tag">
             <Sparkles size={14} color="#ffa502" />
