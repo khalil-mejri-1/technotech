@@ -94,8 +94,25 @@ export default function Hero({
 
   const sizes = ['36', '38', '40', '42'];
 
-  const triggerSlideSwitch = (targetIndex) => {
+  const [autoPlayEnabled, setAutoPlayEnabled] = useState(true);
+
+  // Auto-play carousel every 3 seconds until manual user interaction
+  useEffect(() => {
+    if (!autoPlayEnabled || isTransitioning || activeSlides.length <= 1) return;
+
+    const timer = setInterval(() => {
+      const nextIndex = (safeIndex + 1) % activeSlides.length;
+      triggerSlideSwitch(nextIndex, false);
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [autoPlayEnabled, isTransitioning, safeIndex, activeSlides.length]);
+
+  const triggerSlideSwitch = (targetIndex, isManual = false) => {
     if (isTransitioning || targetIndex === safeIndex) return;
+    if (isManual) {
+      setAutoPlayEnabled(false);
+    }
     setOutgoingIndex(safeIndex);
     setIsTransitioning(true);
     if (onSlideChange) {
@@ -115,12 +132,12 @@ export default function Hero({
 
   const handlePrev = () => {
     const prevIndex = (safeIndex - 1 + activeSlides.length) % activeSlides.length;
-    triggerSlideSwitch(prevIndex);
+    triggerSlideSwitch(prevIndex, true);
   };
 
   const handleNext = () => {
     const nextIndex = (safeIndex + 1) % activeSlides.length;
-    triggerSlideSwitch(nextIndex);
+    triggerSlideSwitch(nextIndex, true);
   };
 
   const outgoingSlide = outgoingIndex !== null ? activeSlides[outgoingIndex] : null;
@@ -418,7 +435,7 @@ export default function Hero({
                           }
                         : {}
                     }
-                    onClick={() => triggerSlideSwitch(index)}
+                    onClick={() => triggerSlideSwitch(index, true)}
                     disabled={isTransitioning || isActive}
                     title={isActive ? `Actuel : ${rawName}` : `Passer à ${rawName}`}
                     aria-label={isActive ? `Actuel : ${rawName}` : `Passer à ${rawName}`}
