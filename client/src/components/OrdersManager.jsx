@@ -22,6 +22,7 @@ import {
   Loader2,
   ChevronDown,
   ArrowUpRight,
+  X,
 } from 'lucide-react';
 import { orderService } from '../services/orderService.js';
 import { getImageUrl } from '../config/api.js';
@@ -597,97 +598,166 @@ export default function OrdersManager({ notify }) {
           onClick={() => setActiveOrderModal(null)}
         >
           <div
-            className="order-details-modal"
+            className="order-details-modal window-frame"
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
           >
-            <div className="modal-header-banner">
-              <div>
-                <span className="modal-top-tag">FACTURE &amp; DÉTAILS DE COMMANDE</span>
-                <h3 className="modal-order-number">{activeOrderModal.orderNumber}</h3>
-                <span className="modal-date">
-                  {formatDateTime(activeOrderModal.createdAt)}
-                </span>
+            {/* Window Top Titlebar */}
+            <div className="window-frame-titlebar">
+              <div className="window-frame-dots">
+                <span
+                  className="dot-btn close"
+                  onClick={() => setActiveOrderModal(null)}
+                  title="Fermer la fenêtre"
+                />
+                <span className="dot-btn minimize" title="Réduire" />
+                <span className="dot-btn expand" title="Agrandir" />
               </div>
+
+              <div className="window-frame-title">
+                <FileText size={14} className="window-title-icon" />
+                <span>Facture &amp; Détails de Commande &bull; {activeOrderModal.orderNumber}</span>
+              </div>
+
               <button
                 type="button"
-                className="modal-close-btn"
+                className="window-frame-close-btn"
                 onClick={() => setActiveOrderModal(null)}
+                aria-label="Fermer"
               >
-                &times;
+                <X size={16} />
               </button>
             </div>
 
-            <div className="modal-body-content">
-              {/* Customer Box */}
-              <div className="modal-section-card">
-                <h4>Informations Client</h4>
-                <div className="client-details-grid">
-                  <div>
-                    <strong>Nom :</strong> {activeOrderModal.customerName}
-                  </div>
-                  <div>
-                    <strong>Téléphone :</strong> +216 {activeOrderModal.customerPhone}
-                  </div>
-                  <div>
-                    <strong>Gouvernorat :</strong> {activeOrderModal.customerCity || 'N/A'}
-                  </div>
-                  <div>
-                    <strong>Adresse :</strong> {activeOrderModal.customerAddress || 'Non spécifiée'}
-                  </div>
-                  {activeOrderModal.customerNotes && (
-                    <div className="full-width">
-                      <strong>Remarques :</strong> {activeOrderModal.customerNotes}
-                    </div>
-                  )}
+            {/* Window Content Body */}
+            <div className="window-frame-body">
+              {/* Header Banner */}
+              <div className="modal-header-banner">
+                <div>
+                  <span className="modal-top-tag">BON DE COMMANDE OFFICIEL</span>
+                  <h3 className="modal-order-number">{activeOrderModal.orderNumber}</h3>
+                  <span className="modal-date">
+                    <Calendar size={13} /> {formatDateTime(activeOrderModal.createdAt)}
+                  </span>
+                </div>
+
+                <div className="modal-header-status-box">
+                  {getStatusBadge(activeOrderModal.status)}
                 </div>
               </div>
 
-              {/* Items Table */}
-              <div className="modal-section-card">
-                <h4>Articles commandés</h4>
-                <div className="modal-items-table">
-                  {(activeOrderModal.items || []).map((it, idx) => (
-                    <div key={idx} className="modal-table-row">
-                      <img
-                        src={getImageUrl(it.image)}
-                        alt={it.name}
-                        className="modal-table-thumb"
-                      />
-                      <div className="modal-table-name">
-                        <strong>{it.name}</strong>
-                        <span>{it.size || 'Standard'}</span>
-                      </div>
-                      <div className="modal-table-qty">Qté: {it.quantity}</div>
-                      <div className="modal-table-price">
-                        {(Number(it.price) || 0) * (Number(it.quantity) || 1)} DT
-                      </div>
+              <div className="modal-body-content">
+                {/* Customer Box */}
+                <div className="modal-section-card">
+                  <div className="section-card-header">
+                    <h4>Informations Client</h4>
+                    <div className="modal-quick-contacts">
+                      <a
+                        href={`tel:+216${activeOrderModal.customerPhone}`}
+                        className="contact-action-btn phone"
+                        title="Appeler"
+                      >
+                        <Phone size={13} />
+                        <span>Appeler</span>
+                      </a>
+                      <a
+                        href={`https://wa.me/216${activeOrderModal.customerPhone}?text=${encodeURIComponent(
+                          `Bonjour ${activeOrderModal.customerName}, nous confirmons votre commande #${activeOrderModal.orderNumber} chez TechnoTech.`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="contact-action-btn whatsapp"
+                        title="WhatsApp"
+                      >
+                        <MessageCircle size={13} />
+                        <span>WhatsApp</span>
+                      </a>
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="client-details-grid">
+                    <div className="client-detail-item">
+                      <span className="detail-label">Nom du client :</span>
+                      <strong className="detail-value">{activeOrderModal.customerName}</strong>
+                    </div>
+                    <div className="client-detail-item">
+                      <span className="detail-label">Téléphone :</span>
+                      <strong className="detail-value phone-highlight">+216 {activeOrderModal.customerPhone}</strong>
+                    </div>
+                    <div className="client-detail-item">
+                      <span className="detail-label">Gouvernorat :</span>
+                      <strong className="detail-value">{activeOrderModal.customerCity || 'Non spécifié'}</strong>
+                    </div>
+                    <div className="client-detail-item">
+                      <span className="detail-label">Adresse de livraison :</span>
+                      <strong className="detail-value">{activeOrderModal.customerAddress || 'Non spécifiée'}</strong>
+                    </div>
+                    {activeOrderModal.customerNotes && (
+                      <div className="client-detail-item full-width">
+                        <span className="detail-label">Remarques / Instructions :</span>
+                        <p className="detail-notes">{activeOrderModal.customerNotes}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="modal-total-summary">
-                  <span>Montant Total à encaisser :</span>
-                  <span className="amount">{activeOrderModal.totalAmount} DT</span>
+                {/* Items Table */}
+                <div className="modal-section-card">
+                  <h4>Articles &amp; Formules commandés</h4>
+                  <div className="modal-items-table">
+                    {(activeOrderModal.items || []).map((it, idx) => (
+                      <div key={idx} className="modal-table-row">
+                        <img
+                          src={getImageUrl(it.image)}
+                          alt={it.name}
+                          className="modal-table-thumb"
+                        />
+                        <div className="modal-table-name">
+                          <strong>{it.name}</strong>
+                          <span>{it.size || 'Standard'} &bull; Activation immédiate</span>
+                        </div>
+                        <div className="modal-table-qty">Qté: <strong>{it.quantity}</strong></div>
+                        <div className="modal-table-price">
+                          {(Number(it.price) || 0) * (Number(it.quantity) || 1)} DT
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="modal-total-summary">
+                    <div className="summary-payment-method">
+                      <span className="summary-label">Mode de règlement :</span>
+                      <span className="summary-method-val">
+                        {activeOrderModal.paymentMethod || 'Paiement à la livraison'}
+                      </span>
+                    </div>
+                    <div className="summary-amount-box">
+                      <span className="summary-label">Total à encaisser :</span>
+                      <span className="amount">{activeOrderModal.totalAmount} DT</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="modal-footer-bar">
-              <button
-                type="button"
-                className="admin-btn secondary"
-                onClick={() => window.print()}
-              >
-                <Printer size={16} />
-                <span>Imprimer</span>
-              </button>
-              <button
-                type="button"
-                className="admin-btn primary"
-                onClick={() => setActiveOrderModal(null)}
-              >
-                Fermer
-              </button>
+              {/* Modal Window Footer Bar */}
+              <div className="modal-footer-bar">
+                <button
+                  type="button"
+                  className="admin-btn secondary"
+                  onClick={() => window.print()}
+                >
+                  <Printer size={16} />
+                  <span>Imprimer le reçu</span>
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn primary"
+                  onClick={() => setActiveOrderModal(null)}
+                >
+                  Fermer la fenêtre
+                </button>
+              </div>
             </div>
           </div>
         </div>
