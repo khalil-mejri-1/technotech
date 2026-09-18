@@ -32,22 +32,10 @@ export default function CardImageWithSkeleton({
 
   return (
     <div className="card-bg-image-wrapper">
-      {/* 1. SKELETON LOADER HAUT DE GAMME (Visible pendant le chargement ou en cas d'erreur) */}
+      {/* 1. Simple glowing frosted glass skeleton on exact image size */}
       {(!isLoaded || hasError) && (
-        <div className={`card-skeleton-layer ${hasError ? 'skeleton-error' : ''}`}>
-          {/* Vague Shimmer animée ultra-fluide */}
-          <div className="skeleton-shimmer-sweep" />
-
-          {/* Badge central stylisé avec effet de respiration néon */}
-          <div className="skeleton-center-content">
-            <div className="skeleton-glowing-orb">
-              <Sparkles size={24} className="skeleton-sparkle-glow" />
-            </div>
-            <span className="skeleton-brand-title">TECHNOTECH</span>
-            <div className="skeleton-pulse-bar">
-              <div className="skeleton-progress-indeterminate" />
-            </div>
-          </div>
+        <div className="simple-glass-skeleton card-glass-skeleton">
+          <div className="simple-skeleton-shimmer" />
         </div>
       )}
 
