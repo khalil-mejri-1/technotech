@@ -91,8 +91,8 @@ export default function AboutPage({ onNavigate }) {
       <section className="about-pillars-section">
         <div className="section-title-wrap text-center">
           <span className="section-tag-pill">POURQUOI TECHNOTECH ?</span>
-          <h2 className="section-main-heading">Nos 4 Engagements Fondamentaux</h2>
-          <p className="section-sub-heading">
+          <h2 className="about-pillars-heading">Nos 4 Engagements Fondamentaux</h2>
+          <p className="about-pillars-subheading">
             Nous avons conçu notre service pour vous offrir une sérénité totale à chaque commande.
           </p>
         </div>
