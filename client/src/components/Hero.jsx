@@ -35,12 +35,11 @@ function ThumbnailWithSkeleton({ src, alt, className, activeColor }) {
   return (
     <div className="thumbnail-skeleton-wrapper">
       {!isLoaded && (
-        <div className="thumbnail-skeleton-box">
-          <div className="thumbnail-skeleton-shimmer" />
-          <div
-            className="thumbnail-skeleton-dot"
-            style={{ backgroundColor: activeColor || '#ff7828' }}
-          />
+        <div
+          className="simple-glass-skeleton thumb-glass-skeleton"
+          style={{ '--skeleton-glow': activeColor || '#ff7828' }}
+        >
+          <div className="simple-skeleton-shimmer" />
         </div>
       )}
       <img
@@ -307,27 +306,13 @@ export default function Hero({
               transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
             }}
           >
-            {/* Professional Luxury Hero Skeleton Loader */}
+            {/* Simple glowing frosted glass skeleton on exact image size */}
             {!heroImageLoaded && (
               <div
-                className="hero-stage-skeleton"
-                style={{ '--hero-accent': activeColor }}
+                className="simple-glass-skeleton hero-glass-skeleton"
+                style={{ '--skeleton-glow': activeColor }}
               >
-                <div className="hero-skeleton-shimmer-sweep" />
-                <div className="hero-skeleton-backdrop-glow" />
-                <div className="hero-skeleton-core">
-                  <div className="hero-skeleton-orb-pulse">
-                    <Sparkles size={30} className="hero-skeleton-sparkle" />
-                  </div>
-                  <span className="hero-skeleton-brand">TECHNOTECH</span>
-                  <div className="hero-skeleton-badge">
-                    <span className="hero-skeleton-dot" />
-                    <span>CHARGEMENT EN COURS</span>
-                  </div>
-                  <div className="hero-skeleton-track">
-                    <div className="hero-skeleton-bar" />
-                  </div>
-                </div>
+                <div className="simple-skeleton-shimmer" />
               </div>
             )}
 
