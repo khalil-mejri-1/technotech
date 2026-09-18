@@ -73,6 +73,8 @@ export default function OrdersManager({ notify }) {
   const [activeOrderModal, setActiveOrderModal] = useState(null);
   const [deleteConfirmOrder, setDeleteConfirmOrder] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
 
   // Track known orders to detect newly arrived orders during live polling
   const knownOrderIdsRef = useRef(new Set());
@@ -173,6 +175,25 @@ export default function OrdersManager({ notify }) {
       console.error('Erreur suppression commande :', err);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  // Handle delete ALL orders
+  const handleDeleteAllOrders = async () => {
+    setIsDeletingAll(true);
+    try {
+      await orderService.deleteAll();
+      setOrders([]);
+      knownOrderIdsRef.current.clear();
+      if (activeOrderModal) {
+        setActiveOrderModal(null);
+      }
+      setShowDeleteAllModal(false);
+      if (notify) notify('Toutes les commandes ont été supprimées avec succès. 🗑️');
+    } catch (err) {
+      console.error('Erreur suppression de toutes les commandes :', err);
+    } finally {
+      setIsDeletingAll(false);
     }
   };
 
@@ -288,6 +309,19 @@ export default function OrdersManager({ notify }) {
             <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
             <span>Actualiser</span>
           </button>
+
+          {/* Delete All Orders Button */}
+          {orders.length > 0 && (
+            <button
+              type="button"
+              className="delete-all-orders-btn"
+              onClick={() => setShowDeleteAllModal(true)}
+              title="Supprimer définitivement toutes les commandes"
+            >
+              <Trash2 size={16} />
+              <span>Supprimer tout ({orders.length})</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -800,6 +834,61 @@ export default function OrdersManager({ notify }) {
                 disabled={isDeleting}
               >
                 {isDeleting ? 'Suppression...' : 'Oui, supprimer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* -------------------------------------------------------------
+          MODAL 3: DELETE ALL ORDERS CONFIRMATION
+          ------------------------------------------------------------- */}
+      {showDeleteAllModal && (
+        <div
+          className="admin-dialog-backdrop"
+          onClick={() => !isDeletingAll && setShowDeleteAllModal(false)}
+        >
+          <div
+            className="admin-confirm-box"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="confirm-icon danger">
+              <AlertTriangle size={32} />
+            </div>
+            <h3>Supprimer toutes les commandes ?</h3>
+            <p>
+              Êtes-vous sûr de vouloir supprimer définitivement <strong>l'ensemble des {orders.length} commande(s)</strong> de la base de données ?
+              <br />
+              <span style={{ color: '#ef4444', fontSize: '0.85rem', fontWeight: 600, display: 'inline-block', marginTop: '6px' }}>
+                ⚠️ Cette action est irréversible et effacera tout l'historique des commandes.
+              </span>
+            </p>
+            <div className="confirm-buttons">
+              <button
+                type="button"
+                className="admin-btn secondary"
+                onClick={() => setShowDeleteAllModal(false)}
+                disabled={isDeletingAll}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                className="admin-btn danger"
+                onClick={handleDeleteAllOrders}
+                disabled={isDeletingAll}
+              >
+                {isDeletingAll ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    <span>Suppression en cours...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={16} />
+                    <span>Oui, tout supprimer ({orders.length})</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
