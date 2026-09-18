@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Plus,
   Trash2,
@@ -28,8 +28,9 @@ import {
 } from 'lucide-react';
 import { INITIAL_PRODUCTS } from '../data/productsData.js';
 import { productService } from '../services/productService.js';
+import { orderService } from '../services/orderService.js';
 import { getImageUrl } from '../config/api.js';
-import OrdersManager from './OrdersManager.jsx';
+import OrdersManager, { playOrderChime } from './OrdersManager.jsx';
 
 const getThumbnailLabel = (name = '') => {
   if (!name) return '';
@@ -49,6 +50,108 @@ export default function AdminDashboard({
   const [editingProduct, setEditingProduct] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusNotice, setStatusNotice] = useState(null);
+
+  // Orders & Unseen Orders Badge State
+  const [orders, setOrders] = useState([]);
+  const [unseenOrdersCount, setUnseenOrdersCount] = useState(0);
+  const lastUnseenCountRef = useRef(null);
+  const isFirstLoadRef = useRef(true);
+
+  // Calculate unseen orders
+  const calculateUnseenOrders = (ordersList) => {
+    if (!Array.isArray(ordersList) || ordersList.length === 0) return 0;
+    try {
+      const raw = localStorage.getItem('technotech_seen_orders');
+      if (!raw) {
+        return ordersList.filter((o) => o.status === 'en_attente').length;
+      }
+      const seenIds = new Set(JSON.parse(raw));
+      return ordersList.filter((o) => {
+        const id = o._id || o.orderNumber;
+        return id && !seenIds.has(id) && o.status !== 'annulee';
+      }).length;
+    } catch {
+      return ordersList.filter((o) => o.status === 'en_attente').length;
+    }
+  };
+
+  // Mark all current orders as seen
+  const markAllOrdersAsSeen = (targetOrders) => {
+    const list = targetOrders || orders;
+    if (!Array.isArray(list) || list.length === 0) {
+      setUnseenOrdersCount(0);
+      return;
+    }
+    try {
+      const existingRaw = localStorage.getItem('technotech_seen_orders');
+      const seenSet = new Set(existingRaw ? JSON.parse(existingRaw) : []);
+      list.forEach((o) => {
+        const id = o._id || o.orderNumber;
+        if (id) seenSet.add(id);
+      });
+      localStorage.setItem('technotech_seen_orders', JSON.stringify(Array.from(seenSet)));
+      setUnseenOrdersCount(0);
+    } catch (e) {
+      console.warn('Erreur sauvegarde commandes vues:', e);
+      setUnseenOrdersCount(0);
+    }
+  };
+
+  // Callback when OrdersManager updates orders
+  const handleOrdersChange = (updatedOrders) => {
+    const list = Array.isArray(updatedOrders) ? updatedOrders : [];
+    setOrders(list);
+    if (activeTab === 'orders') {
+      markAllOrdersAsSeen(list);
+    } else {
+      setUnseenOrdersCount(calculateUnseenOrders(list));
+    }
+  };
+
+  // Background polling for orders to update the unseen badge live
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchOrdersBackground = async () => {
+      try {
+        const data = await orderService.getAll();
+        if (!isMounted) return;
+        const currentOrders = Array.isArray(data) ? data : [];
+        setOrders(currentOrders);
+
+        if (activeTab === 'orders') {
+          markAllOrdersAsSeen(currentOrders);
+        } else {
+          const unseen = calculateUnseenOrders(currentOrders);
+          if (!isFirstLoadRef.current && lastUnseenCountRef.current !== null && unseen > lastUnseenCountRef.current) {
+            const diff = unseen - lastUnseenCountRef.current;
+            playOrderChime();
+            notify(`🔔 ${diff} nouvelle(s) commande(s) reçue(s) !`);
+          }
+          lastUnseenCountRef.current = unseen;
+          setUnseenOrdersCount(unseen);
+        }
+        isFirstLoadRef.current = false;
+      } catch (e) {
+        // Silent error handling for background polling
+      }
+    };
+
+    fetchOrdersBackground();
+    const intervalId = setInterval(fetchOrdersBackground, 6000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
+  }, [activeTab]);
+
+  // When admin switches to 'orders' tab, mark all currently loaded orders as seen
+  useEffect(() => {
+    if (activeTab === 'orders' && orders.length > 0) {
+      markAllOrdersAsSeen(orders);
+    }
+  }, [activeTab]);
 
   // Hero Carousel Management State
   const [isHeroModalOpen, setIsHeroModalOpen] = useState(false);
@@ -905,11 +1008,30 @@ export default function AdminDashboard({
 
           <button
             type="button"
-            className={`admin-tab-item ${activeTab === 'orders' ? 'active' : ''}`}
-            onClick={() => setActiveTab('orders')}
+            className={`admin-tab-item ${activeTab === 'orders' ? 'active' : ''} ${unseenOrdersCount > 0 ? 'has-unseen-orders' : ''}`}
+            onClick={() => {
+              setActiveTab('orders');
+              markAllOrdersAsSeen(orders);
+            }}
           >
             <ShoppingBag size={17} />
             <span>Gestion de commande</span>
+            {unseenOrdersCount > 0 ? (
+              <span
+                className="tab-count-badge orders-badge unseen-alert"
+                title={`${unseenOrdersCount} nouvelle(s) commande(s) non consultée(s)`}
+              >
+                <span className="unseen-ping-dot" />
+                <span>{unseenOrdersCount}</span>
+              </span>
+            ) : orders.length > 0 ? (
+              <span
+                className="tab-count-badge orders-badge"
+                title={`${orders.length} commande(s) au total`}
+              >
+                {orders.length}
+              </span>
+            ) : null}
           </button>
         </div>
       </div>
@@ -1092,7 +1214,7 @@ export default function AdminDashboard({
             ORDERS MANAGEMENT VIEW (GESTION DE COMMANDE)
             ================================================================ */}
         {activeTab === 'orders' && (
-          <OrdersManager notify={notify} />
+          <OrdersManager notify={notify} onOrdersChange={handleOrdersChange} />
         )}
 
         {/* ================================================================

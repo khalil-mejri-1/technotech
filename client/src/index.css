@@ -3421,60 +3421,75 @@ body {
   overflow: hidden;
 }
 
-/* Dynamic Subscription Duration Selector (Simple, Clean, Zero Blur) */
+/* Dynamic Subscription Duration Selector (Simple, Minimalist, Zero Shadows) */
 .card-plans-group {
-  margin-bottom: 1.1rem;
+  margin-bottom: 0.95rem;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
 }
 
 .plans-label {
   display: block;
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.75rem;
+  font-weight: 600;
   color: #94a3b8;
-  margin-bottom: 0.45rem;
-  letter-spacing: 0.2px;
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.1px;
+  text-transform: none;
+  box-shadow: none !important;
+  text-shadow: none !important;
 }
 
 .plans-buttons-row {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.45rem;
+  box-shadow: none !important;
 }
 
 .plan-choice-chip {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 9999px;
-  padding: 5px 13px;
-  font-size: 0.78rem;
-  font-weight: 600;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 4px 11px;
+  font-size: 0.76rem;
+  font-weight: 500;
   color: #cbd5e1;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   user-select: none;
   box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  outline: none;
 }
 
 .plan-choice-chip:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.22);
   color: #ffffff;
-}
-
-.plan-choice-chip.selected {
-  background: #ff7828;
-  border-color: #ff7828;
-  color: #ffffff;
-  font-weight: 700;
   box-shadow: none !important;
 }
 
-.plan-choice-chip .check-icon {
+.plan-choice-chip.selected {
+  background: rgba(255, 120, 40, 0.12);
+  border-color: #ff7828;
   color: #ffffff;
-  stroke-width: 3;
+  font-weight: 600;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+.plan-choice-chip .check-icon {
+  color: #ff7828;
+  flex-shrink: 0;
 }
 
 /* Footer Action */
@@ -3646,27 +3661,38 @@ body {
   }
 
   .card-plans-group {
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.65rem;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
   }
 
   .plans-label {
-    font-size: 0.72rem;
-    margin-bottom: 0.35rem;
+    font-size: 0.7rem;
+    margin-bottom: 0.3rem;
+    box-shadow: none !important;
+    text-shadow: none !important;
   }
 
   .plans-buttons-row {
     gap: 0.35rem;
+    box-shadow: none !important;
   }
 
   .plan-choice-chip {
-    padding: 4px 9px;
+    padding: 3px 9px;
     font-size: 0.72rem;
+    border-radius: 7px;
     gap: 4px;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
   }
 
   .plan-choice-chip .check-icon {
-    width: 11px;
-    height: 11px;
+    width: 10px;
+    height: 10px;
   }
 
   .card-footer-action {
@@ -5527,6 +5553,80 @@ body {
 .admin-tab-item.active .tab-count-badge.hero-badge {
   background: #ff7828;
   color: #ffffff;
+}
+
+.tab-count-badge.orders-badge {
+  background: rgba(14, 165, 233, 0.18);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  font-weight: 700;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.admin-tab-item.active .tab-count-badge.orders-badge {
+  background: #0284c7;
+  color: #ffffff;
+  border-color: #38bdf8;
+}
+
+/* Luxury high-visibility unseen notification badge */
+.tab-count-badge.orders-badge.unseen-alert {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.45) !important;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.7), 0 2px 6px rgba(0, 0, 0, 0.35);
+  font-weight: 800;
+  padding: 2px 9px;
+  animation: pulseBadgeGlow 2.2s infinite ease-in-out;
+}
+
+.admin-tab-item.has-unseen-orders {
+  position: relative;
+}
+
+.admin-tab-item.has-unseen-orders:not(.active) {
+  border-color: rgba(239, 68, 68, 0.55);
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.22);
+}
+
+.unseen-ping-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  box-shadow: 0 0 6px #ffffff;
+  display: inline-block;
+  animation: pingDot 1.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes pingDot {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 1;
+    box-shadow: 0 0 10px #ffffff;
+  }
+  100% {
+    transform: scale(0.85);
+    opacity: 0.75;
+  }
+}
+
+@keyframes pulseBadgeGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.6), 0 2px 6px rgba(0, 0, 0, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(239, 68, 68, 0.9), 0 0 32px rgba(239, 68, 68, 0.45);
+    transform: scale(1.06);
+  }
 }
 
 /* Hero Manager Container */

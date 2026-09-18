@@ -28,7 +28,7 @@ import { orderService } from '../services/orderService.js';
 import { getImageUrl } from '../config/api.js';
 
 // Play a pleasant luxury notification chime using Web Audio API
-function playOrderChime() {
+export function playOrderChime() {
   try {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const now = audioCtx.currentTime;
@@ -62,7 +62,7 @@ function playOrderChime() {
   }
 }
 
-export default function OrdersManager({ notify }) {
+export default function OrdersManager({ notify, onOrdersChange }) {
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -79,6 +79,13 @@ export default function OrdersManager({ notify }) {
   // Track known orders to detect newly arrived orders during live polling
   const knownOrderIdsRef = useRef(new Set());
   const isFirstLoadRef = useRef(true);
+
+  // Notify parent dashboard when orders change
+  useEffect(() => {
+    if (onOrdersChange) {
+      onOrdersChange(orders);
+    }
+  }, [orders]);
 
   // Fetch orders from API
   const fetchOrders = async (isBackground = false) => {
