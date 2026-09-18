@@ -334,6 +334,31 @@ router.post('/orders', async (req, res) => {
     });
 
     const savedOrder = await newOrder.save();
+
+    // 🔔 Déclencher l'alerte push instantanée vers les téléphones admin
+    try {
+      const firstItem = savedOrder.items?.[0]?.name || 'Produit';
+      const itemsCount = savedOrder.items?.length || 1;
+      const countLabel = itemsCount > 1 ? ` (+${itemsCount - 1} autre(s))` : '';
+
+      sendExpoPushNotification({
+        title: '⚡ Nouvelle Commande Reçue !',
+        body: `${savedOrder.orderNumber} • ${savedOrder.customerName} (${savedOrder.totalAmount} DT)\n📦 ${firstItem}${countLabel}`,
+        data: {
+          orderId: String(savedOrder._id),
+          orderNumber: savedOrder.orderNumber,
+          customerName: savedOrder.customerName,
+          totalAmount: savedOrder.totalAmount,
+        },
+        sound: 'default',
+        channelId: 'orders',
+      }).catch((pushErr) => {
+        console.error('⚠️ [Push] Erreur asynchrone lors de l’envoi de notification :', pushErr);
+      });
+    } catch (pushErr) {
+      console.error('⚠️ [Push] Erreur déclenchement notification commande :', pushErr);
+    }
+
     res.status(201).json(savedOrder);
   } catch (err) {
     console.error('Erreur création commande :', err);
