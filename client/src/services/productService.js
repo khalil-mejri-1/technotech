@@ -227,6 +227,7 @@ export const productService = {
       return data.map((slide) => ({
         ...slide,
         image: getImageUrl(slide.image),
+        thumbnailImage: slide.thumbnailImage ? getImageUrl(slide.thumbnailImage) : '',
       }));
     } catch (error) {
       console.warn('Impossible de joindre les slides Hero distants, utilisation du cache local :', error.message);
@@ -254,6 +255,7 @@ export const productService = {
     return saved.map((slide) => ({
       ...slide,
       image: getImageUrl(slide.image),
+      thumbnailImage: slide.thumbnailImage ? getImageUrl(slide.thumbnailImage) : '',
     }));
   },
 };

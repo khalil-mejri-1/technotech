@@ -95,6 +95,11 @@ export default function CartDrawer({
                     src={getImageUrl(item.image)}
                     alt={item.name}
                     className="cart-item-img"
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = '/images/logo.png';
+                    }}
                   />
                 </div>
                 <div className="cart-item-info">

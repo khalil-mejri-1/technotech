@@ -11,6 +11,8 @@ export const INITIAL_PRODUCTS = [
     price: 20,
     originalPrice: 28,
     sourceBot: '@AI_Sub_Bot',
+    displayMode: 'single',
+    selectedImageIndex: 0,
     images: [
       '/images/black_jacket.png'
     ],
@@ -30,6 +32,8 @@ export const INITIAL_PRODUCTS = [
     price: 15,
     originalPrice: 24,
     sourceBot: '@CanvaEnterprise_Bot',
+    displayMode: 'single',
+    selectedImageIndex: 0,
     images: [
       '/images/orange_jacket.png'
     ],
@@ -49,6 +53,8 @@ export const INITIAL_PRODUCTS = [
     price: 29,
     originalPrice: 45,
     sourceBot: '@MS_LicenseKey_Bot',
+    displayMode: 'single',
+    selectedImageIndex: 0,
     images: [
       '/images/cream_jacket.png'
     ],
@@ -67,6 +73,8 @@ export const INITIAL_PRODUCTS = [
     price: 149,
     originalPrice: 199,
     sourceBot: 'Atelier Textile Direct',
+    displayMode: 'carousel',
+    selectedImageIndex: 0,
     images: [
       '/images/orange_jacket.png',
       '/images/black_jacket.png',
@@ -215,7 +223,16 @@ export const getStoredHeroSlides = (availableProducts = []) => {
               prod?.images?.[0] ||
               '/images/logo.png';
           }
-          return { ...slide, image: getImageUrl(img) };
+          let thumb = slide.thumbnailImage;
+          if (slide.thumbnailImage === '__product_thumb_ref__') {
+            const prod = availableProducts.find((p) => (p._id || p.id) === slide.productId);
+            thumb = prod?.images?.[1] || prod?.images?.[0] || img;
+          }
+          return {
+            ...slide,
+            image: getImageUrl(img),
+            thumbnailImage: thumb ? getImageUrl(thumb) : '',
+          };
         });
       }
     }
@@ -243,14 +260,17 @@ export const saveStoredHeroSlides = (slides) => {
         slide.image.startsWith('data:') &&
         slide.image.length > 10000;
 
-      if (isLargeBase64) {
-        return {
-          ...slide,
-          image: '__product_image_ref__',
-          isCompactRef: true,
-        };
-      }
-      return slide;
+      const isLargeThumb =
+        typeof slide.thumbnailImage === 'string' &&
+        slide.thumbnailImage.startsWith('data:') &&
+        slide.thumbnailImage.length > 10000;
+
+      return {
+        ...slide,
+        image: isLargeBase64 ? '__product_image_ref__' : slide.image,
+        thumbnailImage: isLargeThumb ? '__product_thumb_ref__' : slide.thumbnailImage,
+        isCompactRef: isLargeBase64 || isLargeThumb,
+      };
     });
 
     safeLocalStorageSet(HERO_STORAGE_KEY, JSON.stringify(compactSlides));

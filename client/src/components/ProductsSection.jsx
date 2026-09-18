@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, ChevronLeft, ChevronRight, Check, Zap, ShieldCheck } from 'lucide-react';
+import { ShoppingBag, ChevronLeft, ChevronRight, Check, Zap, ShieldCheck, Clock } from 'lucide-react';
 import { getImageUrl } from '../config/api.js';
 import CardImageWithSkeleton from './CardImageWithSkeleton.jsx';
 
@@ -16,10 +16,10 @@ export default function ProductsSection({ products, onAddToCart }) {
     }));
   };
 
-  const handlePrevImage = (productId, imagesLength, e) => {
+  const handlePrevImage = (productId, imagesLength, defaultIdx = 0, e) => {
     e.stopPropagation();
     setActiveImageIndexes((prev) => {
-      const current = prev[productId] || 0;
+      const current = prev[productId] !== undefined ? prev[productId] : defaultIdx;
       return {
         ...prev,
         [productId]: (current - 1 + imagesLength) % imagesLength,
@@ -27,10 +27,10 @@ export default function ProductsSection({ products, onAddToCart }) {
     });
   };
 
-  const handleNextImage = (productId, imagesLength, e) => {
+  const handleNextImage = (productId, imagesLength, defaultIdx = 0, e) => {
     e.stopPropagation();
     setActiveImageIndexes((prev) => {
-      const current = prev[productId] || 0;
+      const current = prev[productId] !== undefined ? prev[productId] : defaultIdx;
       return {
         ...prev,
         [productId]: (current + 1) % imagesLength,
@@ -71,15 +71,33 @@ export default function ProductsSection({ products, onAddToCart }) {
           {/* Side-by-Side Products Grid */}
           <div className="products-cards-grid">
             {products.map((product) => {
+              const productId = product._id || product.id;
               const images = product.images && product.images.length > 0
                 ? product.images.map(getImageUrl).filter(Boolean)
                 : [];
-              const currentImgIndex = activeImageIndexes[product.id] || 0;
+
+              // Check if product is set to single image mode
+              const isSingleMode = product.displayMode === 'single';
+
+              // Default index chosen by admin
+              const defaultIndex =
+                typeof product.selectedImageIndex === 'number' &&
+                product.selectedImageIndex >= 0 &&
+                product.selectedImageIndex < images.length
+                  ? product.selectedImageIndex
+                  : 0;
+
+              // If single mode, always display the admin-selected image
+              // If carousel mode, display the active index (initialized to defaultIndex)
+              const currentImgIndex = isSingleMode
+                ? defaultIndex
+                : (activeImageIndexes[productId] !== undefined ? activeImageIndexes[productId] : defaultIndex);
+
               const activeImage = images[currentImgIndex] || images[0] || '';
 
               // Determine active plan and dynamic price
               const activePlan =
-                selectedPlans[product.id] ||
+                selectedPlans[productId] ||
                 (product.plans && product.plans.length > 0 ? product.plans[0] : null);
               const displayPrice = activePlan ? activePlan.price : product.price;
 
@@ -88,58 +106,84 @@ export default function ProductsSection({ products, onAddToCart }) {
                 product.originalPrice && product.originalPrice > displayPrice
                   ? Math.round(((product.originalPrice - displayPrice) / product.originalPrice) * 100)
                   : null;
-              const productId = product._id || product.id;
 
               return (
-                <article key={productId} className="white-product-card full-card-image-card">
-                  {/* Full background image layer with professional skeleton loader */}
-                  <CardImageWithSkeleton
-                    src={activeImage}
-                    alt={product.name}
-                    className="card-featured-img"
-                  />
+                <article key={productId} className="white-product-card split-product-card">
+                  {/* Top Dedicated Image Section */}
+                  <div className="card-image-section">
+                    <CardImageWithSkeleton
+                      src={activeImage}
+                      alt={product.name}
+                      className="card-featured-img"
+                    />
 
-                  {/* Top Floating Controls: Badge and Carousel Navigation */}
-                  <div className="card-top-controls">
-                    {product.badge ? (
-                      <span className="card-top-badge">{product.badge}</span>
-                    ) : (
-                      <span />
-                    )}
+                    {/* Top Floating Controls: Badge and Carousel Navigation */}
+                    <div className="card-top-controls">
+                      {product.badge ? (
+                        <span className="card-top-badge">{product.badge}</span>
+                      ) : (
+                        <span />
+                      )}
 
-                    {/* Image Carousel Controls if multiple images exist */}
-                    {images.length > 1 && (
-                      <div className="card-image-nav">
-                        <button
-                          type="button"
-                          className="image-nav-arrow prev"
-                          onClick={(e) => handlePrevImage(productId, images.length, e)}
-                          title="Image précédente"
-                        >
-                          <ChevronLeft size={16} />
-                        </button>
-                        <div className="image-dots">
-                          {images.map((_, idx) => (
-                            <span
-                              key={idx}
-                              className={`dot ${idx === currentImgIndex ? 'active' : ''}`}
-                            />
-                          ))}
+                      {/* Image Carousel Controls: Only if multiple images exist AND NOT in single-image mode */}
+                      {!isSingleMode && images.length > 1 && (
+                        <div className="card-image-nav">
+                          <button
+                            type="button"
+                            className="image-nav-arrow prev"
+                            onClick={(e) => handlePrevImage(productId, images.length, defaultIndex, e)}
+                            title="Image précédente"
+                          >
+                            <ChevronLeft size={16} />
+                          </button>
+                          <div className="image-dots">
+                            {images.map((_, idx) => (
+                              <span
+                                key={idx}
+                                className={`dot ${idx === currentImgIndex ? 'active' : ''}`}
+                              />
+                            ))}
+                          </div>
+                          <button
+                            type="button"
+                            className="image-nav-arrow next"
+                            onClick={(e) => handleNextImage(productId, images.length, defaultIndex, e)}
+                            title="Image suivante"
+                          >
+                            <ChevronRight size={16} />
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          className="image-nav-arrow next"
-                          onClick={(e) => handleNextImage(productId, images.length, e)}
-                          title="Image suivante"
-                        >
-                          <ChevronRight size={16} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
 
-                  {/* Spacer so the upper visual area remains highlighted */}
-                  <div className="card-image-spacer" />
+                    {/* Subtle Angled Geometric Separator (ماءل قليلا) */}
+                    <div className="card-angled-divider" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 100 16"
+                        preserveAspectRatio="none"
+                        className="card-angled-svg"
+                      >
+                        <defs>
+                          <linearGradient id={`card-angle-glow-${productId}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="rgba(255, 255, 255, 0.08)" />
+                            <stop offset="35%" stopColor="rgba(255, 120, 40, 0.65)" />
+                            <stop offset="65%" stopColor="#ff7828" />
+                            <stop offset="100%" stopColor="rgba(255, 255, 255, 0.12)" />
+                          </linearGradient>
+                        </defs>
+                        <polygon points="0,16 100,0 100,16" fill="#0b1329" />
+                        <line
+                          x1="0"
+                          y1="16"
+                          x2="100"
+                          y2="0"
+                          stroke={`url(#card-angle-glow-${productId})`}
+                          strokeWidth="1.4"
+                          vectorEffect="non-scaling-stroke"
+                        />
+                      </svg>
+                    </div>
+                  </div>
 
                   {/* Card Body Information */}
                   <div className="card-body-details">
@@ -149,19 +193,46 @@ export default function ProductsSection({ products, onAddToCart }) {
                     {/* Dynamic Subscription Duration / Options Selector */}
                     {product.plans && product.plans.length > 0 && (
                       <div className="card-plans-group">
-                        <span className="plans-label">Durée de l'abonnement :</span>
+                        <div className="plans-header-row">
+                          <span className="plans-label">
+                            <Clock size={12} className="plans-clock-icon" />
+                            <span>Durée de l'abonnement :</span>
+                          </span>
+                          {activePlan?.duration && (
+                            <span className="plans-active-tag">
+                              {activePlan.duration}
+                            </span>
+                          )}
+                        </div>
                         <div className="plans-buttons-row">
-                          {product.plans.map((plan) => {
-                            const isSelected = activePlan?.id === plan.id || activePlan?.duration === plan.duration;
+                          {product.plans.map((plan, idx) => {
+                            const planKey = plan.id || plan._id || `plan-${idx}`;
+                            const isSelected = Boolean(
+                              activePlan && (
+                                (plan.id && activePlan.id && activePlan.id === plan.id) ||
+                                (plan._id && activePlan._id && activePlan._id === plan._id) ||
+                                (activePlan.duration && activePlan.duration === plan.duration)
+                              )
+                            );
                             return (
                               <button
-                                key={plan.id || plan.duration}
+                                key={planKey}
                                 type="button"
                                 className={`plan-choice-chip ${isSelected ? 'selected' : ''}`}
                                 onClick={() => handleSelectPlan(productId, plan)}
+                                title={`Choisir ${plan.duration} — ${plan.price} DT`}
                               >
-                                {isSelected && <Check size={13} className="check-icon" />}
-                                <span>{plan.duration}</span>
+                                <span className="plan-chip-content">
+                                  <span className={`plan-indicator-dot ${isSelected ? 'active' : ''}`}>
+                                    {isSelected && <Check size={10} strokeWidth={3.5} />}
+                                  </span>
+                                  <span className="plan-dur-name">{plan.duration}</span>
+                                </span>
+                                {plan.price !== undefined && (
+                                  <span className={`plan-dur-price-pill ${isSelected ? 'selected' : ''}`}>
+                                    {plan.price} DT
+                                  </span>
+                                )}
                               </button>
                             );
                           })}
@@ -173,7 +244,9 @@ export default function ProductsSection({ products, onAddToCart }) {
                     <div className="card-footer-action">
                       <div className="pricing-stack">
                         <div className="current-price-row">
-                          <span className="main-price-val">{displayPrice}</span>
+                          <span key={`price-${productId}-${displayPrice}`} className="main-price-val price-pop-anim">
+                            {displayPrice}
+                          </span>
                           <span className="currency-symbol">DT</span>
                         </div>
                         {product.originalPrice && product.originalPrice > displayPrice && (

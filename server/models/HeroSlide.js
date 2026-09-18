@@ -26,6 +26,10 @@ const heroSlideSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    thumbnailImage: {
+      type: String,
+      default: '',
+    },
     bgColor: {
       type: String,
       default: '#e25816',
