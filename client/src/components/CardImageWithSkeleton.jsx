@@ -15,10 +15,12 @@ export default function CardImageWithSkeleton({
 }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [currentSrc, setCurrentSrc] = useState(src);
   const imgRef = useRef(null);
 
   // Réinitialiser l'état de chargement dès que la source de l'image change
   useEffect(() => {
+    setCurrentSrc(src);
     setIsLoaded(false);
     setHasError(false);
 
@@ -30,8 +32,8 @@ export default function CardImageWithSkeleton({
 
   return (
     <div className="card-bg-image-wrapper">
-      {/* 1. SKELETON LOADER HAUT DE GAMME (Visible pendant le chargement) */}
-      {!isLoaded && (
+      {/* 1. SKELETON LOADER HAUT DE GAMME (Visible pendant le chargement ou en cas d'erreur) */}
+      {(!isLoaded || hasError) && (
         <div className={`card-skeleton-layer ${hasError ? 'skeleton-error' : ''}`}>
           {/* Vague Shimmer animée ultra-fluide */}
           <div className="skeleton-shimmer-sweep" />
@@ -52,9 +54,9 @@ export default function CardImageWithSkeleton({
       {/* 2. IMAGE RÉELLE (Invisible avec transition fluide dès le chargement) */}
       <img
         ref={imgRef}
-        src={src}
-        alt={alt}
-        className={`${className} ${isLoaded ? 'image-visible' : 'image-hidden'}`}
+        src={currentSrc}
+        alt=""
+        className={`${className} ${isLoaded && !hasError ? 'image-visible' : 'image-hidden'}`}
         loading={loading}
         draggable="false"
         onLoad={() => {
@@ -62,8 +64,12 @@ export default function CardImageWithSkeleton({
           setHasError(false);
         }}
         onError={() => {
-          setHasError(true);
-          setIsLoaded(true);
+          if (currentSrc !== '/images/logo.png') {
+            setCurrentSrc('/images/logo.png');
+          } else {
+            setHasError(true);
+            setIsLoaded(true);
+          }
         }}
       />
 
