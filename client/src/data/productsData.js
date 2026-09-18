@@ -12,7 +12,6 @@ export const INITIAL_PRODUCTS = [
     originalPrice: 28,
     sourceBot: '@AI_Sub_Bot',
     images: [
-      '/images/logo.png',
       '/images/black_jacket.png'
     ],
     plans: [
@@ -32,7 +31,6 @@ export const INITIAL_PRODUCTS = [
     originalPrice: 24,
     sourceBot: '@CanvaEnterprise_Bot',
     images: [
-      '/images/logo.png',
       '/images/orange_jacket.png'
     ],
     plans: [
@@ -52,7 +50,6 @@ export const INITIAL_PRODUCTS = [
     originalPrice: 45,
     sourceBot: '@MS_LicenseKey_Bot',
     images: [
-      '/images/logo.png',
       '/images/cream_jacket.png'
     ],
     plans: [

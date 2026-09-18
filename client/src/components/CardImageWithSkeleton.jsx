@@ -13,53 +13,64 @@ export default function CardImageWithSkeleton({
   overlay = null,
   loading = 'lazy',
 }) {
+  const isLogoPlaceholder =
+    !src ||
+    src === '/images/logo.png' ||
+    src.endsWith('/images/logo.png') ||
+    src === 'logo.png' ||
+    src.endsWith('/logo.png');
+
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [currentSrc, setCurrentSrc] = useState(src);
   const imgRef = useRef(null);
 
-  // Réinitialiser l'état de chargement dès que la source de l'image change
+  // Réinitialiser l'état dès que la source change
   useEffect(() => {
-    setCurrentSrc(src);
+    if (isLogoPlaceholder) {
+      setIsLoaded(false);
+      setHasError(false);
+      return;
+    }
+
     setIsLoaded(false);
     setHasError(false);
 
-    // Si l'image est déjà en cache dans le navigateur
+    // Si l'image réelle est déjà en cache dans le navigateur
     if (imgRef.current && imgRef.current.complete && imgRef.current.naturalWidth > 0) {
       setIsLoaded(true);
     }
-  }, [src]);
+  }, [src, isLogoPlaceholder]);
+
+  const showSkeleton = !isLoaded || hasError || isLogoPlaceholder;
 
   return (
     <div className="card-bg-image-wrapper">
       {/* 1. Simple glowing frosted glass skeleton on exact image size */}
-      {(!isLoaded || hasError) && (
+      {showSkeleton && (
         <div className="simple-glass-skeleton card-glass-skeleton">
           <div className="simple-skeleton-shimmer" />
         </div>
       )}
 
-      {/* 2. IMAGE RÉELLE (Invisible avec transition fluide dès le chargement) */}
-      <img
-        ref={imgRef}
-        src={currentSrc}
-        alt=""
-        className={`${className} ${isLoaded && !hasError ? 'image-visible' : 'image-hidden'}`}
-        loading={loading}
-        draggable="false"
-        onLoad={() => {
-          setIsLoaded(true);
-          setHasError(false);
-        }}
-        onError={() => {
-          if (currentSrc !== '/images/logo.png') {
-            setCurrentSrc('/images/logo.png');
-          } else {
-            setHasError(true);
+      {/* 2. IMAGE RÉELLE: Affichée UNIQUEMENT lorsqu'elle est prête et n'est pas le logo par défaut */}
+      {!isLogoPlaceholder && (
+        <img
+          ref={imgRef}
+          src={src}
+          alt=""
+          className={`${className} ${!showSkeleton ? 'image-visible' : 'image-hidden'}`}
+          loading={loading}
+          draggable="false"
+          onLoad={() => {
             setIsLoaded(true);
-          }
-        }}
-      />
+            setHasError(false);
+          }}
+          onError={() => {
+            setHasError(true);
+            setIsLoaded(false);
+          }}
+        />
+      )}
 
       {/* 3. OVERLAY GRADIENT */}
       {overlay || <div className="card-bg-overlay" />}
