@@ -283,7 +283,14 @@ export default function Hero({
 
         {/* Dynamic Product Headline from Product Data */}
         <h1 className="hero-title">
-          <span>{displayName}</span>
+          {displayName && displayName.includes(' ') ? (
+            <>
+              <span className="hero-title-main">{displayName.split(' ')[0]}</span>
+              <span className="hero-title-accent">{displayName.split(' ').slice(1).join(' ')}</span>
+            </>
+          ) : (
+            <span className="hero-title-main">{displayName}</span>
+          )}
         </h1>
 
         {/* Narrative Description Copy from Product Data */}
@@ -535,7 +542,12 @@ export default function Hero({
                 );
                 const rawName = matchingProd?.name || slide.name;
                 const thumbTitle = getThumbnailLabel(rawName);
-                const thumbImg = getImageUrl(slide.image || (matchingProd?.images && matchingProd.images[0]) || '/images/logo.png');
+                const thumbImg = getImageUrl(
+                  slide.thumbnailImage ||
+                  slide.image ||
+                  (matchingProd?.images && matchingProd.images[0]) ||
+                  '/images/logo.png'
+                );
                 const isActive = index === safeIndex;
                 const cardAccent = slide.bgColor || '#ff5e00';
 

@@ -39,6 +39,15 @@ const technotechSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    displayMode: {
+      type: String,
+      enum: ['carousel', 'single'],
+      default: 'carousel',
+    },
+    selectedImageIndex: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

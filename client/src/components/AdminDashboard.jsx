@@ -22,12 +22,19 @@ import {
   Palette,
   ChevronUp,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ShoppingBag
 } from 'lucide-react';
 import { INITIAL_PRODUCTS } from '../data/productsData.js';
 import { productService } from '../services/productService.js';
 import { getImageUrl } from '../config/api.js';
 import OrdersManager from './OrdersManager.jsx';
+
+const getThumbnailLabel = (name = '') => {
+  if (!name) return '';
+  return name.length > 12 ? `${name.substring(0, 11)}...` : name;
+};
 
 export default function AdminDashboard({
   products,
@@ -97,6 +104,30 @@ export default function AdminDashboard({
   // ==========================================
   // HERO CAROUSEL SLIDES HANDLERS
   // ==========================================
+  const handleHeroImageUpload = async (e, targetField) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      notify('Téléversement de la photo en cours... ⏳');
+      let uploadedUrl;
+      try {
+        uploadedUrl = await productService.uploadImage(file);
+      } catch {
+        uploadedUrl = await compressImageFile(file);
+      }
+      if (uploadedUrl) {
+        setHeroForm((prev) => ({
+          ...prev,
+          [targetField]: uploadedUrl,
+        }));
+        notify('Photo mise à jour pour ce slide ! ✨');
+      }
+    } catch (err) {
+      console.error('Erreur upload:', err);
+      notify('Erreur lors du téléversement de la photo');
+    }
+  };
+
   const handleOpenAddHeroModal = () => {
     setEditingHeroSlideIndex(null);
     const firstProduct = products[0];
@@ -108,6 +139,7 @@ export default function AdminDashboard({
         price: firstProduct.price,
         originalPrice: firstProduct.originalPrice || '',
         image: firstProduct.images && firstProduct.images.length > 0 ? firstProduct.images[0] : '/images/logo.png',
+        thumbnailImage: firstProduct.images && firstProduct.images.length > 1 ? firstProduct.images[1] : (firstProduct.images?.[0] || '/images/logo.png'),
         selectedImageIndex: 0,
         bgColor: '#e25816',
       });
@@ -119,6 +151,7 @@ export default function AdminDashboard({
         price: '',
         originalPrice: '',
         image: '/images/logo.png',
+        thumbnailImage: '/images/logo.png',
         selectedImageIndex: 0,
         bgColor: '#e25816',
       });
@@ -137,6 +170,7 @@ export default function AdminDashboard({
     const foundImgIdx = prod?.images ? prod.images.findIndex((img) => img === slide.image) : -1;
     const initialIndex = foundImgIdx >= 0 ? foundImgIdx : (slide.selectedImageIndex || 0);
     const resolvedImage = slide.image || (prod?.images && prod.images[initialIndex]) || '/images/logo.png';
+    const resolvedThumb = slide.thumbnailImage || (prod?.images && prod.images.length > 1 ? prod.images[1] : resolvedImage);
 
     setHeroForm({
       productId: prod ? (prod._id || prod.id) : (slide.productId || slide.id),
@@ -145,6 +179,7 @@ export default function AdminDashboard({
       price: prod ? prod.price : slide.price,
       originalPrice: prod ? (prod.originalPrice || '') : (slide.originalPrice || ''),
       image: resolvedImage,
+      thumbnailImage: resolvedThumb,
       selectedImageIndex: initialIndex,
       bgColor: slide.bgColor || '#e25816',
     });
@@ -154,6 +189,7 @@ export default function AdminDashboard({
   const handleHeroProductSelect = (productId) => {
     const selected = products.find((p) => (p._id || p.id) === productId);
     if (!selected) return;
+    const pImgs = selected.images && selected.images.length > 0 ? selected.images : ['/images/logo.png'];
     setHeroForm((prev) => ({
       ...prev,
       productId: selected._id || selected.id,
@@ -161,7 +197,8 @@ export default function AdminDashboard({
       description: selected.description || '',
       price: selected.price,
       originalPrice: selected.originalPrice || '',
-      image: selected.images && selected.images.length > 0 ? selected.images[0] : '/images/logo.png',
+      image: pImgs[0],
+      thumbnailImage: pImgs.length > 1 ? pImgs[1] : pImgs[0],
       selectedImageIndex: 0,
     }));
   };
@@ -186,6 +223,16 @@ export default function AdminDashboard({
       }
     }
 
+    let thumbImg = heroForm.thumbnailImage;
+    if (thumbImg && thumbImg.startsWith('data:')) {
+      try {
+        const savedUrl = await productService.uploadBase64(thumbImg, `thumb-${Date.now()}.png`);
+        if (savedUrl) thumbImg = savedUrl;
+      } catch (err) {
+        console.warn('Erreur sauvegarde vignette hero :', err);
+      }
+    }
+
     const prod = products.find(
       (p) =>
         (p._id && (p._id === heroForm.productId || p._id === heroForm.id)) ||
@@ -202,6 +249,7 @@ export default function AdminDashboard({
       originalPrice: (prod?.originalPrice !== undefined && prod?.originalPrice !== null) ? Number(prod.originalPrice) : (heroForm.originalPrice ? Number(heroForm.originalPrice) : null),
       plans: prod?.plans || [],
       image: slideImg,
+      thumbnailImage: thumbImg || slideImg,
       selectedImageIndex: heroForm.selectedImageIndex !== undefined ? heroForm.selectedImageIndex : 0,
       bgColor: heroForm.bgColor || '#e25816',
       order: editingHeroSlideIndex !== null ? editingHeroSlideIndex : heroSlides.length,
@@ -267,6 +315,8 @@ export default function AdminDashboard({
       price: 20,
       originalPrice: 30,
       sourceBot: '',
+      displayMode: 'carousel',
+      selectedImageIndex: 0,
       images: ['/images/logo.png'],
       plans: [
         { id: `plan-${Date.now()}-1`, duration: '1 Mois', price: 20 },
@@ -280,6 +330,15 @@ export default function AdminDashboard({
 
   const handleOpenEditModal = (product) => {
     setEditingProduct(product);
+    const pImages = product.images && product.images.length > 0 ? [...product.images] : ['/images/logo.png'];
+    const pDisplayMode = product.displayMode || (pImages.length > 1 ? 'carousel' : 'single');
+    const pSelectedIdx =
+      typeof product.selectedImageIndex === 'number' &&
+      product.selectedImageIndex >= 0 &&
+      product.selectedImageIndex < pImages.length
+        ? product.selectedImageIndex
+        : 0;
+
     setFormData({
       id: product._id || product.id,
       name: product.name || '',
@@ -289,8 +348,10 @@ export default function AdminDashboard({
       price: product.price || '',
       originalPrice: product.originalPrice || '',
       sourceBot: product.sourceBot || '',
-      images: product.images ? [...product.images] : ['/images/logo.png'],
-      plans: product.plans ? product.plans.map(p => ({ ...p })) : [],
+      displayMode: pDisplayMode,
+      selectedImageIndex: pSelectedIdx,
+      images: pImages,
+      plans: product.plans ? product.plans.map((p) => ({ ...p })) : [],
     });
     setNewPlanDuration('');
     setNewPlanPrice('');
@@ -479,10 +540,55 @@ export default function AdminDashboard({
   };
 
   const handleRemoveImage = (indexToRemove) => {
+    setFormData((prev) => {
+      const newImages = prev.images.filter((_, idx) => idx !== indexToRemove);
+      let newSelected = prev.selectedImageIndex || 0;
+      if (newImages.length === 0) {
+        newSelected = 0;
+      } else if (newSelected >= newImages.length) {
+        newSelected = Math.max(0, newImages.length - 1);
+      } else if (newSelected > indexToRemove) {
+        newSelected = newSelected - 1;
+      }
+      return {
+        ...prev,
+        images: newImages,
+        selectedImageIndex: newSelected,
+      };
+    });
+  };
+
+  const handleSelectCardImage = (imgIdx) => {
     setFormData((prev) => ({
       ...prev,
-      images: prev.images.filter((_, idx) => idx !== indexToRemove),
+      selectedImageIndex: imgIdx,
     }));
+    notify(`Photo #${imgIdx + 1} sélectionnée pour le card ! 📸`);
+  };
+
+  const handleMoveImage = (currentIndex, direction) => {
+    setFormData((prev) => {
+      const targetIndex = currentIndex + direction;
+      if (targetIndex < 0 || targetIndex >= prev.images.length) return prev;
+      const updatedImages = [...prev.images];
+      const [moved] = updatedImages.splice(currentIndex, 1);
+      updatedImages.splice(targetIndex, 0, moved);
+
+      let newSelected = prev.selectedImageIndex ?? 0;
+      if (newSelected === currentIndex) {
+        newSelected = targetIndex;
+      } else if (currentIndex < targetIndex && newSelected > currentIndex && newSelected <= targetIndex) {
+        newSelected -= 1;
+      } else if (currentIndex > targetIndex && newSelected >= targetIndex && newSelected < currentIndex) {
+        newSelected += 1;
+      }
+
+      return {
+        ...prev,
+        images: updatedImages,
+        selectedImageIndex: newSelected,
+      };
+    });
   };
 
   // Adding a duration plan
@@ -547,11 +653,18 @@ export default function AdminDashboard({
         );
       }
 
+      let safeSelectedImageIndex = parseInt(formData.selectedImageIndex, 10);
+      if (isNaN(safeSelectedImageIndex) || safeSelectedImageIndex < 0 || safeSelectedImageIndex >= finalImages.length) {
+        safeSelectedImageIndex = 0;
+      }
+
       const finalProduct = {
         ...formData,
         price: numericPrice,
         originalPrice: numericOriginalPrice,
         images: finalImages.length > 0 ? finalImages : ['/images/logo.png'],
+        displayMode: formData.displayMode || (finalImages.length > 1 ? 'carousel' : 'single'),
+        selectedImageIndex: safeSelectedImageIndex,
       };
       if (editingProduct) {
         const idToUpdate = editingProduct._id || editingProduct.id;
@@ -901,7 +1014,14 @@ export default function AdminDashboard({
                           src={displayImg}
                           alt={displayTitle}
                           className="slide-thumb-img"
+                          title="Vitrine principale"
                         />
+                        {slide.thumbnailImage && slide.thumbnailImage !== slide.image && (
+                          <div className="slide-card-thumb-badge" title="Miniature Carrousel">
+                            <img src={getImageUrl(slide.thumbnailImage)} alt="Miniature" />
+                            <span>Carrousel</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Content Details */}
@@ -1033,7 +1153,8 @@ export default function AdminDashboard({
                       </tr>
                     ) : (
                       filteredProducts.map((product) => {
-                        const primaryImg = getImageUrl(product.images?.[0] || '/images/logo.png');
+                        const chosenIdx = typeof product.selectedImageIndex === 'number' ? product.selectedImageIndex : 0;
+                        const primaryImg = getImageUrl(product.images?.[chosenIdx] || product.images?.[0] || '/images/logo.png');
                         const productId = product._id || product.id;
                         return (
                           <tr key={productId}>
@@ -1046,9 +1167,20 @@ export default function AdminDashboard({
                                 />
                                 <div>
                                   <strong className="table-product-name">{product.name}</strong>
-                                  <span className="table-images-count">
-                                    {product.images?.length || 1} photo(s)
-                                  </span>
+                                  <div className="table-image-mode-tags">
+                                    <span className="table-images-count">
+                                      {product.images?.length || 1} photo(s)
+                                    </span>
+                                    {product.displayMode === 'single' ? (
+                                      <span className="table-mode-badge single" title="Photo unique fixe affichée sur le card">
+                                        Photo unique
+                                      </span>
+                                    ) : (
+                                      <span className="table-mode-badge carousel" title="Carrousel multi-photos avec défilement">
+                                        Carrousel
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </td>
@@ -1083,9 +1215,12 @@ export default function AdminDashboard({
                             </td>
                             <td>
                               {product.sourceBot ? (
-                                <span className="admin-secret-bot-badge" title="Information privée visible uniquement par l'administrateur">
+                                <span
+                                  className="admin-secret-bot-badge"
+                                  title={`Bot / Fournisseur (Privé) : ${product.sourceBot}`}
+                                >
                                   <Bot size={13} className="bot-icon-glow" />
-                                  <span>{product.sourceBot}</span>
+                                  <span className="bot-text-truncate">{product.sourceBot}</span>
                                 </span>
                               ) : (
                                 <span className="bot-not-set">—</span>
@@ -1225,33 +1360,16 @@ export default function AdminDashboard({
                 </div>
               </div>
 
-              {/* Badge & Category */}
-              <div className="form-two-cols">
-                <div className="form-row-group">
-                  <label className="form-label">Badge promotionnel</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="Ex : Bestseller 🔥, Activation Immédiate ⚡"
-                    value={formData.badge}
-                    onChange={(e) => setFormData({ ...formData, badge: e.target.value })}
-                  />
-                </div>
-
-                <div className="form-row-group">
-                  <label className="form-label">Catégorie</label>
-                  <select
-                    className="form-select"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  >
-                    <option value="ai-tools">Outils d'Intelligence Artificielle (IA)</option>
-                    <option value="licenses">Licences Logicielles & Systèmes</option>
-                    <option value="design">Design, Graphisme & Multimédia</option>
-                    <option value="subscriptions">Abonnements & Services Cloud</option>
-                    <option value="apparel">Vêtements & Lifestyle</option>
-                  </select>
-                </div>
+              {/* Promotional Badge */}
+              <div className="form-row-group">
+                <label className="form-label">Badge promotionnel</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Ex : Bestseller 🔥, Activation Immédiate ⚡"
+                  value={formData.badge}
+                  onChange={(e) => setFormData({ ...formData, badge: e.target.value })}
+                />
               </div>
 
               {/* Private Admin Section: Source Bot */}
@@ -1353,16 +1471,92 @@ export default function AdminDashboard({
                 </div>
               </div>
 
-              {/* Multiple Images Upload from Computer */}
+              {/* Multiple Images Upload & Card Display Mode */}
               <div className="form-section-box">
                 <div className="box-title-row">
                   <div>
-                    <h4 className="box-heading">Photos du produit (Téléchargement depuis l'ordinateur)</h4>
+                    <h4 className="box-heading">Photos du produit & Mode d'affichage sur le Card</h4>
                     <p className="box-sub">
-                      Sélectionnez une ou plusieurs photos depuis votre ordinateur pour créer une galerie produit.
+                      Choisissez si vous souhaitez afficher une seule photo fixe ou un carrousel défilant avec navigation sur le card de la boutique.
                     </p>
                   </div>
                 </div>
+
+                {/* Display Mode Switcher (Carousel vs Single Image) */}
+                <div className="display-mode-selector-grid">
+                  <div
+                    className={`display-mode-card ${formData.displayMode === 'carousel' ? 'active' : ''}`}
+                    onClick={() => setFormData((prev) => ({ ...prev, displayMode: 'carousel' }))}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="mode-card-radio">
+                      <div className={`radio-dot ${formData.displayMode === 'carousel' ? 'checked' : ''}`} />
+                    </div>
+                    <div className="mode-card-content">
+                      <div className="mode-card-title-row">
+                        <Layers size={17} className="mode-icon" />
+                        <span className="mode-title">Carrousel Multi-photos</span>
+                        <span className="mode-badge-pill">Avec flèches & points</span>
+                      </div>
+                      <p className="mode-desc">
+                        Permet aux clients de faire défiler toutes les photos du produit directement sur la carte de la boutique.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`display-mode-card ${formData.displayMode === 'single' ? 'active' : ''}`}
+                    onClick={() => setFormData((prev) => ({ ...prev, displayMode: 'single' }))}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="mode-card-radio">
+                      <div className={`radio-dot ${formData.displayMode === 'single' ? 'checked' : ''}`} />
+                    </div>
+                    <div className="mode-card-content">
+                      <div className="mode-card-title-row">
+                        <ImageIcon size={17} className="mode-icon" />
+                        <span className="mode-title">Une seule photo fixe</span>
+                        <span className="mode-badge-pill single">Sans carrousel</span>
+                      </div>
+                      <p className="mode-desc">
+                        Affiche uniquement la photo de votre choix sur le card, sans aucune flèche ni défilement.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Informational Alert Banner */}
+                {formData.displayMode === 'single' ? (
+                  <div className="mode-alert-banner single-mode">
+                    <div className="alert-banner-icon">
+                      <Check size={18} />
+                    </div>
+                    <div className="alert-banner-text">
+                      <strong>Mode Photo Unique actif :</strong>
+                      <span>
+                        {formData.images.length > 1
+                          ? ` Cliquez sur la photo désirée ci-dessous pour l'afficher sur le card (Photo #${(formData.selectedImageIndex || 0) + 1} actuellement sélectionnée).`
+                          : ` La photo ci-dessous sera affichée de manière fixe sur la vitrine.`}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mode-alert-banner carousel-mode">
+                    <div className="alert-banner-icon">
+                      <Layers size={18} />
+                    </div>
+                    <div className="alert-banner-text">
+                      <strong>Mode Carrousel actif :</strong>
+                      <span>
+                        {formData.images.length > 1
+                          ? ` Les ${formData.images.length} photos défileront sur le card avec les flèches. La photo marquée "Photo de couverture" sera la première visible.`
+                          : ` Ajoutez d'autres photos ci-dessous pour activer le défilement carrousel.`}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 {/* File Upload Input */}
                 <div className="file-dropzone">
@@ -1381,32 +1575,108 @@ export default function AdminDashboard({
                   </label>
                 </div>
 
-                {/* Image Previews */}
+                {/* Interactive Image Previews Gallery */}
                 {formData.images.length > 0 && (
-                  <div className="images-preview-grid">
-                    {formData.images.map((imgSrc, idx) => (
-                      <div key={idx} className="preview-thumb-card">
-                        <img src={getImageUrl(imgSrc)} alt={`Aperçu ${idx + 1}`} className="preview-img" />
-                        <button
-                          type="button"
-                          className="remove-img-btn"
-                          onClick={() => handleRemoveImage(idx)}
-                          title="Supprimer cette photo"
-                        >
-                          <X size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          className="remove-bg-btn"
-                          onClick={() => handleMakeImageTransparent(idx)}
-                          title="Supprimer le fond noir pour rendre la photo transparente"
-                        >
-                          <Sparkles size={11} />
-                          <span>Fond transparent</span>
-                        </button>
-                        {idx === 0 && <span className="primary-tag">Principale</span>}
-                      </div>
-                    ))}
+                  <div className="admin-images-gallery-section">
+                    <div className="gallery-header-info">
+                      <span className="gallery-count-label">
+                        {formData.images.length} photo{formData.images.length > 1 ? 's' : ''} enregistrée{formData.images.length > 1 ? 's' : ''} :
+                      </span>
+                      <span className="gallery-instruction-hint">
+                        {formData.displayMode === 'single'
+                          ? '👉 Cliquez sur une photo pour l\'afficher sur le card'
+                          : '👉 Cliquez pour définir la photo de couverture initiale'}
+                      </span>
+                    </div>
+
+                    <div className="product-images-admin-grid">
+                      {formData.images.map((imgSrc, idx) => {
+                        const isCardSelected = (formData.selectedImageIndex || 0) === idx;
+                        return (
+                          <div
+                            key={idx}
+                            className={`admin-image-card ${isCardSelected ? 'card-selected' : ''}`}
+                            onClick={() => handleSelectCardImage(idx)}
+                            role="button"
+                            tabIndex={0}
+                            title={`Photo #${idx + 1} - Cliquez pour sélectionner`}
+                          >
+                            {/* Image Thumbnail */}
+                            <div className="admin-img-wrap">
+                              <img src={getImageUrl(imgSrc)} alt={`Photo ${idx + 1}`} className="admin-card-img" />
+                            </div>
+
+                            {/* Top Actions: Reorder and Delete */}
+                            <div className="admin-img-top-bar" onClick={(e) => e.stopPropagation()}>
+                              <div className="reorder-btns-group">
+                                <button
+                                  type="button"
+                                  className="img-action-mini-btn"
+                                  disabled={idx === 0}
+                                  onClick={() => handleMoveImage(idx, -1)}
+                                  title="Déplacer vers la gauche"
+                                >
+                                  <ChevronLeft size={13} />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="img-action-mini-btn"
+                                  disabled={idx === formData.images.length - 1}
+                                  onClick={() => handleMoveImage(idx, 1)}
+                                  title="Déplacer vers la droite"
+                                >
+                                  <ChevronRight size={13} />
+                                </button>
+                              </div>
+                              <button
+                                type="button"
+                                className="img-action-mini-btn delete"
+                                onClick={() => handleRemoveImage(idx)}
+                                title="Supprimer cette photo"
+                              >
+                                <X size={13} />
+                              </button>
+                            </div>
+
+                            {/* Transparent BG Button */}
+                            <div className="admin-img-mid-bar" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                type="button"
+                                className="img-transparent-btn"
+                                onClick={() => handleMakeImageTransparent(idx)}
+                                title="Supprimer le fond noir pour rendre la photo transparente"
+                              >
+                                <Sparkles size={11} />
+                                <span>Fond transparent</span>
+                              </button>
+                            </div>
+
+                            {/* Selection Status Badge / Button */}
+                            <div className="admin-img-footer-badge">
+                              {isCardSelected ? (
+                                <span className="badge-selected-status">
+                                  <Check size={12} />
+                                  <span>
+                                    {formData.displayMode === 'single' ? 'Affichée sur le card' : 'Photo de couverture'}
+                                  </span>
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="badge-select-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSelectCardImage(idx);
+                                  }}
+                                >
+                                  {formData.displayMode === 'single' ? 'Choisir pour le card' : 'Définir comme couverture'}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1515,10 +1785,12 @@ export default function AdminDashboard({
       {isHeroModalOpen && (
         <div className="admin-modal-backdrop" onClick={() => setIsHeroModalOpen(false)}>
           <div className="admin-modal-window hero-config-modal-window" onClick={(e) => e.stopPropagation()}>
-            <div className="admin-modal-header">
-              <div className="modal-title-wrap">
-                <Sparkles size={22} className="modal-icon-sparkle" />
-                <div>
+            <div className="modal-header admin-modal-header">
+              <div className="modal-title-wrap has-icon">
+                <div className="modal-title-icon-badge">
+                  <Sparkles size={22} />
+                </div>
+                <div className="modal-title-texts">
                   <h2 className="modal-title">
                     {editingHeroSlideIndex !== null
                       ? 'Modifier la slide du carrousel d’accueil'
@@ -1533,12 +1805,13 @@ export default function AdminDashboard({
                 type="button"
                 className="modal-close-btn"
                 onClick={() => setIsHeroModalOpen(false)}
+                title="Fermer"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <div className="admin-modal-body hero-modal-body">
+            <div className="modal-form-body admin-modal-body hero-modal-body">
               {/* 1. Product Selector */}
               <div className="form-group">
                 <label className="form-label">
@@ -1594,85 +1867,243 @@ export default function AdminDashboard({
                 );
               })()}
 
-              {/* 3. Image Selection: Single Image from Product's Images */}
+              {/* 3. Configuration Avancée des Deux Images (Vitrine Principale & Miniature Carrousel) */}
               {heroForm.productId && (() => {
                 const selProduct = products.find((p) => (p._id || p.id) === heroForm.productId);
                 const pImages = selProduct?.images && selProduct.images.length > 0
                   ? selProduct.images
                   : [heroForm.image || '/images/logo.png'];
 
+                const currentShowcaseImg = heroForm.image || pImages[0] || '/images/logo.png';
+                const currentThumbImg = heroForm.thumbnailImage || heroForm.image || (pImages.length > 1 ? pImages[1] : pImages[0]) || '/images/logo.png';
+
                 return (
-                  <div className="form-group">
-                    <label className="form-label">
-                      <ImageIcon size={15} />
-                      <span>
-                        {pImages.length > 1
-                          ? `Sélectionnez l'image à afficher dans le carrousel (${pImages.length} photos disponibles) :`
-                          : "Image du produit dans le carrousel :"}
-                      </span>
-                    </label>
+                  <div className="hero-dual-image-section">
+                    <div className="hero-dual-section-header">
+                      <div className="hero-dual-header-left">
+                        <Layers size={18} className="dual-header-icon" />
+                        <div>
+                          <h4 className="dual-header-title">Configuration Indépendante des Images</h4>
+                          <p className="dual-header-sub">
+                            Vous pouvez modifier la photo de la vitrine principale tout en conservant une photo différente pour le carrousel latéral.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
 
-                    {pImages.length > 1 ? (
-                      <div className="hero-images-choice-grid">
-                        {pImages.map((imgUrl, imgIdx) => {
-                          const isChosen =
-                            heroForm.selectedImageIndex === imgIdx ||
-                            heroForm.image === imgUrl;
-                          return (
-                            <div
-                              key={imgIdx}
-                              className={`hero-image-choice-card ${isChosen ? 'selected' : ''}`}
-                              onClick={() =>
-                                setHeroForm((prev) => ({
-                                  ...prev,
-                                  image: imgUrl,
-                                  selectedImageIndex: imgIdx,
-                                }))
-                              }
-                              role="button"
-                              tabIndex={0}
-                            >
-                              <img src={getImageUrl(imgUrl)} alt={`Option ${imgIdx + 1}`} className="choice-thumb-img" />
-                              {isChosen ? (
-                                <span className="choice-active-badge">
-                                  <Check size={12} />
-                                  <span>Choisie</span>
-                                </span>
-                              ) : (
-                                <span className="choice-pick-badge">Choisir cette photo</span>
-                              )}
+                    <div className="hero-dual-grid">
+                      {/* ========================================================= */}
+                      {/* COLONNE 1 : IMAGE PRINCIPALE (VITRINE 3D / CENTRE) */}
+                      {/* ========================================================= */}
+                      <div className="hero-dual-card vitrine-card">
+                        <div className="hero-dual-card-header">
+                          <div className="hero-dual-card-badge vitrine-badge">
+                            <Sparkles size={13} />
+                            <span>1. Image de la Vitrine (Centre)</span>
+                          </div>
+                          <span className="hero-dual-role-tag">Centre de l'accueil</span>
+                        </div>
+                        <p className="hero-dual-card-desc">
+                          S'affiche en grand au centre de la page avec l'effet 3D interactif et le halo d'ambiance.
+                        </p>
+
+                        {/* Grand Aperçu Vitrine */}
+                        <div
+                          className="hero-preview-box showcase-box"
+                          style={{
+                            background: `radial-gradient(circle at center, ${heroForm.bgColor || '#ff5e00'}33 0%, rgba(15, 23, 42, 0.75) 80%)`,
+                          }}
+                        >
+                          <img
+                            key={`vitrine-prev-${currentShowcaseImg ? currentShowcaseImg.slice(-20) : ''}`}
+                            src={getImageUrl(currentShowcaseImg)}
+                            alt="Aperçu Vitrine Principale"
+                            className="hero-dual-preview-img main-showcase-preview"
+                          />
+                        </div>
+
+                        {/* Galerie de sélection depuis les photos du produit */}
+                        <div className="hero-subgallery-title">
+                          <span>Choisir parmi les photos du produit ({pImages.length}) :</span>
+                        </div>
+                        <div className="hero-subgallery-grid">
+                          {pImages.map((imgUrl, imgIdx) => {
+                            const isChosen = heroForm.image === imgUrl;
+                            return (
+                              <button
+                                type="button"
+                                key={`showcase-opt-${imgIdx}`}
+                                className={`hero-subgallery-item ${isChosen ? 'active-showcase' : ''}`}
+                                onClick={() =>
+                                  setHeroForm((prev) => ({
+                                    ...prev,
+                                    image: imgUrl,
+                                    selectedImageIndex: imgIdx,
+                                  }))
+                                }
+                              >
+                                <img src={getImageUrl(imgUrl)} alt="" />
+                                {isChosen ? (
+                                  <span className="subgallery-item-badge">
+                                    <Check size={11} strokeWidth={3} />
+                                    Vitrine
+                                  </span>
+                                ) : (
+                                  <span className="subgallery-hover-label">Photo #{imgIdx + 1}</span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Upload & URL direct */}
+                        <div className="hero-custom-img-row">
+                          <label className="hero-upload-btn-mini" title="Téléverser une image depuis votre PC">
+                            <Upload size={13} />
+                            <span>Téléverser</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              style={{ display: 'none' }}
+                              onChange={(e) => handleHeroImageUpload(e, 'image')}
+                            />
+                          </label>
+                          <input
+                            type="text"
+                            className="hero-mini-url-input"
+                            placeholder="Ou lien URL de la vitrine..."
+                            value={heroForm.image || ''}
+                            onChange={(e) => setHeroForm((prev) => ({ ...prev, image: e.target.value }))}
+                          />
+                        </div>
+
+                        {/* Magic Remove Black Background */}
+                        <button
+                          type="button"
+                          className="hero-trans-magic-btn mini"
+                          onClick={async () => {
+                            if (!heroForm.image) return;
+                            notify('Suppression du fond noir en cours... ⏳');
+                            const trans = await removeBlackBgFromImage(heroForm.image);
+                            setHeroForm((prev) => ({ ...prev, image: trans }));
+                            notify('Fond transparent généré pour la vitrine ! ✨');
+                          }}
+                        >
+                          <Sparkles size={13} color="#38bdf8" />
+                          <span>Rendre le fond transparent</span>
+                        </button>
+                      </div>
+
+                      {/* ========================================================= */}
+                      {/* COLONNE 2 : MINIATURE « SÉLECTION DU CARROUSEL » */}
+                      {/* ========================================================= */}
+                      <div className="hero-dual-card thumbnail-card">
+                        <div className="hero-dual-card-header">
+                          <div className="hero-dual-card-badge carousel-badge">
+                            <ImageIcon size={13} />
+                            <span>2. Miniature Carrousel</span>
+                          </div>
+                          <span className="hero-dual-role-tag thumb-role">SÉLECTION DU CARROUSEL</span>
+                        </div>
+                        <p className="hero-dual-card-desc">
+                          S'affiche dans la barre latérale droite (ex: cadre smartphone). Reste inchangée si vous changez la vitrine !
+                        </p>
+
+                        {/* Aperçu Réplique Fidèle du Carrousel */}
+                        <div className="hero-thumb-live-preview-wrap">
+                          <div
+                            className="modern-carousel-card preview-card-replica active"
+                            style={{
+                              borderColor: `${heroForm.bgColor || '#ff5e00'}cc`,
+                              boxShadow: `0 8px 24px -4px rgba(0, 0, 0, 0.6), 0 0 20px -2px ${heroForm.bgColor || '#ff5e00'}55`,
+                            }}
+                          >
+                            <div className="preview-replica-thumb-wrap">
+                              <img
+                                key={`thumb-prev-${currentThumbImg ? currentThumbImg.slice(-20) : ''}`}
+                                src={getImageUrl(currentThumbImg)}
+                                alt="Miniature Carrousel"
+                                className="modern-thumbnail-img"
+                              />
                             </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="hero-single-image-preview">
-                        <img
-                          key={`single-prev-${heroForm.image ? heroForm.image.slice(-20) : ''}`}
-                          src={getImageUrl(heroForm.image || '/images/logo.png')}
-                          alt="Image du produit"
-                          className="single-preview-img"
-                        />
-                        <span className="single-preview-text">Photo unique du produit</span>
-                      </div>
-                    )}
+                            <div className="modern-card-details">
+                              <span className="modern-card-title">{getThumbnailLabel(heroForm.name || 'Produit')}</span>
+                              <span
+                                className="card-active-dot"
+                                style={{ backgroundColor: heroForm.bgColor || '#ff5e00' }}
+                              />
+                            </div>
+                          </div>
+                          <span className="replica-preview-subtext">Rendu réel dans la barre latérale droite</span>
+                        </div>
 
-                    {/* Quick Button to remove black background from chosen photo */}
-                    <div className="hero-transparent-action-row" style={{ marginTop: '0.65rem' }}>
-                      <button
-                        type="button"
-                        className="hero-trans-magic-btn"
-                        onClick={async () => {
-                          if (!heroForm.image) return;
-                          notify('Suppression du fond noir en cours... ⏳');
-                          const trans = await removeBlackBgFromImage(heroForm.image);
-                          setHeroForm((prev) => ({ ...prev, image: trans }));
-                          notify('Fond transparent généré pour ce produit ! ✨');
-                        }}
-                      >
-                        <Sparkles size={14} color="#38bdf8" />
-                        <span>Rendre le fond transparent (Supprimer le fond noir)</span>
-                      </button>
+                        {/* Galerie de sélection pour la miniature */}
+                        <div className="hero-subgallery-title">
+                          <span>Choisir la photo pour la miniature :</span>
+                        </div>
+                        <div className="hero-subgallery-grid">
+                          {pImages.map((imgUrl, imgIdx) => {
+                            const isChosen = currentThumbImg === imgUrl;
+                            return (
+                              <button
+                                type="button"
+                                key={`thumb-opt-${imgIdx}`}
+                                className={`hero-subgallery-item ${isChosen ? 'active-thumb' : ''}`}
+                                onClick={() =>
+                                  setHeroForm((prev) => ({
+                                    ...prev,
+                                    thumbnailImage: imgUrl,
+                                  }))
+                                }
+                              >
+                                <img src={getImageUrl(imgUrl)} alt="" />
+                                {isChosen ? (
+                                  <span className="subgallery-item-badge thumb-badge">
+                                    <Check size={11} strokeWidth={3} />
+                                    Carrousel
+                                  </span>
+                                ) : (
+                                  <span className="subgallery-hover-label">Photo #{imgIdx + 1}</span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Upload & URL direct miniature */}
+                        <div className="hero-custom-img-row">
+                          <label className="hero-upload-btn-mini" title="Téléverser une miniature personnalisée">
+                            <Upload size={13} />
+                            <span>Téléverser</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              style={{ display: 'none' }}
+                              onChange={(e) => handleHeroImageUpload(e, 'thumbnailImage')}
+                            />
+                          </label>
+                          <input
+                            type="text"
+                            className="hero-mini-url-input"
+                            placeholder="Ou lien URL de la miniature..."
+                            value={heroForm.thumbnailImage || ''}
+                            onChange={(e) => setHeroForm((prev) => ({ ...prev, thumbnailImage: e.target.value }))}
+                          />
+                        </div>
+
+                        {/* Bouton de synchronisation rapide */}
+                        <button
+                          type="button"
+                          className="hero-sync-btn"
+                          onClick={() => {
+                            setHeroForm((prev) => ({ ...prev, thumbnailImage: prev.image }));
+                            notify('Miniature synchronisée avec la photo de la vitrine ! 🔄');
+                          }}
+                        >
+                          <RefreshCw size={13} />
+                          <span>Utiliser la même image que la vitrine</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
