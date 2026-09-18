@@ -7,25 +7,24 @@ import { getImageUrl } from '../config/api.js';
  * Thumbnail with luxury glowing skeleton loader
  */
 function ThumbnailWithSkeleton({ src, alt, className, activeColor }) {
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [imgSrc, setImgSrc] = useState(src);
 
   useEffect(() => {
     setImgSrc(src);
-    setIsLoaded(false);
 
     if (src) {
       const img = new Image();
       img.src = src;
       if (img.complete && img.naturalWidth > 0) {
-        setIsLoaded(true);
+        setHasLoadedOnce(true);
       } else {
-        img.onload = () => setIsLoaded(true);
+        img.onload = () => setHasLoadedOnce(true);
         img.onerror = () => {
           if (src !== '/images/logo.png') {
             setImgSrc('/images/logo.png');
           } else {
-            setIsLoaded(true);
+            setHasLoadedOnce(true);
           }
         };
       }
@@ -34,7 +33,7 @@ function ThumbnailWithSkeleton({ src, alt, className, activeColor }) {
 
   return (
     <div className="thumbnail-skeleton-wrapper">
-      {!isLoaded && (
+      {!hasLoadedOnce && (
         <div
           className="simple-glass-skeleton thumb-glass-skeleton"
           style={{ '--skeleton-glow': activeColor || '#ff7828' }}
@@ -45,15 +44,15 @@ function ThumbnailWithSkeleton({ src, alt, className, activeColor }) {
       <img
         src={imgSrc}
         alt=""
-        className={`${className} ${isLoaded ? 'thumb-img-visible' : 'thumb-img-hidden'}`}
+        className={`${className} ${hasLoadedOnce ? 'thumb-img-visible' : 'thumb-img-hidden'}`}
         draggable="false"
-        loading="lazy"
-        onLoad={() => setIsLoaded(true)}
+        loading="eager"
+        onLoad={() => setHasLoadedOnce(true)}
         onError={() => {
           if (imgSrc !== '/images/logo.png') {
             setImgSrc('/images/logo.png');
           } else {
-            setIsLoaded(true);
+            setHasLoadedOnce(true);
           }
         }}
       />
@@ -113,33 +112,46 @@ export default function Hero({
   const displayDesc = currentProduct?.description || currentSlide.description;
   const displayImage = getImageUrl(currentSlide.image || (currentProduct?.images && currentProduct.images[0]) || '/images/logo.png');
 
-  // Hero Center Showcase Skeleton Management
-  const [heroImageLoaded, setHeroImageLoaded] = useState(false);
+  // Hero Center Showcase Skeleton Management - ONLY shows ONCE on initial site open!
+  const [initialHeroLoaded, setInitialHeroLoaded] = useState(false);
   const [currentHeroSrc, setCurrentHeroSrc] = useState(displayImage);
+
+  // Preload all slides immediately into browser memory so switching is instantaneous
+  useEffect(() => {
+    if (Array.isArray(activeSlides)) {
+      activeSlides.forEach((slide) => {
+        const url = getImageUrl(slide.image);
+        if (url) {
+          const preloadImg = new Image();
+          preloadImg.src = url;
+        }
+      });
+    }
+  }, [activeSlides]);
 
   useEffect(() => {
     setCurrentHeroSrc(displayImage);
-    setHeroImageLoaded(false);
 
-    if (displayImage) {
+    // Only do initial check if not already loaded once
+    if (!initialHeroLoaded && displayImage) {
       const img = new Image();
       img.src = displayImage;
       if (img.complete && img.naturalWidth > 0) {
-        setHeroImageLoaded(true);
+        setInitialHeroLoaded(true);
       } else {
         img.onload = () => {
-          setHeroImageLoaded(true);
+          setInitialHeroLoaded(true);
         };
         img.onerror = () => {
           if (displayImage !== '/images/logo.png') {
             setCurrentHeroSrc('/images/logo.png');
           } else {
-            setHeroImageLoaded(true);
+            setInitialHeroLoaded(true);
           }
         };
       }
     }
-  }, [displayImage]);
+  }, [displayImage, initialHeroLoaded]);
 
   const discountPercent =
     displayOriginalPrice && displayOriginalPrice > displayPrice
@@ -306,8 +318,8 @@ export default function Hero({
               transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
             }}
           >
-            {/* Simple glowing frosted glass skeleton on exact image size */}
-            {!heroImageLoaded && (
+            {/* Simple glowing frosted glass skeleton: ONLY SHOWN ONCE ON INITIAL SITE LOAD */}
+            {!initialHeroLoaded && (
               <div
                 className="simple-glass-skeleton hero-glass-skeleton"
                 style={{ '--skeleton-glow': activeColor }}
@@ -332,16 +344,16 @@ export default function Hero({
               key={`current-${currentSlide.id || currentSlide.name}-${currentHeroSrc ? currentHeroSrc.slice(-20) : ''}`}
               src={currentHeroSrc}
               alt=""
-              className={`hero-jacket-img ${heroImageLoaded ? 'hero-img-visible' : 'hero-img-hidden'} ${
+              className={`hero-jacket-img ${initialHeroLoaded ? 'hero-img-visible' : 'hero-img-hidden'} ${
                 isTransitioning ? 'jacket-fade-enter' : 'jacket-idle'
               }`}
               draggable="false"
-              onLoad={() => setHeroImageLoaded(true)}
+              onLoad={() => setInitialHeroLoaded(true)}
               onError={() => {
                 if (currentHeroSrc !== '/images/logo.png') {
                   setCurrentHeroSrc('/images/logo.png');
                 } else {
-                  setHeroImageLoaded(true);
+                  setInitialHeroLoaded(true);
                 }
               }}
             />
