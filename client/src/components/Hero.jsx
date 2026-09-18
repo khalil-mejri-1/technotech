@@ -3,6 +3,65 @@ import { ChevronLeft, ChevronRight, ChevronRight as ArrowRight, Check, Zap, Shie
 import { INITIAL_HERO_SLIDES } from '../data/productsData.js';
 import { getImageUrl } from '../config/api.js';
 
+/**
+ * Thumbnail with luxury glowing skeleton loader
+ */
+function ThumbnailWithSkeleton({ src, alt, className, activeColor }) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [imgSrc, setImgSrc] = useState(src);
+
+  useEffect(() => {
+    setImgSrc(src);
+    setIsLoaded(false);
+
+    if (src) {
+      const img = new Image();
+      img.src = src;
+      if (img.complete && img.naturalWidth > 0) {
+        setIsLoaded(true);
+      } else {
+        img.onload = () => setIsLoaded(true);
+        img.onerror = () => {
+          if (src !== '/images/logo.png') {
+            setImgSrc('/images/logo.png');
+          } else {
+            setIsLoaded(true);
+          }
+        };
+      }
+    }
+  }, [src]);
+
+  return (
+    <div className="thumbnail-skeleton-wrapper">
+      {!isLoaded && (
+        <div className="thumbnail-skeleton-box">
+          <div className="thumbnail-skeleton-shimmer" />
+          <div
+            className="thumbnail-skeleton-dot"
+            style={{ backgroundColor: activeColor || '#ff7828' }}
+          />
+        </div>
+      )}
+      <img
+        src={imgSrc}
+        alt=""
+        className={`${className} ${isLoaded ? 'thumb-img-visible' : 'thumb-img-hidden'}`}
+        draggable="false"
+        loading="lazy"
+        onLoad={() => setIsLoaded(true)}
+        onError={() => {
+          if (imgSrc !== '/images/logo.png') {
+            setImgSrc('/images/logo.png');
+          } else {
+            setIsLoaded(true);
+          }
+        }}
+      />
+    </div>
+  );
+}
+
 export default function Hero({
   slides = [],
   activeSlideIndex = 0,
@@ -54,6 +113,34 @@ export default function Hero({
   const displayName = currentProduct?.name || currentSlide.name;
   const displayDesc = currentProduct?.description || currentSlide.description;
   const displayImage = getImageUrl(currentSlide.image || (currentProduct?.images && currentProduct.images[0]) || '/images/logo.png');
+
+  // Hero Center Showcase Skeleton Management
+  const [heroImageLoaded, setHeroImageLoaded] = useState(false);
+  const [currentHeroSrc, setCurrentHeroSrc] = useState(displayImage);
+
+  useEffect(() => {
+    setCurrentHeroSrc(displayImage);
+    setHeroImageLoaded(false);
+
+    if (displayImage) {
+      const img = new Image();
+      img.src = displayImage;
+      if (img.complete && img.naturalWidth > 0) {
+        setHeroImageLoaded(true);
+      } else {
+        img.onload = () => {
+          setHeroImageLoaded(true);
+        };
+        img.onerror = () => {
+          if (displayImage !== '/images/logo.png') {
+            setCurrentHeroSrc('/images/logo.png');
+          } else {
+            setHeroImageLoaded(true);
+          }
+        };
+      }
+    }
+  }, [displayImage]);
 
   const discountPercent =
     displayOriginalPrice && displayOriginalPrice > displayPrice
@@ -220,12 +307,36 @@ export default function Hero({
               transform: `perspective(1000px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
             }}
           >
+            {/* Professional Luxury Hero Skeleton Loader */}
+            {!heroImageLoaded && (
+              <div
+                className="hero-stage-skeleton"
+                style={{ '--hero-accent': activeColor }}
+              >
+                <div className="hero-skeleton-shimmer-sweep" />
+                <div className="hero-skeleton-backdrop-glow" />
+                <div className="hero-skeleton-core">
+                  <div className="hero-skeleton-orb-pulse">
+                    <Sparkles size={30} className="hero-skeleton-sparkle" />
+                  </div>
+                  <span className="hero-skeleton-brand">TECHNOTECH</span>
+                  <div className="hero-skeleton-badge">
+                    <span className="hero-skeleton-dot" />
+                    <span>CHARGEMENT EN COURS</span>
+                  </div>
+                  <div className="hero-skeleton-track">
+                    <div className="hero-skeleton-bar" />
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Outgoing product: gradually fades out while floating upward */}
             {isTransitioning && outgoingSlide && (
               <img
                 key={`outgoing-${outgoingSlide.id || outgoingSlide.name}`}
                 src={getImageUrl(outgoingSlide.image)}
-                alt={outgoingSlide.name}
+                alt=""
                 className="hero-jacket-img jacket-fade-exit"
                 draggable="false"
               />
@@ -233,11 +344,21 @@ export default function Hero({
 
             {/* Incoming product: gradually fades in while floating up from below */}
             <img
-              key={`current-${currentSlide.id || currentSlide.name}-${displayImage ? displayImage.slice(-20) : ''}`}
-              src={displayImage}
-              alt={displayName}
-              className={`hero-jacket-img ${isTransitioning ? 'jacket-fade-enter' : 'jacket-idle'}`}
+              key={`current-${currentSlide.id || currentSlide.name}-${currentHeroSrc ? currentHeroSrc.slice(-20) : ''}`}
+              src={currentHeroSrc}
+              alt=""
+              className={`hero-jacket-img ${heroImageLoaded ? 'hero-img-visible' : 'hero-img-hidden'} ${
+                isTransitioning ? 'jacket-fade-enter' : 'jacket-idle'
+              }`}
               draggable="false"
+              onLoad={() => setHeroImageLoaded(true)}
+              onError={() => {
+                if (currentHeroSrc !== '/images/logo.png') {
+                  setCurrentHeroSrc('/images/logo.png');
+                } else {
+                  setHeroImageLoaded(true);
+                }
+              }}
             />
           </div>
 
@@ -440,15 +561,12 @@ export default function Hero({
                     title={isActive ? `Actuel : ${rawName}` : `Passer à ${rawName}`}
                     aria-label={isActive ? `Actuel : ${rawName}` : `Passer à ${rawName}`}
                   >
-                    <div className="thumbnail-mockup-wrapper">
-                      <img
-                        key={`thumb-img-${slide.id || index}-${thumbImg ? thumbImg.slice(-20) : ''}`}
-                        src={thumbImg}
-                        alt={thumbTitle}
-                        className="modern-thumbnail-img"
-                        loading="lazy"
-                      />
-                    </div>
+                    <ThumbnailWithSkeleton
+                      src={thumbImg}
+                      alt={thumbTitle}
+                      className="modern-thumbnail-img"
+                      activeColor={cardAccent}
+                    />
                     <div className="modern-card-details">
                       <span className="modern-card-title">{thumbTitle}</span>
                       {isActive && (
