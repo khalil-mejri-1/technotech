@@ -6165,6 +6165,33 @@ body {
   transform: translateY(-1px);
 }
 
+.delete-all-orders-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.32);
+  color: #f87171;
+  padding: 7px 14px;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-all-orders-btn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.55);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.22);
+  transform: translateY(-1px);
+}
+
+.delete-all-orders-btn:active {
+  transform: translateY(0);
+}
+
 /* Stats Cards Grid */
 .orders-stats-grid {
   display: grid;

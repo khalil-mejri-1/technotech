@@ -390,6 +390,35 @@ router.patch('/orders/:id/read', async (req, res) => {
   }
 });
 
+// Delete ALL orders (placed BEFORE /orders/:id)
+router.delete('/orders/all', async (req, res) => {
+  try {
+    const result = await Order.deleteMany({});
+    res.json({
+      success: true,
+      message: 'Toutes les commandes ont été supprimées avec succès',
+      deletedCount: result.deletedCount,
+    });
+  } catch (err) {
+    console.error('Erreur suppression de toutes les commandes :', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/orders', async (req, res) => {
+  try {
+    const result = await Order.deleteMany({});
+    res.json({
+      success: true,
+      message: 'Toutes les commandes ont été supprimées avec succès',
+      deletedCount: result.deletedCount,
+    });
+  } catch (err) {
+    console.error('Erreur suppression de toutes les commandes :', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Delete order
 router.delete('/orders/:id', async (req, res) => {
   try {

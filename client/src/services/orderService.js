@@ -108,6 +108,26 @@ export const orderService = {
     return { id: orderId };
   },
 
+  /**
+   * Delete ALL orders
+   */
+  async deleteAll() {
+    try {
+      const response = await fetch(`${ORDERS_ENDPOINT}/all`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Erreur suppression de toutes les commandes');
+      }
+    } catch (err) {
+      console.warn('Erreur suppression serveur :', err.message);
+    }
+    // Clear local storage cache
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
+    return { success: true };
+  },
+
   _getLocalOrders() {
     try {
       const data = localStorage.getItem(LOCAL_STORAGE_KEY);
