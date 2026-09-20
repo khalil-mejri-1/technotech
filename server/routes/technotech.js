@@ -38,14 +38,24 @@ const upload = multer({
   limits: { fileSize: 30 * 1024 * 1024 }, // 30MB
 });
 
-const IMGBB_API_KEY = process.env.IMGBB_API_KEY || 'e684619df3cc8614b21e1b4f826b7fff';
+const DEFAULT_IMGBB_API_KEY = process.env.IMGBB_API_KEY || 'e684619df3cc8614b21e1b4f826b7fff';
 
 async function uploadBufferToImgBB(buffer, filename) {
   try {
+    let key = DEFAULT_IMGBB_API_KEY;
+    try {
+      const siteSettings = await SiteSettings.findOne({ key: 'main_settings' });
+      if (siteSettings?.imgbbApiKey) {
+        key = siteSettings.imgbbApiKey.trim();
+      }
+    } catch (e) {
+      // ignore, fallback to default key
+    }
+
     const blob = new Blob([buffer]);
     const fd = new FormData();
     fd.append('image', blob, filename || 'image.png');
-    const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+    const res = await fetch(`https://api.imgbb.com/1/upload?key=${key}`, {
       method: 'POST',
       body: fd,
       headers: {
@@ -278,6 +288,8 @@ router.get('/settings', async (req, res) => {
         disableRightClick: true,
         disableImageDragging: true,
         protectInAdmin: false,
+        whatsappNumber: '96086581',
+        imgbbApiKey: 'e684619df3cc8614b21e1b4f826b7fff',
       });
     }
     res.json(settings);
@@ -290,7 +302,15 @@ router.get('/settings', async (req, res) => {
 // Update site settings
 router.put('/settings', async (req, res) => {
   try {
-    const { disableInspect, disableRightClick, disableImageDragging, protectInAdmin } = req.body;
+    const {
+      disableInspect,
+      disableRightClick,
+      disableImageDragging,
+      protectInAdmin,
+      whatsappNumber,
+      imgbbApiKey,
+    } = req.body;
+
     const updated = await SiteSettings.findOneAndUpdate(
       { key: 'main_settings' },
       {
@@ -299,6 +319,8 @@ router.put('/settings', async (req, res) => {
           ...(typeof disableRightClick === 'boolean' && { disableRightClick }),
           ...(typeof disableImageDragging === 'boolean' && { disableImageDragging }),
           ...(typeof protectInAdmin === 'boolean' && { protectInAdmin }),
+          ...(typeof whatsappNumber === 'string' && { whatsappNumber: whatsappNumber.trim() }),
+          ...(typeof imgbbApiKey === 'string' && { imgbbApiKey: imgbbApiKey.trim() }),
         },
       },
       { new: true, upsert: true }

@@ -1,6 +1,7 @@
 import { API_BASE_URL, getImageUrl } from '../config/api.js';
+import { settingsService } from './settingsService.js';
 
-const IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY || 'e684619df3cc8614b21e1b4f826b7fff';
+const FALLBACK_IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY || 'e684619df3cc8614b21e1b4f826b7fff';
 const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
 
 /**
@@ -9,8 +10,9 @@ const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
  * Ce lien est ensuite enregistré dans la base de données MongoDB Atlas.
  */
 async function uploadToImgBB(fileOrBase64, filename) {
+  const activeKey = settingsService.getImgbbApiKey() || FALLBACK_IMGBB_API_KEY;
   const formData = new FormData();
-  formData.append('key', IMGBB_API_KEY);
+  formData.append('key', activeKey);
 
   if (typeof fileOrBase64 === 'string') {
     // Si c'est une chaîne base64 (ex: data:image/png;base64,...), extraire les données pures

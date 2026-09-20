@@ -6,6 +6,8 @@ export const DEFAULT_SITE_SETTINGS = {
   disableRightClick: true,
   disableImageDragging: true,
   protectInAdmin: false,
+  whatsappNumber: '96086581',
+  imgbbApiKey: import.meta.env.VITE_IMGBB_API_KEY || 'e684619df3cc8614b21e1b4f826b7fff',
 };
 
 export const settingsService = {
@@ -25,6 +27,22 @@ export const settingsService = {
   },
 
   /**
+   * Returns current active WhatsApp number for links and display
+   */
+  getWhatsAppNumber() {
+    const s = this.getLocalSettings();
+    return s.whatsappNumber || DEFAULT_SITE_SETTINGS.whatsappNumber;
+  },
+
+  /**
+   * Returns current active ImgBB API key
+   */
+  getImgbbApiKey() {
+    const s = this.getLocalSettings();
+    return s.imgbbApiKey || DEFAULT_SITE_SETTINGS.imgbbApiKey;
+  },
+
+  /**
    * Fetch site settings from server, falls back to local cache
    */
   async getSettings() {
@@ -39,6 +57,8 @@ export const settingsService = {
             disableRightClick: Boolean(data.disableRightClick),
             disableImageDragging: Boolean(data.disableImageDragging),
             protectInAdmin: Boolean(data.protectInAdmin),
+            whatsappNumber: (data.whatsappNumber || DEFAULT_SITE_SETTINGS.whatsappNumber).toString().trim(),
+            imgbbApiKey: (data.imgbbApiKey || DEFAULT_SITE_SETTINGS.imgbbApiKey).toString().trim(),
           };
           localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
           return merged;
@@ -58,6 +78,8 @@ export const settingsService = {
     const merged = {
       ...current,
       ...newSettings,
+      whatsappNumber: (newSettings.whatsappNumber !== undefined ? newSettings.whatsappNumber : current.whatsappNumber).toString().trim(),
+      imgbbApiKey: (newSettings.imgbbApiKey !== undefined ? newSettings.imgbbApiKey : current.imgbbApiKey).toString().trim(),
     };
     // Save to local cache first for instant UI response
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
@@ -76,6 +98,8 @@ export const settingsService = {
           disableRightClick: Boolean(saved.disableRightClick),
           disableImageDragging: Boolean(saved.disableImageDragging),
           protectInAdmin: Boolean(saved.protectInAdmin),
+          whatsappNumber: (saved.whatsappNumber || merged.whatsappNumber).toString().trim(),
+          imgbbApiKey: (saved.imgbbApiKey || merged.imgbbApiKey).toString().trim(),
         };
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(finalData));
         return finalData;

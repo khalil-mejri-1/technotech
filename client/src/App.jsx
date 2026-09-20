@@ -419,7 +419,7 @@ function App() {
       {isAboutPage ? (
         <AboutPage onNavigate={navigateTo} />
       ) : isContactPage ? (
-        <ContactPage onNavigate={navigateTo} showToast={showToast} />
+        <ContactPage onNavigate={navigateTo} showToast={showToast} whatsappNumber={siteSettings.whatsappNumber} />
       ) : isOffersPage ? (
         <OffersPage
           offers={offers}
@@ -427,6 +427,7 @@ function App() {
           onNavigate={navigateTo}
           onAddToCart={handleAddToCart}
           onOpenCart={() => setIsCartOpen(true)}
+          whatsappNumber={siteSettings.whatsappNumber}
         />
       ) : (
         <>
@@ -454,7 +455,7 @@ function App() {
 
       <div className="content-layer-bottom">
         {/* Bottom Footer */}
-        <Footer onNavigate={navigateTo} />
+        <Footer onNavigate={navigateTo} whatsappNumber={siteSettings.whatsappNumber} />
       </div>
 
       {/* Slide-over Cart Drawer */}

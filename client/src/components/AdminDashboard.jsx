@@ -38,7 +38,10 @@ import {
   MousePointer,
   Terminal,
   Save,
-  Unlock
+  Unlock,
+  Key,
+  MessageCircle,
+  Phone
 } from 'lucide-react';
 import { INITIAL_PRODUCTS } from '../data/productsData.js';
 import { productService } from '../services/productService.js';
@@ -77,7 +80,10 @@ export default function AdminDashboard({
     disableRightClick: siteSettings?.disableRightClick ?? true,
     disableImageDragging: siteSettings?.disableImageDragging ?? true,
     protectInAdmin: siteSettings?.protectInAdmin ?? false,
+    whatsappNumber: siteSettings?.whatsappNumber || '96086581',
+    imgbbApiKey: siteSettings?.imgbbApiKey || import.meta.env.VITE_IMGBB_API_KEY || 'e684619df3cc8614b21e1b4f826b7fff',
   });
+  const [showImgbbKey, setShowImgbbKey] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   useEffect(() => {
@@ -87,6 +93,8 @@ export default function AdminDashboard({
         disableRightClick: siteSettings.disableRightClick ?? true,
         disableImageDragging: siteSettings.disableImageDragging ?? true,
         protectInAdmin: siteSettings.protectInAdmin ?? false,
+        whatsappNumber: siteSettings.whatsappNumber || '96086581',
+        imgbbApiKey: siteSettings.imgbbApiKey || import.meta.env.VITE_IMGBB_API_KEY || 'e684619df3cc8614b21e1b4f826b7fff',
       });
     }
   }, [siteSettings]);
@@ -2261,6 +2269,110 @@ export default function AdminDashboard({
                       {securityForm.protectInAdmin ? 'Actif dans Admin' : 'Inactif dans Admin (Recommandé)'}
                     </span>
                   </label>
+                </div>
+              </div>
+
+              {/* Card 5: WhatsApp Direct Number */}
+              <div className="security-feature-card security-config-card active">
+                <div className="card-top-header">
+                  <div className="feature-icon-wrapper whatsapp-icon">
+                    <MessageCircle size={22} />
+                  </div>
+                  <div className="card-badge-status">
+                    <span className="badge-chip chip-whatsapp"><Check size={12} /> WhatsApp Officiel</span>
+                  </div>
+                </div>
+
+                <div className="card-main-content">
+                  <h3 className="feature-card-title">Numéro WhatsApp de Contact & Commandes</h3>
+                  <p className="feature-card-desc">
+                    Numéro officiel utilisé sur tout le site (page Contact, page Offres, boutons de commande directe et pied de page). Les clients seront automatiquement redirigés vers ce numéro.
+                  </p>
+
+                  <div className="security-input-field-wrap">
+                    <label className="security-field-label">Numéro de téléphone WhatsApp :</label>
+                    <div className="security-input-container">
+                      <span className="security-input-addon">🇹🇳 +216</span>
+                      <input
+                        type="text"
+                        className="security-custom-input"
+                        placeholder="ex: 96 086 581"
+                        value={securityForm.whatsappNumber}
+                        onChange={(e) => setSecurityForm((prev) => ({ ...prev, whatsappNumber: e.target.value }))}
+                      />
+                    </div>
+                    <span className="security-input-preview-text">
+                      Lien direct généré : <code>https://wa.me/216{String(securityForm.whatsappNumber || '96086581').replace(/\D/g, '').replace(/^216/, '')}</code>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="card-bottom-footer config-footer">
+                  <span className="config-hint-badge">
+                    <Phone size={13} />
+                    <span>Modifiable à tout moment et synchronisé sur la vitrine</span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Card 6: ImgBB Cloud Storage API Key */}
+              <div className="security-feature-card security-config-card active">
+                <div className="card-top-header">
+                  <div className="feature-icon-wrapper key-icon">
+                    <Key size={22} />
+                  </div>
+                  <div className="card-badge-status">
+                    <span className="badge-chip chip-active"><Check size={12} /> Clé Active</span>
+                  </div>
+                </div>
+
+                <div className="card-main-content">
+                  <h3 className="feature-card-title">Clé API ImgBB (Stockage Cloud des Images)</h3>
+                  <p className="feature-card-desc">
+                    Clé d'API utilisée pour téléverser et stocker automatiquement toutes les images, affiches et logos sur le CDN rapide et gratuit ImgBB.
+                  </p>
+
+                  <div className="security-input-field-wrap">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+                      <label className="security-field-label">Clé API (VITE_IMGBB_API_KEY) :</label>
+                      <a
+                        href="https://api.imgbb.com/"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="security-get-key-link"
+                      >
+                        Obtenir une clé gratuite ↗
+                      </a>
+                    </div>
+                    <div className="security-input-container">
+                      <input
+                        type={showImgbbKey ? "text" : "password"}
+                        className="security-custom-input key-font"
+                        placeholder="Entrez votre clé API ImgBB..."
+                        value={securityForm.imgbbApiKey}
+                        onChange={(e) => setSecurityForm((prev) => ({ ...prev, imgbbApiKey: e.target.value }))}
+                        spellCheck={false}
+                      />
+                      <button
+                        type="button"
+                        className="security-addon-btn"
+                        onClick={() => setShowImgbbKey(!showImgbbKey)}
+                        title={showImgbbKey ? "Masquer la clé" : "Afficher la clé"}
+                      >
+                        {showImgbbKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                    <span className="security-input-preview-text">
+                      La clé est active immédiatement pour les ajouts de produits et d'offres sans redémarrage.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="card-bottom-footer config-footer">
+                  <span className="config-hint-badge">
+                    <Key size={13} />
+                    <span>Sauvegarde cloud sans limite de bande passante</span>
+                  </span>
                 </div>
               </div>
             </div>
