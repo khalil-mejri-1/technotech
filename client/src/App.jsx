@@ -14,12 +14,14 @@ import { getStoredProducts, saveStoredProducts, INITIAL_PRODUCTS, getStoredHeroS
 import { getStoredOffers, saveStoredOffers } from './data/offersData.js';
 import { productService } from './services/productService.js';
 import { offerService } from './services/offerService.js';
+import { settingsService, DEFAULT_SITE_SETTINGS } from './services/settingsService.js';
 
 function App() {
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
   const [products, setProducts] = useState(getStoredProducts);
   const [heroSlides, setHeroSlides] = useState(() => getStoredHeroSlides(getStoredProducts()));
   const [offers, setOffers] = useState(getStoredOffers);
+  const [siteSettings, setSiteSettings] = useState(() => settingsService.getLocalSettings());
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [activeColor, setActiveColor] = useState('orange');
   const [activeSize, setActiveSize] = useState('36');
@@ -78,6 +80,15 @@ function App() {
       } catch (err) {
         console.warn('Offres distantes hors ligne :', err.message);
       }
+
+      try {
+        const dbSettings = await settingsService.getSettings();
+        if (isMounted && dbSettings) {
+          setSiteSettings(dbSettings);
+        }
+      } catch (err) {
+        console.warn('Paramètres de sécurité hors ligne :', err.message);
+      }
     };
 
     fetchFromDatabase();
@@ -90,7 +101,6 @@ function App() {
     setOffers(newOffers);
     saveStoredOffers(newOffers);
   };
-
 
   const handleUpdateProducts = (newProducts) => {
     setProducts(newProducts);
@@ -110,12 +120,123 @@ function App() {
     }
   };
 
+  const handleUpdateSettings = async (newSettings) => {
+    const updated = await settingsService.updateSettings(newSettings);
+    setSiteSettings(updated);
+    return updated;
+  };
+
   const showToast = (message) => {
     setToastMessage(message);
     setTimeout(() => {
       setToastMessage(null);
     }, 3200);
   };
+
+  // Site Security & Content Protection (Disable Right Click, Inspect/DevTools & Dragging)
+  useEffect(() => {
+    const isAdmin = currentPath === '/admin' || currentPath.startsWith('/admin');
+    // If inside admin and admin protection is not explicitly enabled, allow normal devtools & right click
+    if (isAdmin && !siteSettings.protectInAdmin) {
+      return;
+    }
+
+    let lastWarningTime = 0;
+    const triggerProtectionNotice = (msg) => {
+      const now = Date.now();
+      if (now - lastWarningTime > 2500) {
+        lastWarningTime = now;
+        showToast(msg);
+      }
+    };
+
+    // 1. Disable Right Click Context Menu (Image link copying, save image as, etc.)
+    const handleContextMenu = (e) => {
+      if (siteSettings.disableRightClick) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerProtectionNotice('🔒 Clic droit désactivé - Contenu et images protégés © TechnoTech');
+        return false;
+      }
+    };
+
+    // 2. Disable Image Drag & Drop
+    const handleDragStart = (e) => {
+      if (siteSettings.disableImageDragging) {
+        const target = e.target;
+        if (target && (target.tagName === 'IMG' || target.closest('img') || target.tagName === 'PICTURE')) {
+          e.preventDefault();
+          return false;
+        }
+      }
+    };
+
+    // 3. Disable Inspect & DevTools keyboard shortcuts
+    const handleKeyDown = (e) => {
+      if (!siteSettings.disableInspect) return;
+
+      const code = e.keyCode || e.which;
+      const key = (e.key || '').toUpperCase();
+      const ctrlOrMeta = e.ctrlKey || e.metaKey;
+
+      // F12
+      if (key === 'F12' || code === 123) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerProtectionNotice('🔒 Raccourci désactivé - Inspecteur protégé © TechnoTech');
+        return false;
+      }
+
+      // Ctrl+Shift+I / Cmd+Opt+I (Inspect)
+      if (ctrlOrMeta && e.shiftKey && (key === 'I' || code === 73)) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerProtectionNotice('🔒 Raccourci désactivé - Inspecteur protégé © TechnoTech');
+        return false;
+      }
+
+      // Ctrl+Shift+J / Cmd+Opt+J (Console)
+      if (ctrlOrMeta && e.shiftKey && (key === 'J' || code === 74)) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerProtectionNotice('🔒 Console désactivée - Protection © TechnoTech');
+        return false;
+      }
+
+      // Ctrl+Shift+C / Cmd+Opt+C (Inspect Element)
+      if (ctrlOrMeta && e.shiftKey && (key === 'C' || code === 67)) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerProtectionNotice('🔒 Inspecteur désactivé - Protection © TechnoTech');
+        return false;
+      }
+
+      // Ctrl+U / Cmd+Opt+U (View Source)
+      if (ctrlOrMeta && (key === 'U' || code === 85)) {
+        e.preventDefault();
+        e.stopPropagation();
+        triggerProtectionNotice('🔒 Code source protégé © TechnoTech');
+        return false;
+      }
+
+      // Ctrl+S / Cmd+S (Save Page)
+      if (ctrlOrMeta && (key === 'S' || code === 83)) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }
+    };
+
+    window.addEventListener('contextmenu', handleContextMenu, { capture: true });
+    window.addEventListener('dragstart', handleDragStart, { capture: true });
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+
+    return () => {
+      window.removeEventListener('contextmenu', handleContextMenu, { capture: true });
+      window.removeEventListener('dragstart', handleDragStart, { capture: true });
+      window.removeEventListener('keydown', handleKeyDown, { capture: true });
+    };
+  }, [currentPath, siteSettings]);
 
   const handleToggleWishlist = () => {
     const nextState = !isWishlisted;
@@ -209,6 +330,8 @@ function App() {
           offers={offers}
           onUpdateOffers={handleUpdateOffers}
           onNavigateStore={() => navigateTo('/')}
+          siteSettings={siteSettings}
+          onUpdateSettings={handleUpdateSettings}
         />
         {/* Interactive Toast Notification */}
         <div className={`toast-notice ${toastMessage ? 'show' : ''}`}>
@@ -225,7 +348,7 @@ function App() {
   const isOffersPage = currentPath === '/offers' || currentPath === '/offres';
 
   return (
-    <div className={`app-container ${isOffersPage ? 'offers-view-active' : ''} ${isAboutPage ? 'about-view-active' : ''} ${isContactPage ? 'contact-view-active' : ''}`}>
+    <div className={`app-container ${isOffersPage ? 'offers-view-active' : ''} ${isAboutPage ? 'about-view-active' : ''} ${isContactPage ? 'contact-view-active' : ''} ${siteSettings.disableImageDragging ? 'disable-img-drag' : ''}`}>
       {/* 1. Top Yellow Gift Announcement Bar */}
       <div className="top-gift-announcement-bar">
         <div className="announcement-content-wrap">

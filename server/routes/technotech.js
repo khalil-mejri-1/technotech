@@ -9,6 +9,7 @@ import HeroSlide from '../models/HeroSlide.js';
 import Offer from '../models/Offer.js';
 import Order from '../models/Order.js';
 import AdminPushToken from '../models/AdminPushToken.js';
+import SiteSettings from '../models/SiteSettings.js';
 import { sendExpoPushNotification } from '../utils/pushNotification.js';
 
 const router = express.Router();
@@ -261,6 +262,53 @@ router.delete('/offers/:offerId', async (req, res) => {
 // ==========================================
 
 // Create new order with strict validation
+
+// ==========================================
+// Site Settings & Security Endpoints
+// ==========================================
+
+// Get site settings
+router.get('/settings', async (req, res) => {
+  try {
+    let settings = await SiteSettings.findOne({ key: 'main_settings' });
+    if (!settings) {
+      settings = await SiteSettings.create({
+        key: 'main_settings',
+        disableInspect: true,
+        disableRightClick: true,
+        disableImageDragging: true,
+        protectInAdmin: false,
+      });
+    }
+    res.json(settings);
+  } catch (err) {
+    console.error('Error fetching settings:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update site settings
+router.put('/settings', async (req, res) => {
+  try {
+    const { disableInspect, disableRightClick, disableImageDragging, protectInAdmin } = req.body;
+    const updated = await SiteSettings.findOneAndUpdate(
+      { key: 'main_settings' },
+      {
+        $set: {
+          ...(typeof disableInspect === 'boolean' && { disableInspect }),
+          ...(typeof disableRightClick === 'boolean' && { disableRightClick }),
+          ...(typeof disableImageDragging === 'boolean' && { disableImageDragging }),
+          ...(typeof protectInAdmin === 'boolean' && { protectInAdmin }),
+        },
+      },
+      { new: true, upsert: true }
+    );
+    res.json(updated);
+  } catch (err) {
+    console.error('Error updating settings:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ==========================================
 // Push Notifications Endpoints for Mobile Admin
