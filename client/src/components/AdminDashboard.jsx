@@ -31,7 +31,14 @@ import {
   Tag,
   Calculator,
   Search,
-  Clock
+  Clock,
+  Shield,
+  ShieldCheck,
+  ShieldAlert,
+  MousePointer,
+  Terminal,
+  Save,
+  Unlock
 } from 'lucide-react';
 import { INITIAL_PRODUCTS } from '../data/productsData.js';
 import { productService } from '../services/productService.js';
@@ -53,14 +60,59 @@ export default function AdminDashboard({
   onUpdateHeroSlides,
   offers = [],
   onUpdateOffers,
-  onNavigateStore
+  onNavigateStore,
+  siteSettings = {},
+  onUpdateSettings
 }) {
-  const [activeTab, setActiveTab] = useState('products'); // 'products' | 'hero' | 'orders' | 'offers'
+  const [activeTab, setActiveTab] = useState('products'); // 'products' | 'hero' | 'orders' | 'offers' | 'security'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusNotice, setStatusNotice] = useState(null);
+
+  // Security & Content Protection Settings State
+  const [securityForm, setSecurityForm] = useState({
+    disableInspect: siteSettings?.disableInspect ?? true,
+    disableRightClick: siteSettings?.disableRightClick ?? true,
+    disableImageDragging: siteSettings?.disableImageDragging ?? true,
+    protectInAdmin: siteSettings?.protectInAdmin ?? false,
+  });
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
+
+  useEffect(() => {
+    if (siteSettings) {
+      setSecurityForm({
+        disableInspect: siteSettings.disableInspect ?? true,
+        disableRightClick: siteSettings.disableRightClick ?? true,
+        disableImageDragging: siteSettings.disableImageDragging ?? true,
+        protectInAdmin: siteSettings.protectInAdmin ?? false,
+      });
+    }
+  }, [siteSettings]);
+
+  const handleSaveSecuritySettings = async () => {
+    setIsSavingSettings(true);
+    try {
+      if (onUpdateSettings) {
+        await onUpdateSettings(securityForm);
+      }
+      notify('Paramètres de sécurité enregistrés avec succès ! La protection est désormais active.');
+    } catch (err) {
+      notify('Erreur lors de la sauvegarde: ' + err.message);
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
+
+  const handleToggleAllSecurity = (enable) => {
+    setSecurityForm((prev) => ({
+      ...prev,
+      disableInspect: enable,
+      disableRightClick: enable,
+      disableImageDragging: enable,
+    }));
+  };
 
   // Orders & Unseen Orders Badge State
   const [orders, setOrders] = useState([]);
@@ -1527,6 +1579,18 @@ export default function AdminDashboard({
               <span>Créer une Offre / Pack</span>
             </button>
           )}
+
+          {activeTab === 'security' && (
+            <button
+              type="button"
+              className="admin-btn primary security-save-top-btn"
+              onClick={handleSaveSecuritySettings}
+              disabled={isSavingSettings}
+            >
+              {isSavingSettings ? <Loader2 size={17} className="btn-spinner-icon" /> : <Save size={17} />}
+              <span>Enregistrer la Protection</span>
+            </button>
+          )}
         </div>
       </header>
 
@@ -1589,6 +1653,20 @@ export default function AdminDashboard({
                 {orders.length}
               </span>
             ) : null}
+          </button>
+
+          <button
+            type="button"
+            className={`admin-tab-item ${activeTab === 'security' ? 'active' : ''}`}
+            onClick={() => setActiveTab('security')}
+          >
+            <Shield size={17} />
+            <span>Sécurité & Protection</span>
+            <span
+              className={`tab-count-badge ${securityForm.disableInspect || securityForm.disableRightClick ? 'security-badge-active' : 'security-badge-muted'}`}
+            >
+              {securityForm.disableInspect || securityForm.disableRightClick ? 'Protégé' : 'Inactif'}
+            </span>
           </button>
         </div>
       </div>
@@ -1985,6 +2063,242 @@ export default function AdminDashboard({
                   );
                 })
               )}
+            </div>
+          </div>
+        )}
+
+        {/* ================================================================
+            SECURITY & ANTI-INSPECT PROTECTION VIEW
+            ================================================================ */}
+        {activeTab === 'security' && (
+          <div className="security-manager-wrapper">
+            {/* Guide & Status Banner */}
+            <div className={`hero-manager-banner security-status-banner ${securityForm.disableInspect || securityForm.disableRightClick ? 'protection-enabled' : 'protection-disabled'}`}>
+              <div className="banner-icon-box security-icon-box">
+                {securityForm.disableInspect || securityForm.disableRightClick ? (
+                  <ShieldCheck size={28} className="shield-icon-active" />
+                ) : (
+                  <ShieldAlert size={28} className="shield-icon-inactive" />
+                )}
+              </div>
+              <div className="banner-text-box">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                  <h2 className="banner-heading">Protection du Contenu & Sécurité Antivol</h2>
+                  <span className={`security-live-pill ${securityForm.disableInspect || securityForm.disableRightClick ? 'live-on' : 'live-off'}`}>
+                    {securityForm.disableInspect || securityForm.disableRightClick ? '● SYSTÈME ACTIF' : '○ SYSTÈME DÉSACTIVÉ'}
+                  </span>
+                </div>
+                <p className="banner-subtext">
+                  Verrouillez l'inspecteur web (F12 / DevTools) et le clic droit pour empêcher les visiteurs et concurrents de voler vos affiches, d'extraire les liens d'images ou d'analyser le code de TechnoTech.
+                </p>
+              </div>
+              <div className="security-banner-actions">
+                <button
+                  type="button"
+                  className="security-quick-btn active-all"
+                  onClick={() => handleToggleAllSecurity(true)}
+                  title="Activer toutes les protections en 1 clic"
+                >
+                  <Lock size={15} />
+                  <span>Tout Activer</span>
+                </button>
+                <button
+                  type="button"
+                  className="security-quick-btn disable-all"
+                  onClick={() => handleToggleAllSecurity(false)}
+                  title="Désactiver temporairement les protections"
+                >
+                  <Unlock size={15} />
+                  <span>Tout Désactiver</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Security Settings Cards Grid */}
+            <div className="security-cards-grid">
+              {/* Card 1: Right Click Disable */}
+              <div className={`security-feature-card ${securityForm.disableRightClick ? 'active' : 'inactive'}`}>
+                <div className="card-top-header">
+                  <div className="feature-icon-wrapper mouse-icon">
+                    <MousePointer size={22} />
+                  </div>
+                  <div className="card-badge-status">
+                    {securityForm.disableRightClick ? (
+                      <span className="badge-chip chip-active"><Check size={12} /> Clic Droit Bloqué</span>
+                    ) : (
+                      <span className="badge-chip chip-inactive"><X size={12} /> Autorisé</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="card-main-content">
+                  <h3 className="feature-card-title">Blocage du Clic Droit (Anti-Copie d'Images)</h3>
+                  <p className="feature-card-desc">
+                    Désactive complètement le menu contextuel du clic droit sur tout le site public. Empêche les utilisateurs de faire un clic droit pour « Copier l'adresse de l'image », « Ouvrir dans un nouvel onglet » ou « Enregistrer l'image sous… ».
+                  </p>
+                </div>
+
+                <div className="card-bottom-footer">
+                  <label className="admin-switch-label">
+                    <div
+                      className={`admin-switch-track ${securityForm.disableRightClick ? 'on' : ''}`}
+                      onClick={() => setSecurityForm((prev) => ({ ...prev, disableRightClick: !prev.disableRightClick }))}
+                    >
+                      <div className="admin-switch-thumb" />
+                    </div>
+                    <span className="switch-text-label">
+                      {securityForm.disableRightClick ? 'Protection Clic Droit Active' : 'Clic Droit Désactivé (Autorisé)'}
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Card 2: Inspect Element & DevTools Disable */}
+              <div className={`security-feature-card ${securityForm.disableInspect ? 'active' : 'inactive'}`}>
+                <div className="card-top-header">
+                  <div className="feature-icon-wrapper terminal-icon">
+                    <Terminal size={22} />
+                  </div>
+                  <div className="card-badge-status">
+                    {securityForm.disableInspect ? (
+                      <span className="badge-chip chip-active"><Check size={12} /> Inspecteur Bloqué</span>
+                    ) : (
+                      <span className="badge-chip chip-inactive"><X size={12} /> Accessible</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="card-main-content">
+                  <h3 className="feature-card-title">Verrouillage de l'Inspecteur (F12 & Raccourcis)</h3>
+                  <p className="feature-card-desc">
+                    Neutralise automatiquement la touche <strong>F12</strong>, les raccourcis <strong>Ctrl+Shift+I</strong>, <strong>Ctrl+Shift+J</strong> (Console), <strong>Ctrl+Shift+C</strong> (Inspecter l'élément), ainsi que <strong>Ctrl+U</strong> (Code source) et <strong>Ctrl+S</strong>.
+                  </p>
+                </div>
+
+                <div className="card-bottom-footer">
+                  <label className="admin-switch-label">
+                    <div
+                      className={`admin-switch-track ${securityForm.disableInspect ? 'on' : ''}`}
+                      onClick={() => setSecurityForm((prev) => ({ ...prev, disableInspect: !prev.disableInspect }))}
+                    >
+                      <div className="admin-switch-thumb" />
+                    </div>
+                    <span className="switch-text-label">
+                      {securityForm.disableInspect ? 'Inspecteur & DevTools Verrouillés' : 'Inspecteur Accessible'}
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Card 3: Disable Image Dragging */}
+              <div className={`security-feature-card ${securityForm.disableImageDragging ? 'active' : 'inactive'}`}>
+                <div className="card-top-header">
+                  <div className="feature-icon-wrapper image-icon">
+                    <ImageIcon size={22} />
+                  </div>
+                  <div className="card-badge-status">
+                    {securityForm.disableImageDragging ? (
+                      <span className="badge-chip chip-active"><Check size={12} /> Glisser Bloqué</span>
+                    ) : (
+                      <span className="badge-chip chip-inactive"><X size={12} /> Autorisé</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="card-main-content">
+                  <h3 className="feature-card-title">Protection Anti Glisser-Déposer des Images</h3>
+                  <p className="feature-card-desc">
+                    Empêche les visiteurs de faire glisser une affiche ou un logo avec la souris vers leur bureau ou vers la barre d'onglets pour obtenir le fichier original de l'image.
+                  </p>
+                </div>
+
+                <div className="card-bottom-footer">
+                  <label className="admin-switch-label">
+                    <div
+                      className={`admin-switch-track ${securityForm.disableImageDragging ? 'on' : ''}`}
+                      onClick={() => setSecurityForm((prev) => ({ ...prev, disableImageDragging: !prev.disableImageDragging }))}
+                    >
+                      <div className="admin-switch-thumb" />
+                    </div>
+                    <span className="switch-text-label">
+                      {securityForm.disableImageDragging ? 'Glisser-Déposer Bloqué' : 'Glisser-Déposer Autorisé'}
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Card 4: Protect Inside Admin */}
+              <div className={`security-feature-card ${securityForm.protectInAdmin ? 'active' : 'inactive'}`}>
+                <div className="card-top-header">
+                  <div className="feature-icon-wrapper lock-icon">
+                    <Lock size={22} />
+                  </div>
+                  <div className="card-badge-status">
+                    {securityForm.protectInAdmin ? (
+                      <span className="badge-chip chip-active">Bloqué dans Admin</span>
+                    ) : (
+                      <span className="badge-chip chip-neutral">Mode Développeur</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="card-main-content">
+                  <h3 className="feature-card-title">Protection à l'Intérieur du Dashboard (/admin)</h3>
+                  <p className="feature-card-desc">
+                    Par défaut désactivé pour vous permettre d'inspecter, tester et déboguer librement dans votre panneau d'administration sans blocage.
+                  </p>
+                </div>
+
+                <div className="card-bottom-footer">
+                  <label className="admin-switch-label">
+                    <div
+                      className={`admin-switch-track ${securityForm.protectInAdmin ? 'on' : ''}`}
+                      onClick={() => setSecurityForm((prev) => ({ ...prev, protectInAdmin: !prev.protectInAdmin }))}
+                    >
+                      <div className="admin-switch-thumb" />
+                    </div>
+                    <span className="switch-text-label">
+                      {securityForm.protectInAdmin ? 'Actif dans Admin' : 'Inactif dans Admin (Recommandé)'}
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Floating Save Strip */}
+            <div className="security-save-strip">
+              <div className="save-strip-info">
+                <Sparkles size={17} className="save-strip-sparkle" />
+                <span>Les modifications s'appliquent immédiatement dès l'enregistrement et sont synchronisées en base de données.</span>
+              </div>
+              <div className="save-strip-actions">
+                <button
+                  type="button"
+                  className="admin-btn secondary"
+                  onClick={onNavigateStore}
+                >
+                  <Eye size={16} />
+                  <span>Tester sur la boutique</span>
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn primary security-big-save-btn"
+                  onClick={handleSaveSecuritySettings}
+                  disabled={isSavingSettings}
+                >
+                  {isSavingSettings ? (
+                    <>
+                      <Loader2 size={17} className="btn-spinner-icon" />
+                      <span>Enregistrement en cours...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save size={17} />
+                      <span>Enregistrer les Paramètres de Sécurité</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         )}
