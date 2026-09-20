@@ -3,19 +3,23 @@ import Navbar from './components/Navbar.jsx';
 import Hero from './components/Hero.jsx';
 import ProductsSection from './components/ProductsSection.jsx';
 import AdminDashboard from './components/AdminDashboard.jsx';
+import OffersPage from './components/OffersPage.jsx';
 import Footer from './components/Footer.jsx';
 import CartDrawer from './components/CartDrawer.jsx';
 import CheckoutModal from './components/CheckoutModal.jsx';
 import AboutPage from './components/AboutPage.jsx';
 import ContactPage from './components/ContactPage.jsx';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Gift, ArrowRight } from 'lucide-react';
 import { getStoredProducts, saveStoredProducts, INITIAL_PRODUCTS, getStoredHeroSlides, saveStoredHeroSlides } from './data/productsData.js';
+import { getStoredOffers, saveStoredOffers } from './data/offersData.js';
 import { productService } from './services/productService.js';
+import { offerService } from './services/offerService.js';
 
 function App() {
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
   const [products, setProducts] = useState(getStoredProducts);
   const [heroSlides, setHeroSlides] = useState(() => getStoredHeroSlides(getStoredProducts()));
+  const [offers, setOffers] = useState(getStoredOffers);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [activeColor, setActiveColor] = useState('orange');
   const [activeSize, setActiveSize] = useState('36');
@@ -35,7 +39,7 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Synchronize products and hero slides directly with MongoDB Atlas database
+  // Synchronize products, hero slides and offers directly with MongoDB Atlas database
   useEffect(() => {
     let isMounted = true;
     const fetchFromDatabase = async () => {
@@ -64,6 +68,16 @@ function App() {
       } catch (err) {
         console.warn('Carrousel distant hors ligne :', err.message);
       }
+
+      try {
+        const dbOffers = await offerService.getAll(true);
+        if (isMounted && Array.isArray(dbOffers)) {
+          setOffers(dbOffers);
+          saveStoredOffers(dbOffers);
+        }
+      } catch (err) {
+        console.warn('Offres distantes hors ligne :', err.message);
+      }
     };
 
     fetchFromDatabase();
@@ -71,6 +85,11 @@ function App() {
       isMounted = false;
     };
   }, []);
+
+  const handleUpdateOffers = (newOffers) => {
+    setOffers(newOffers);
+    saveStoredOffers(newOffers);
+  };
 
 
   const handleUpdateProducts = (newProducts) => {
@@ -187,6 +206,8 @@ function App() {
           onUpdateProducts={handleUpdateProducts}
           heroSlides={heroSlides}
           onUpdateHeroSlides={handleUpdateHeroSlides}
+          offers={offers}
+          onUpdateOffers={handleUpdateOffers}
           onNavigateStore={() => navigateTo('/')}
         />
         {/* Interactive Toast Notification */}
@@ -198,14 +219,52 @@ function App() {
     );
   }
 
-  // Otherwise, display the Luxury Storefront (Home, About, or Contact)
+  // Otherwise, display the Luxury Storefront (Home, About, Contact, or Offers)
   const isAboutPage = currentPath === '/about' || currentPath === '/a-propos';
   const isContactPage = currentPath === '/contact';
+  const isOffersPage = currentPath === '/offers' || currentPath === '/offres';
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${isOffersPage ? 'offers-view-active' : ''} ${isAboutPage ? 'about-view-active' : ''} ${isContactPage ? 'contact-view-active' : ''}`}>
+      {/* 1. Top Yellow Gift Announcement Bar */}
+      <div className="top-gift-announcement-bar">
+        <div className="announcement-content-wrap">
+          <div className="announcement-badge">
+            <Gift size={13} className="announcement-gift-icon" />
+            <span>CADEAU OFFERT</span>
+          </div>
+
+          <div className="announcement-text-wrap">
+            <span className="announcement-main-text">
+              Pour toute commande supérieure à <strong>100 DT</strong>, recevez un <strong>cadeau exclusif offert</strong> ! 🎁
+            </span>
+            <span className="announcement-ar-text">
+              (كل طلب يتجاوز 100 دينار يحصل على هدية مجانية خاصة 🎁)
+            </span>
+          </div>
+
+          <button
+            type="button"
+            className="announcement-cta-btn"
+            onClick={() => {
+              if (currentPath !== '/') {
+                navigateTo('/');
+              }
+              setTimeout(() => {
+                const el = document.getElementById('store-products-section');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 150);
+            }}
+            title="Commander maintenant pour débloquer votre cadeau"
+          >
+            <span>Commander</span>
+            <ArrowRight size={12} />
+          </button>
+        </div>
+      </div>
+
       {/* Smoothly cross-fading dynamic background color layers for each hero product */}
-      {!isAboutPage && !isContactPage && heroSlides.map((slide, idx) => (
+      {!isAboutPage && !isContactPage && !isOffersPage && heroSlides.map((slide, idx) => (
         <div
           key={slide.id || slide._id || idx}
           className={`bg-theme-layer ${idx === activeSlideIndex ? 'active' : ''}`}
@@ -218,7 +277,7 @@ function App() {
           }}
         />
       ))}
-      <div className="bg-ambient-orb" />
+      {!isAboutPage && !isContactPage && !isOffersPage && <div className="bg-ambient-orb" />}
 
       {/* Top Floating Navbar (Root Level for Topmost Z-Index Stacking) */}
       <Navbar
@@ -238,6 +297,14 @@ function App() {
         <AboutPage onNavigate={navigateTo} />
       ) : isContactPage ? (
         <ContactPage onNavigate={navigateTo} showToast={showToast} />
+      ) : isOffersPage ? (
+        <OffersPage
+          offers={offers}
+          products={products}
+          onNavigate={navigateTo}
+          onAddToCart={handleAddToCart}
+          onOpenCart={() => setIsCartOpen(true)}
+        />
       ) : (
         <>
           <div className="content-layer">
@@ -250,6 +317,7 @@ function App() {
               }}
               products={products}
               onAddToCart={handleAddToCart}
+              onNavigate={navigateTo}
             />
           </div>
 

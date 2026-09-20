@@ -1,10 +1,12 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import Technotech from '../models/Technotech.js';
 import HeroSlide from '../models/HeroSlide.js';
+import Offer from '../models/Offer.js';
 import Order from '../models/Order.js';
 import AdminPushToken from '../models/AdminPushToken.js';
 import { sendExpoPushNotification } from '../utils/pushNotification.js';
@@ -165,6 +167,89 @@ router.delete('/hero-slides/:slideId', async (req, res) => {
   try {
     await HeroSlide.findByIdAndDelete(req.params.slideId);
     res.json({ message: 'Slide deleted', id: req.params.slideId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// Offers & Subscription Bundles Endpoints
+// ==========================================
+router.get('/offers', async (req, res) => {
+  try {
+    const { all } = req.query;
+    const query = all === 'true' ? {} : { isActive: true };
+    const offers = await Offer.find(query).sort({ order: 1, createdAt: -1 });
+    res.json(offers);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/offers', async (req, res) => {
+  try {
+    if (Array.isArray(req.body)) {
+      await Offer.deleteMany({});
+      const clean = req.body.map((item, index) => {
+        const { _id, createdAt, updatedAt, __v, ...rest } = item;
+        return {
+          ...rest,
+          id: rest.id || `offer-${Date.now()}-${index}`,
+          order: rest.order !== undefined ? rest.order : index,
+        };
+      });
+      const inserted = await Offer.insertMany(clean);
+      return res.json(inserted);
+    }
+
+    const offerData = req.body;
+    const id = offerData.id || `offer-${Date.now()}`;
+    const newOffer = new Offer({
+      ...offerData,
+      id,
+    });
+    const saved = await newOffer.save();
+    res.status(201).json(saved);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put('/offers/:offerId', async (req, res) => {
+  try {
+    const { offerId } = req.params;
+    const isObjId = mongoose.Types.ObjectId.isValid(offerId);
+    const updated = await Offer.findOneAndUpdate(
+      { $or: [{ ...(isObjId ? { _id: offerId } : { _id: null }) }, { id: offerId }] },
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!updated) {
+      return res.status(404).json({ error: 'Offre introuvable' });
+    }
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/offers', async (req, res) => {
+  try {
+    await Offer.deleteMany({});
+    res.json({ message: 'Toutes les offres ont été supprimées avec succès' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/offers/:offerId', async (req, res) => {
+  try {
+    const { offerId } = req.params;
+    const isObjId = mongoose.Types.ObjectId.isValid(offerId);
+    const deleted = await Offer.findOneAndDelete({
+      $or: [{ ...(isObjId ? { _id: offerId } : { _id: null }) }, { id: offerId }],
+    });
+    res.json({ message: 'Offre supprimée avec succès', id: offerId });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

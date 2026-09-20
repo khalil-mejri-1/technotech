@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
+import { X, Trash2, Plus, Minus, ShoppingBag, ArrowRight, ShieldCheck, Zap, Gift } from 'lucide-react';
 import { getImageUrl } from '../config/api.js';
 
 export default function CartDrawer({
@@ -158,6 +158,19 @@ export default function CartDrawer({
               <ShieldCheck size={14} className="trust-icon" />
               <span>Paiement sécurisé &bull; Activation instantanée 100% garantie</span>
             </div>
+
+            {/* 100 DT Gift Incentive Indicator */}
+            {subtotal >= 100 ? (
+              <div className="cart-gift-reward-banner unlocked">
+                <Gift size={15} className="cart-gift-icon" />
+                <span><strong>Félicitations !</strong> Vous recevrez un <strong>cadeau exclusif offert</strong> avec cette commande 🎁</span>
+              </div>
+            ) : (
+              <div className="cart-gift-reward-banner">
+                <Gift size={14} className="cart-gift-icon" />
+                <span>Plus que <strong>{100 - subtotal} DT</strong> pour débloquer votre <strong>cadeau offert</strong> ! 🎁</span>
+              </div>
+            )}
 
             <div className="cart-total-row">
               <span className="subtotal-label">Total de la commande</span>
