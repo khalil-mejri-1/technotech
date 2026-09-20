@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, ChevronRight as ArrowRight, Check, Zap, ShieldCheck, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronRight as ArrowRight, ChevronDown, Check, Zap, ShieldCheck, Sparkles, Flame } from 'lucide-react';
 import { INITIAL_HERO_SLIDES } from '../data/productsData.js';
 import { getImageUrl } from '../config/api.js';
 
@@ -66,6 +66,7 @@ export default function Hero({
   onSlideChange,
   products = [],
   onAddToCart,
+  onNavigate,
 }) {
   const activeSlides = slides && slides.length > 0 ? slides : INITIAL_HERO_SLIDES;
   const safeIndex = activeSlideIndex >= 0 && activeSlideIndex < activeSlides.length ? activeSlideIndex : 0;
@@ -253,6 +254,17 @@ export default function Hero({
     onAddToCart(cartProduct, optionName);
   };
 
+  const handleScrollToOffers = () => {
+    if (onNavigate) {
+      onNavigate('/offers');
+    } else {
+      const el = document.getElementById('store-products-section');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
   return (
     <main className="hero-grid">
       {/* Left Column */}
@@ -299,16 +311,29 @@ export default function Hero({
             "Votre plateforme d'excellence pour acquérir les meilleurs abonnements officiels et produits digitaux authentiques avec activation immédiate et garantie totale."}
         </p>
 
-        {/* CTA Button */}
-        <button
-          type="button"
-          className="cta-button"
-          onClick={handleOrderClick}
-          id="get-the-look-btn"
-        >
-          <span>COMMANDER MAINTENANT</span>
-          <ArrowRight size={17} strokeWidth={2.8} className="cta-arrow" />
-        </button>
+        {/* Hero Actions Group */}
+        <div className="hero-actions-group">
+          <button
+            type="button"
+            className="cta-button"
+            onClick={handleOrderClick}
+            id="get-the-look-btn"
+          >
+            <span>COMMANDER MAINTENANT</span>
+            <ArrowRight size={17} strokeWidth={2.8} className="cta-arrow" />
+          </button>
+
+          <button
+            type="button"
+            className="hero-secondary-btn offers-btn"
+            onClick={handleScrollToOffers}
+            id="hero-view-offers-btn"
+          >
+            <Flame size={16} className="offers-btn-flame" />
+            <span>VOIR LES OFFRES</span>
+            <ArrowRight size={16} strokeWidth={2.6} className="offers-btn-arrow" />
+          </button>
+        </div>
       </section>
 
       {/* Center 3D Floating Showcase with Gradual Fade-out & Fade-in */}

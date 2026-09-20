@@ -190,10 +190,20 @@ export default function ProductsSection({ products, onAddToCart }) {
                     <h3 className="card-product-title">{product.name}</h3>
                     <p className="card-product-desc">{product.description}</p>
 
-                    {/* Dynamic Subscription Duration Selector */}
+                    {/* Dynamic Subscription Duration / Options Selector */}
                     {product.plans && product.plans.length > 0 && (
                       <div className="card-plans-group">
-                        <span className="plans-label">Durée de l'abonnement :</span>
+                        <div className="plans-header-row">
+                          <span className="plans-label">
+                            <Clock size={12} className="plans-clock-icon" />
+                            <span>Durée de l'abonnement :</span>
+                          </span>
+                          {activePlan?.duration && (
+                            <span className="plans-active-tag">
+                              {activePlan.duration}
+                            </span>
+                          )}
+                        </div>
                         <div className="plans-buttons-row">
                           {product.plans.map((plan, idx) => {
                             const planKey = plan.id || plan._id || `plan-${idx}`;
@@ -210,9 +220,19 @@ export default function ProductsSection({ products, onAddToCart }) {
                                 type="button"
                                 className={`plan-choice-chip ${isSelected ? 'selected' : ''}`}
                                 onClick={() => handleSelectPlan(productId, plan)}
+                                title={`Choisir ${plan.duration} — ${plan.price} DT`}
                               >
-                                {isSelected && <Check size={12} className="check-icon" />}
-                                <span>{plan.duration}</span>
+                                <span className="plan-chip-content">
+                                  <span className={`plan-indicator-dot ${isSelected ? 'active' : ''}`}>
+                                    {isSelected && <Check size={9} strokeWidth={3.5} />}
+                                  </span>
+                                  <span className="plan-dur-name">{plan.duration}</span>
+                                </span>
+                                {plan.price !== undefined && (
+                                  <span className={`plan-dur-price-pill ${isSelected ? 'selected' : ''}`}>
+                                    {plan.price} DT
+                                  </span>
+                                )}
                               </button>
                             );
                           })}

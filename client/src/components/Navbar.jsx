@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Menu, X, ChevronRight, Sparkles } from 'lucide-react';
+import { ShoppingBag, Menu, X, ChevronRight, Sparkles, Flame } from 'lucide-react';
 
-export default function Navbar({ 
-  cartCount, 
-  onOpenCart, 
-  isWishlisted, 
-  onToggleWishlist, 
-  activeCategory, 
-  setActiveCategory, 
+export default function Navbar({
+  cartCount,
+  onOpenCart,
+  isWishlisted,
+  onToggleWishlist,
+  activeCategory,
+  setActiveCategory,
   onNavigateAdmin,
   currentPath = '/',
   onNavigate,
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState('home');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -23,12 +24,25 @@ export default function Navbar({
       } else {
         setIsScrolled(false);
       }
+
+      // Track active section between BOUTIQUE (top hero) and CATALOGUE (products section)
+      if (currentPath === '/') {
+        const catalogEl = document.getElementById('store-products-section');
+        if (catalogEl) {
+          const rect = catalogEl.getBoundingClientRect();
+          if (rect.top <= 280) {
+            setActiveSection('catalog');
+          } else {
+            setActiveSection('home');
+          }
+        }
+      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [currentPath]);
 
   // Lock background body scroll when mobile menu is open, and handle Escape key
   useEffect(() => {
@@ -67,6 +81,7 @@ export default function Navbar({
 
   const handleNavClick = (item) => {
     if (item.id === 'catalog') {
+      setActiveSection('catalog');
       if (currentPath !== '/') {
         if (onNavigate) onNavigate('/');
         setTimeout(() => {
@@ -76,6 +91,13 @@ export default function Navbar({
       } else {
         const el = document.getElementById('store-products-section');
         if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else if (item.id === 'home') {
+      setActiveSection('home');
+      if (currentPath !== '/') {
+        if (onNavigate) onNavigate('/');
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } else {
       if (onNavigate) {
@@ -87,7 +109,9 @@ export default function Navbar({
   const isItemActive = (item) => {
     if (item.id === 'about') return currentPath === '/about' || currentPath === '/a-propos';
     if (item.id === 'contact') return currentPath === '/contact';
-    if (item.id === 'home') return currentPath === '/';
+    if (currentPath === '/') {
+      return item.id === activeSection;
+    }
     return false;
   };
 
@@ -99,6 +123,7 @@ export default function Navbar({
           <div
             className="brand"
             onClick={() => {
+              setActiveSection('home');
               if (onNavigate) onNavigate('/');
               else window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
@@ -128,6 +153,20 @@ export default function Navbar({
 
           {/* Quick Action Icons */}
           <div className="nav-actions">
+            {/* Distinctive Special Offers Button */}
+            <button
+              type="button"
+              className={`nav-offers-special-btn ${currentPath === '/offers' ? 'active' : ''}`}
+              onClick={() => {
+                if (onNavigate) onNavigate('/offers');
+              }}
+              title="Découvrez nos Packs & Offres Spéciales (Jusqu'à -50%)"
+            >
+              <span className="offers-flame-wrapper">
+                <Flame size={15} className="offers-flame-icon" />
+              </span>
+              <span className="offers-btn-text">OFFRES </span>
+            </button>
 
             {/* Shopping Bag */}
             <button
@@ -196,6 +235,29 @@ export default function Navbar({
 
         {/* Drawer Body: Navigation Buttons */}
         <div className="mobile-nav-body">
+          <button
+            type="button"
+            className={`mobile-offers-special-btn ${currentPath === '/offers' ? 'active' : ''}`}
+            onClick={() => {
+              if (onNavigate) onNavigate('/offers');
+              setMobileMenuOpen(false);
+            }}
+          >
+            <div className="mobile-offers-content">
+              <div className="mobile-offers-icon-box">
+                <Flame size={20} className="mobile-flame-icon" />
+              </div>
+              <div className="mobile-offers-text-wrap">
+                <div className="mobile-offers-title-row">
+                  <span className="mobile-offers-title">OFFRES & PACKS</span>
+                  <span className="mobile-offers-badge">-50%</span>
+                </div>
+                <span className="mobile-offers-sub">Jusqu'à -50% de réduction immédiate</span>
+              </div>
+            </div>
+            <ChevronRight size={18} className="mobile-offers-chevron" />
+          </button>
+
           <span className="mobile-nav-badge-label">Navigation</span>
           <nav className="mobile-nav-links" aria-label="Liens mobiles">
             {navItems.map((item) => {

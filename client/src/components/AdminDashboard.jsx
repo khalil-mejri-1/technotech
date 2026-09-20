@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Plus,
   Trash2,
@@ -24,12 +24,21 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ShoppingBag
+  ShoppingBag,
+  Flame,
+  Gift,
+  EyeOff,
+  Tag,
+  Calculator,
+  Search,
+  Clock
 } from 'lucide-react';
 import { INITIAL_PRODUCTS } from '../data/productsData.js';
 import { productService } from '../services/productService.js';
 import { orderService } from '../services/orderService.js';
+import { offerService } from '../services/offerService.js';
 import { getImageUrl } from '../config/api.js';
+import { resolveOfferItemImage } from '../data/offersData.js';
 import OrdersManager, { playOrderChime } from './OrdersManager.jsx';
 
 const getThumbnailLabel = (name = '') => {
@@ -42,9 +51,11 @@ export default function AdminDashboard({
   onUpdateProducts,
   heroSlides = [],
   onUpdateHeroSlides,
+  offers = [],
+  onUpdateOffers,
   onNavigateStore
 }) {
-  const [activeTab, setActiveTab] = useState('products'); // 'products' | 'hero'
+  const [activeTab, setActiveTab] = useState('products'); // 'products' | 'hero' | 'orders' | 'offers'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -405,6 +416,529 @@ export default function AdminDashboard({
       onUpdateHeroSlides(updated);
     }
     notify('Ordre du carrousel mis à jour ! 🔄');
+  };
+
+  // ==========================================
+  // OFFERS & PACKS MANAGEMENT STATE & HANDLERS
+  // ==========================================
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
+  const [editingOfferId, setEditingOfferId] = useState(null);
+  const [selectedOfferProductIds, setSelectedOfferProductIds] = useState([]);
+  const [selectedProductPlans, setSelectedProductPlans] = useState({});
+  const [offerCombinerSearch, setOfferCombinerSearch] = useState('');
+  const [offerForm, setOfferForm] = useState({
+    title: '',
+    subtitle: '',
+    type: 'duo',
+    badge: 'PACK DUO ÉCONOMIQUE',
+    itemsText: '',
+    itemImages: [],
+    price: '',
+    originalPrice: '',
+    duration: '1 Mois',
+    image: '/images/logo.png',
+    bgColor: '#ff5722',
+    featuresText: '',
+    isActive: true,
+  });
+
+  const handleOpenAddOfferModal = () => {
+    setEditingOfferId(null);
+    setSelectedOfferProductIds([]);
+    setSelectedProductPlans({});
+    setOfferCombinerSearch('');
+    setOfferForm({
+      title: '',
+      subtitle: '2 abonnements complets réunis en un seul pack à tarif réduit.',
+      type: 'duo',
+      badge: 'PACK DUO ÉCONOMIQUE',
+      itemsText: '',
+      itemImages: [],
+      price: '',
+      originalPrice: '',
+      duration: '1 Mois',
+      image: '/images/logo.png',
+      bgColor: '#ff5722',
+      featuresText: 'Accès officiel individuel et garanti\nActivation instantanée sur votre email\nSupport client prioritaire 7j/7',
+      isActive: true,
+    });
+    setIsOfferModalOpen(true);
+  };
+
+  const handleOpenEditOfferModal = (offer) => {
+    setEditingOfferId(offer.id || offer._id);
+    setOfferCombinerSearch('');
+
+    // Détecter automatiquement les produits composant cette offre
+    const offerTitleLower = (offer.title || '').toLowerCase();
+    const offerItemsStr = Array.isArray(offer.items)
+      ? offer.items.map((i) => String(i).toLowerCase()).join(' ')
+      : String(offer.items || '').toLowerCase();
+
+    const matchedProductIds = products
+      .filter((p) => {
+        const pName = (p.name || '').toLowerCase().trim();
+        if (!pName) return false;
+        const cleanName = pName.split(/[-—–]/)[0].trim();
+        return (
+          (cleanName && (offerTitleLower.includes(cleanName) || offerItemsStr.includes(cleanName))) ||
+          offerTitleLower.includes(pName) ||
+          offerItemsStr.includes(pName)
+        );
+      })
+      .map((p) => String(p._id || p.id));
+
+    setSelectedOfferProductIds(matchedProductIds);
+
+    // Détecter la durée / formule de chaque produit sélectionné
+    const initialPlans = {};
+    matchedProductIds.forEach((pId) => {
+      const prod = products.find((p) => String(p._id || p.id) === pId);
+      if (prod && Array.isArray(prod.plans) && prod.plans.length > 0) {
+        const combinedText = `${offer.title || ''} ${(offer.items || []).join(' ')}`.toLowerCase();
+        const matchedPlan = prod.plans.find((pl) =>
+          pl.duration && combinedText.includes(pl.duration.toLowerCase().trim())
+        );
+        initialPlans[pId] = matchedPlan || prod.plans[0];
+      }
+    });
+    setSelectedProductPlans(initialPlans);
+
+    const rawItems = Array.isArray(offer.items)
+      ? offer.items
+      : (offer.items ? offer.items.split(/[\n\r]+/).filter(Boolean) : []);
+
+    let initialItemImages = Array.isArray(offer.itemImages) ? [...offer.itemImages] : [];
+    if (initialItemImages.length < rawItems.length) {
+      initialItemImages = rawItems.map((item, idx) => {
+        return initialItemImages[idx] || resolveOfferItemImage(item, idx, offer, products);
+      });
+    }
+
+    setOfferForm({
+      title: offer.title || '',
+      subtitle: offer.subtitle || '',
+      type: offer.type || 'duo',
+      badge: offer.badge || '',
+      itemsText: rawItems.join('\n'),
+      itemImages: initialItemImages,
+      price: offer.price !== undefined ? offer.price : '',
+      originalPrice: offer.originalPrice !== undefined ? offer.originalPrice : '',
+      duration: offer.duration || '1 Mois',
+      image: offer.image || initialItemImages[0] || '/images/logo.png',
+      bgColor: offer.bgColor || '#ff5722',
+      featuresText: Array.isArray(offer.features) ? offer.features.join('\n') : (offer.features || ''),
+      isActive: offer.isActive !== false,
+    });
+    setIsOfferModalOpen(true);
+  };
+
+  // Helper pour obtenir le plan / la durée effective choisie pour un produit
+  const getProductEffectivePlan = (prod, plansMap = selectedProductPlans) => {
+    if (!prod) return { duration: '1 Mois', price: 0, originalPrice: 0 };
+    const pId = String(prod._id || prod.id);
+    if (plansMap && plansMap[pId]) {
+      return plansMap[pId];
+    }
+    if (Array.isArray(prod.plans) && prod.plans.length > 0) {
+      return prod.plans[0];
+    }
+    return {
+      duration: prod.duration || '1 Mois',
+      price: Number(prod.price) || 0,
+      originalPrice: Number(prod.originalPrice) || Number(prod.price) || 0,
+    };
+  };
+
+  // Recalcul automatique de l'offre (titre, contenu, prix sans remise, durée) selon les produits et durées choisis
+  const recalculateOfferFromProducts = (selectedIds, plansMap) => {
+    const prods = products.filter((p) => selectedIds.includes(String(p._id || p.id)));
+    if (prods.length === 0) return;
+
+    // Prix cumulés exacts sans remise selon les plans choisis
+    const sumCur = prods.reduce((acc, p) => {
+      const eff = getProductEffectivePlan(p, plansMap);
+      return acc + (Number(eff.price) || Number(p.price) || 0);
+    }, 0);
+
+    const sumOrig = prods.reduce((acc, p) => {
+      const eff = getProductEffectivePlan(p, plansMap);
+      return acc + (Number(eff.originalPrice || eff.price || p.originalPrice || p.price) || 0);
+    }, 0);
+
+    // Contenu inclus avec mention claire de la durée choisie
+    const itemsList = prods
+      .map((p) => {
+        const eff = getProductEffectivePlan(p, plansMap);
+        return eff.duration ? `${p.name} (${eff.duration})` : p.name;
+      })
+      .join('\n');
+
+    // Titre combiné avec les durées
+    const comboTitle = prods
+      .map((p) => {
+        const eff = getProductEffectivePlan(p, plansMap);
+        return eff.duration ? `${p.name} (${eff.duration})` : p.name;
+      })
+      .join(' + ');
+
+    // Détermination de la durée globale recommandée de l'offre
+    const distinctDurations = [
+      ...new Set(prods.map((p) => getProductEffectivePlan(p, plansMap).duration).filter(Boolean)),
+    ];
+    const recommendedDuration =
+      distinctDurations.length === 1
+        ? distinctDurations[0]
+        : (prods.length >= 2 ? 'Formule Spéciale' : (distinctDurations[0] || '1 Mois'));
+
+    const featList =
+      prods.map((p) => `Compte officiel et privé pour ${p.name}`).join('\n') +
+      '\nSupport technique et garantie totale 7j/7';
+    const collectedImages = prods.map((p) => p.images?.[0] || '/images/logo.png');
+    const firstImg = collectedImages[0] || '/images/logo.png';
+
+    setOfferForm((prev) => ({
+      ...prev,
+      title: comboTitle ? (prods.length >= 2 ? `Pack Duo : ${comboTitle}` : comboTitle) : prev.title,
+      subtitle:
+        prods.length >= 2
+          ? `Combinaison exclusive : ${comboTitle} réunis à prix ultra avantageux.`
+          : prev.subtitle,
+      type: prods.length >= 2 ? 'duo' : 'promo',
+      badge: prods.length >= 2 ? 'PACK DUO ÉCONOMIQUE' : 'SUPER PROMO',
+      duration: recommendedDuration,
+      itemsText: itemsList,
+      itemImages: collectedImages,
+      originalPrice: sumOrig > sumCur ? sumOrig : (sumCur > 0 ? Math.round(sumCur * 1.25) : ''),
+      price: sumCur,
+      image: prev.image && prev.image !== '/images/logo.png' ? prev.image : firstImg,
+      featuresText: featList,
+    }));
+  };
+
+  const handleSelectProductPlan = (prod, plan) => {
+    const pId = String(prod._id || prod.id);
+    const nextPlans = {
+      ...selectedProductPlans,
+      [pId]: plan,
+    };
+    setSelectedProductPlans(nextPlans);
+    recalculateOfferFromProducts(selectedOfferProductIds, nextPlans);
+  };
+
+  const handleToggleProductInOffer = (prod) => {
+    const prodId = String(prod._id || prod.id);
+    let nextSelected;
+    let nextPlans = { ...selectedProductPlans };
+
+    if (selectedOfferProductIds.includes(prodId)) {
+      nextSelected = selectedOfferProductIds.filter((id) => id !== prodId);
+      delete nextPlans[prodId];
+    } else {
+      nextSelected = [...selectedOfferProductIds, prodId];
+      if (Array.isArray(prod.plans) && prod.plans.length > 0) {
+        nextPlans[prodId] = prod.plans[0];
+      }
+    }
+    setSelectedOfferProductIds(nextSelected);
+    setSelectedProductPlans(nextPlans);
+    recalculateOfferFromProducts(nextSelected, nextPlans);
+  };
+
+  // Calcul automatique du total des abonnements de l'offre (selon les formules de durées sélectionnées)
+  const currentOfferProducts = useMemo(() => {
+    if (selectedOfferProductIds.length > 0) {
+      return products.filter((p) => selectedOfferProductIds.includes(String(p._id || p.id)));
+    }
+    const searchTarget = `${offerForm.title || ''} ${offerForm.itemsText || ''}`.toLowerCase();
+    if (!searchTarget.trim()) return [];
+    return products.filter((p) => {
+      const pName = (p.name || '').toLowerCase().trim();
+      if (!pName) return false;
+      const cleanName = pName.split(/[-—–]/)[0].trim();
+      return (
+        (cleanName && searchTarget.includes(cleanName)) ||
+        searchTarget.includes(pName)
+      );
+    });
+  }, [selectedOfferProductIds, products, offerForm.title, offerForm.itemsText]);
+
+  const selectedProductsSum = useMemo(() => {
+    return currentOfferProducts.reduce((acc, p) => {
+      const eff = getProductEffectivePlan(p);
+      return acc + (Number(eff.price) || Number(p.price) || 0);
+    }, 0);
+  }, [currentOfferProducts, selectedProductPlans]);
+
+  const selectedProductsOrigSum = useMemo(() => {
+    return currentOfferProducts.reduce((acc, p) => {
+      const eff = getProductEffectivePlan(p);
+      return acc + (Number(eff.originalPrice || eff.price || p.originalPrice || p.price) || 0);
+    }, 0);
+  }, [currentOfferProducts, selectedProductPlans]);
+
+  // Produits sélectionnés ayant plusieurs durées / options de plans
+  const selectedProductsWithMultiplePlans = useMemo(() => {
+    return products.filter(
+      (p) =>
+        selectedOfferProductIds.includes(String(p._id || p.id)) &&
+        Array.isArray(p.plans) &&
+        p.plans.length > 1
+    );
+  }, [products, selectedOfferProductIds]);
+
+  // Liste des abonnements de l'offre (pour l'éditeur d'images et la prévisualisation)
+  const displayOfferItems = useMemo(() => {
+    const fromText = (offerForm.itemsText || '')
+      .split(/[\n\r]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (fromText.length > 0) return fromText;
+    if (currentOfferProducts.length > 0) return currentOfferProducts.map((p) => p.name);
+    if (offerForm.title.trim()) return [offerForm.title.trim()];
+    return [];
+  }, [offerForm.itemsText, currentOfferProducts, offerForm.title]);
+
+  // Tous les abonnements filtrables pour la sélection rapide
+  const filteredCombinerProducts = useMemo(() => {
+    if (!offerCombinerSearch.trim()) return products;
+    const q = offerCombinerSearch.toLowerCase().trim();
+    return products.filter((p) => {
+      const name = (p.name || '').toLowerCase();
+      const cat = (p.category || '').toLowerCase();
+      return name.includes(q) || cat.includes(q);
+    });
+  }, [products, offerCombinerSearch]);
+
+  const handleOfferImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      notify('Téléversement de l\'image de l\'offre... ⏳');
+      let uploadedUrl;
+      try {
+        uploadedUrl = await productService.uploadImage(file);
+      } catch {
+        uploadedUrl = await compressImageFile(file);
+      }
+      if (uploadedUrl) {
+        setOfferForm((prev) => ({ ...prev, image: uploadedUrl }));
+        notify('Image de l\'offre enregistrée ! ✨');
+      }
+    } catch (err) {
+      console.error('Erreur upload:', err);
+      notify('Erreur lors du téléversement de l\'image');
+    }
+  };
+
+  const handleItemImageUpload = async (file, index) => {
+    if (!file) return;
+    try {
+      notify(`Téléversement de l'image de l'abonnement ${index + 1}... ⏳`);
+      let uploadedUrl;
+      try {
+        uploadedUrl = await productService.uploadImage(file);
+      } catch {
+        uploadedUrl = await compressImageFile(file);
+      }
+      if (uploadedUrl) {
+        setOfferForm((prev) => {
+          const nextItemImages = [...(prev.itemImages || [])];
+          nextItemImages[index] = uploadedUrl;
+          return {
+            ...prev,
+            itemImages: nextItemImages,
+            image: index === 0 && (!prev.image || prev.image === '/images/logo.png') ? uploadedUrl : prev.image,
+          };
+        });
+        notify(`Image de l'abonnement ${index + 1} mise à jour ! ✨`);
+      }
+    } catch (err) {
+      console.error('Erreur upload:', err);
+      notify("Erreur lors du téléversement de l'image");
+    }
+  };
+
+  const handleItemImageUrlChange = (url, index) => {
+    setOfferForm((prev) => {
+      const nextItemImages = [...(prev.itemImages || [])];
+      nextItemImages[index] = url;
+      return {
+        ...prev,
+        itemImages: nextItemImages,
+      };
+    });
+  };
+
+  const handleSaveOffer = async (e) => {
+    e?.preventDefault();
+    if (!offerForm.title.trim() || !offerForm.price) {
+      alert('Veuillez renseigner au moins le titre et le prix de l\'offre.');
+      return;
+    }
+
+    const items = offerForm.itemsText
+      ? offerForm.itemsText.split(/[\n\r]+/).map((s) => s.trim()).filter(Boolean)
+      : [];
+    const features = offerForm.featuresText
+      ? offerForm.featuresText.split(/[\n\r]+/).map((s) => s.trim()).filter(Boolean)
+      : [];
+
+    const resolvedItemImages = items.map((item, idx) => {
+      return (
+        offerForm.itemImages?.[idx] ||
+        resolveOfferItemImage(item, idx, offerForm, products) ||
+        '/images/logo.png'
+      );
+    });
+
+    const offerData = {
+      id: editingOfferId || `offer-${Date.now()}`,
+      title: offerForm.title.trim(),
+      subtitle: offerForm.subtitle.trim(),
+      type: offerForm.type || 'duo',
+      badge: offerForm.badge.trim(),
+      items: items.length > 0 ? items : [offerForm.title.trim()],
+      itemImages: resolvedItemImages,
+      price: Number(offerForm.price),
+      originalPrice: offerForm.originalPrice ? Number(offerForm.originalPrice) : null,
+      duration: offerForm.duration.trim() || '1 Mois',
+      image: offerForm.image || resolvedItemImages[0] || '/images/logo.png',
+      bgColor: offerForm.bgColor || '#ff5722',
+      features: features.length > 0 ? features : ['Accès complet garanti', 'Activation express'],
+      isActive: offerForm.isActive !== false,
+      order: 0,
+    };
+
+    try {
+      setIsSaving(true);
+      const saved = await offerService.save(offerData);
+      let updatedOffers;
+      const existingIdx = offers.findIndex((o) => (o.id || o._id) === (saved.id || saved._id));
+      if (existingIdx >= 0) {
+        updatedOffers = [...offers];
+        updatedOffers[existingIdx] = saved;
+      } else {
+        updatedOffers = [saved, ...offers];
+      }
+      if (onUpdateOffers) {
+        onUpdateOffers(updatedOffers);
+      }
+      setIsOfferModalOpen(false);
+      notify('Offre spéciale enregistrée avec succès ! 🎉');
+    } catch (err) {
+      console.error('Erreur sauvegarde offre:', err);
+      alert('Erreur lors de la sauvegarde de l\'offre : ' + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleToggleOfferActive = async (offer) => {
+    try {
+      const updated = { ...offer, isActive: !offer.isActive };
+      const saved = await offerService.save(updated);
+      const nextList = offers.map((o) => ((o.id || o._id) === (saved.id || saved._id) ? saved : o));
+      if (onUpdateOffers) {
+        onUpdateOffers(nextList);
+      }
+      notify(saved.isActive ? 'Offre activée et visible par les clients ! ✅' : 'Offre masquée du site. 👁️‍🗨️');
+    } catch (err) {
+      console.error('Erreur toggle offre:', err);
+      notify('Erreur lors de la mise à jour de l\'offre');
+    }
+  };
+
+  const handleDeleteOffer = (targetOffer) => {
+    const offerId = targetOffer?.id || targetOffer?._id;
+    const offerTitle = targetOffer?.title || 'Offre';
+    setConfirmModal({
+      isOpen: true,
+      title: 'Supprimer cette offre ?',
+      message: `Êtes-vous sûr de vouloir supprimer définitivement l'offre "${offerTitle}" ?`,
+      productName: offerTitle,
+      confirmText: 'Oui, supprimer l\'offre',
+      confirmType: 'danger',
+      isProcessing: false,
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isProcessing: true }));
+        try {
+          if (targetOffer?._id) {
+            await offerService.delete(targetOffer._id);
+          }
+          if (targetOffer?.id && targetOffer?.id !== targetOffer?._id) {
+            await offerService.delete(targetOffer.id);
+          }
+          const nextList = offers.filter(
+            (o) => o.id !== targetOffer?.id && o._id !== targetOffer?._id && (o.id || o._id) !== offerId
+          );
+          if (onUpdateOffers) {
+            onUpdateOffers(nextList);
+          }
+          setConfirmModal({ isOpen: false, isProcessing: false });
+          notify('Offre supprimée avec succès ! 🗑️');
+        } catch (err) {
+          console.error('Erreur suppression offre:', err);
+          setConfirmModal((prev) => ({ ...prev, isProcessing: false }));
+          notify('Erreur lors de la suppression');
+        }
+      },
+    });
+  };
+
+  const handleDeleteAllOffers = () => {
+    if (!offers || offers.length === 0) return;
+    setConfirmModal({
+      isOpen: true,
+      title: 'Supprimer TOUTES les offres ?',
+      message: `Attention : Êtes-vous sûr de vouloir supprimer définitivement les ${offers.length} offres configurées ? Cette action videra complètement la vitrine des offres.`,
+      productName: `${offers.length} offres`,
+      confirmText: 'Oui, tout supprimer définitivement',
+      confirmType: 'danger',
+      isProcessing: false,
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isProcessing: true }));
+        try {
+          await offerService.deleteAll();
+          if (onUpdateOffers) {
+            onUpdateOffers([]);
+          }
+          setConfirmModal({ isOpen: false, isProcessing: false });
+          notify('Toutes les offres ont été supprimées avec succès ! 🗑️');
+        } catch (err) {
+          console.error('Erreur suppression totale des offres:', err);
+          setConfirmModal((prev) => ({ ...prev, isProcessing: false }));
+          notify('Erreur lors de la suppression');
+        }
+      },
+    });
+  };
+
+  const handleResetOffers = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Restaurer les 4 offres d\'origine ?',
+      message: 'Voulez-vous réinitialiser les 4 packs et offres promotionnelles d\'origine ?',
+      productName: 'Offres officielles',
+      confirmText: 'Oui, restaurer les packs',
+      confirmType: 'primary',
+      isProcessing: false,
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isProcessing: true }));
+        try {
+          const restored = await offerService.reset();
+          if (onUpdateOffers) {
+            onUpdateOffers(restored);
+          }
+          setConfirmModal({ isOpen: false, isProcessing: false });
+          notify('Packs et offres d\'origine restaurés avec succès ! ✨');
+        } catch (err) {
+          console.error('Erreur restauration offres:', err);
+          setConfirmModal((prev) => ({ ...prev, isProcessing: false }));
+          notify('Erreur lors de la restauration');
+        }
+      },
+    });
   };
 
   const handleOpenAddModal = () => {
@@ -961,7 +1495,7 @@ export default function AdminDashboard({
             <span>Retour à la boutique</span>
           </button>
 
-          {activeTab === 'products' ? (
+          {activeTab === 'products' && (
             <button
               type="button"
               className="admin-btn primary"
@@ -970,7 +1504,9 @@ export default function AdminDashboard({
               <Plus size={18} />
               <span>Ajouter un produit</span>
             </button>
-          ) : (
+          )}
+
+          {activeTab === 'hero' && (
             <button
               type="button"
               className="admin-btn primary"
@@ -978,6 +1514,17 @@ export default function AdminDashboard({
             >
               <Plus size={18} />
               <span>Ajouter au Carrousel</span>
+            </button>
+          )}
+
+          {activeTab === 'offers' && (
+            <button
+              type="button"
+              className="admin-btn primary offers-admin-add-btn"
+              onClick={handleOpenAddOfferModal}
+            >
+              <Plus size={18} />
+              <span>Créer une Offre / Pack</span>
             </button>
           )}
         </div>
@@ -1004,6 +1551,16 @@ export default function AdminDashboard({
             <Sparkles size={17} />
             <span>Carrousel de la Page d'Accueil (Hero 3D)</span>
             <span className="tab-count-badge hero-badge">{heroSlides.length}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`admin-tab-item ${activeTab === 'offers' ? 'active' : ''}`}
+            onClick={() => setActiveTab('offers')}
+          >
+            <Flame size={17} />
+            <span>Packs & Offres Spéciaux</span>
+            <span className="tab-count-badge offers-badge">{offers.length}</span>
           </button>
 
           <button
@@ -1215,6 +1772,221 @@ export default function AdminDashboard({
             ================================================================ */}
         {activeTab === 'orders' && (
           <OrdersManager notify={notify} onOrdersChange={handleOrdersChange} />
+        )}
+
+        {/* ================================================================
+            OFFERS & PACKS MANAGEMENT VIEW
+            ================================================================ */}
+        {activeTab === 'offers' && (
+          <div className="offers-manager-wrapper">
+            {/* Banner Guide */}
+            <div className="hero-manager-banner offers-manager-banner">
+              <div className="banner-icon-box offers-icon-box">
+                <Flame size={26} />
+              </div>
+              <div className="banner-text-box">
+                <h2 className="banner-heading">Gestion des Packs & Offres Promotionnelles</h2>
+                <p className="banner-subtext">
+                  Configurez vos formules d'abonnements 2-en-1 ("Packs Duo") et promotions exclusives.
+                  Combinez librement les abonnements de votre catalogue, ajustez la remise et publiez-les instantanément sur la vitrine.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="admin-btn primary add-offer-btn"
+                  onClick={handleOpenAddOfferModal}
+                >
+                  <Plus size={18} />
+                  <span>Créer une Offre / Pack</span>
+                </button>
+                {offers.length > 0 && (
+                  <button
+                    type="button"
+                    className="admin-btn"
+                    onClick={handleDeleteAllOffers}
+                    title="Supprimer définitivement toutes les offres configurées"
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      border: '1px solid rgba(239, 68, 68, 0.45)',
+                      color: '#f87171',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Trash2 size={16} />
+                    <span>Supprimer tout ({offers.length})</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Stats Strip */}
+            <div className="admin-control-strip offers-control-strip">
+              <div className="admin-strip-stats">
+                <span className="stats-pill">
+                  Total des offres : <strong>{offers.length}</strong>
+                </span>
+                <span className="stats-pill">
+                  Actives sur le site : <strong style={{ color: '#10b981' }}>{offers.filter((o) => o.isActive !== false).length}</strong>
+                </span>
+                <span className="stats-pill">
+                  Packs Duo : <strong>{offers.filter((o) => o.type === 'duo').length}</strong>
+                </span>
+                <span className="stats-pill">
+                  Super Promos : <strong>{offers.filter((o) => o.type === 'promo').length}</strong>
+                </span>
+              </div>
+            </div>
+
+            {/* Offers Grid */}
+            <div className="offers-admin-grid">
+              {offers.length === 0 ? (
+                <div className="hero-empty-state-card" style={{ gridColumn: '1 / -1' }}>
+                  <Flame size={44} color="#ff5722" />
+                  <h3>Aucune offre configurée pour le moment</h3>
+                  <p>Toutes les offres ont été supprimées. Vous pouvez créer de nouvelles offres personnalisées ou réinitialiser les packs par défaut.</p>
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '1.2rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="admin-btn primary"
+                      onClick={handleOpenAddOfferModal}
+                    >
+                      <Plus size={17} />
+                      <span>Créer une première offre</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-btn secondary"
+                      onClick={handleResetOffers}
+                    >
+                      <RefreshCw size={16} />
+                      <span>Restaurer les packs par défaut</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                offers.map((offer, index) => {
+                  const offerId = offer.id || offer._id || `offer-${index}`;
+                  const isDuo = offer.type === 'duo';
+                  const savingsDT = offer.originalPrice && offer.originalPrice > offer.price
+                    ? offer.originalPrice - offer.price
+                    : 0;
+                  const savingsPct = offer.originalPrice && offer.originalPrice > offer.price
+                    ? Math.round(((offer.originalPrice - offer.price) / offer.originalPrice) * 100)
+                    : 0;
+
+                  return (
+                    <div
+                      key={offerId}
+                      className={`admin-offer-card ${offer.isActive === false ? 'is-inactive' : ''}`}
+                    >
+                      {/* Card Header Tag */}
+                      <div className="admin-offer-top">
+                        <div className="admin-offer-tags-left">
+                          <span className={`admin-offer-type-pill ${isDuo ? 'duo' : 'promo'}`}>
+                            {isDuo ? '🤝 Pack Duo' : '⚡ Super Promo'}
+                          </span>
+                          {offer.badge && (
+                            <span className="admin-offer-badge-pill">{offer.badge}</span>
+                          )}
+                        </div>
+                        <div className="admin-offer-status-right">
+                          <span className={`status-indicator-dot ${offer.isActive !== false ? 'active' : 'inactive'}`} />
+                          <span className="status-indicator-text">
+                            {offer.isActive !== false ? 'Actif' : 'Masqué'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Card Body */}
+                      <div className="admin-offer-body">
+                        <div className="admin-offer-thumb-wrap">
+                          <img
+                            src={getImageUrl(offer.image || '/images/logo.png')}
+                            alt={offer.title}
+                            className="admin-offer-thumb"
+                          />
+                        </div>
+                        <div className="admin-offer-info">
+                          <h3 className="admin-offer-title">{offer.title}</h3>
+                          {offer.subtitle && (
+                            <p className="admin-offer-subtitle">{offer.subtitle}</p>
+                          )}
+                          <div className="admin-offer-meta-row">
+                            <span className="admin-offer-duration-tag">
+                              ⏳ {offer.duration || '1 Mois'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Included Items breakdown */}
+                      {Array.isArray(offer.items) && offer.items.length > 0 && (
+                        <div className="admin-offer-items-box">
+                          <span className="admin-offer-items-label">Contenu inclus :</span>
+                          <div className="admin-offer-items-list">
+                            {offer.items.map((item, i) => (
+                              <div key={i} className="admin-offer-item-chip">
+                                <Check size={12} color="#10b981" />
+                                <span>{item}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Price Strip */}
+                      <div className="admin-offer-pricing-strip">
+                        <div className="admin-offer-prices">
+                          <span className="admin-offer-price-val">{offer.price} DT</span>
+                          {offer.originalPrice && (
+                            <span className="admin-offer-price-orig">{offer.originalPrice} DT</span>
+                          )}
+                        </div>
+                        {savingsDT > 0 && (
+                          <div className="admin-offer-savings-pill">
+                            <span>Économie : -{savingsDT} DT ({savingsPct}%)</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions footer */}
+                      <div className="admin-offer-actions-footer">
+                        <button
+                          type="button"
+                          className={`offer-action-btn toggle-visibility ${offer.isActive === false ? 'reactivate' : ''}`}
+                          onClick={() => handleToggleOfferActive(offer)}
+                          title={offer.isActive !== false ? "Masquer cette offre du site" : "Activer cette offre"}
+                        >
+                          {offer.isActive !== false ? <EyeOff size={15} /> : <Eye size={15} />}
+                          <span>{offer.isActive !== false ? 'Masquer' : 'Activer'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className="offer-action-btn edit"
+                          onClick={() => handleOpenEditOfferModal(offer)}
+                          title="Modifier l'offre"
+                        >
+                          <Edit3 size={15} />
+                          <span>Modifier</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className="offer-action-btn delete"
+                          onClick={() => handleDeleteOffer(offer)}
+                          title="Supprimer l'offre"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         )}
 
         {/* ================================================================
@@ -2347,6 +3119,679 @@ export default function AdminDashboard({
                 </span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Offer Edit / Create Modal */}
+      {isOfferModalOpen && (
+        <div className="admin-modal-backdrop" onClick={() => !isSaving && setIsOfferModalOpen(false)}>
+          <div className="admin-modal-window offer-modal-window" onClick={(e) => e.stopPropagation()}>
+            {/* Loading Overlay During Save */}
+            {isSaving && (
+              <div className="modal-saving-overlay">
+                <div className="saving-spinner-box">
+                  <div className="saving-spinner-ring">
+                    <Loader2 className="saving-spin-icon" size={38} />
+                  </div>
+                  <h4 className="saving-title">Enregistrement de l'offre...</h4>
+                  <p className="saving-subtitle">
+                    Synchronisation et sauvegarde dans la base de données
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="modal-header">
+              <div className="modal-title-wrap">
+                <h2>{editingOfferId ? "Modifier l'offre spéciale" : "Créer une Offre / Pack Spécial"}</h2>
+                <p>Combinez des abonnements officiels à tarif préférentiel ou lancez une super promotion.</p>
+              </div>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => !isSaving && setIsOfferModalOpen(false)}
+                disabled={isSaving}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveOffer} className="modal-form-body">
+              {/* 1. Quick Catalog Combiner Box */}
+              <div className="offer-combiner-box">
+                <div className="combiner-header">
+                  <div className="combiner-header-title">
+                    <Sparkles size={17} className="combiner-sparkle-icon" />
+                    <h4>⚡ Sélection rapide depuis le catalogue :</h4>
+                    <span className="combiner-total-count">({products.length} abonnements disponibles)</span>
+                  </div>
+                </div>
+                <p className="combiner-help-text">
+                  Tous vos abonnements sont affichés ci-dessous (CapCut, Netflix, Claude, ChatGPT, Canva, Spotify, etc.). Cliquez sur un abonnement pour l'ajouter au pack :
+                </p>
+
+                {/* Search Bar for Subscriptions */}
+                <div className="combiner-search-bar">
+                  <Search size={15} className="combiner-search-icon" />
+                  <input
+                    type="text"
+                    className="combiner-search-input"
+                    placeholder="Rechercher un abonnement (ex: Capcut, Netflix, Canva, Claude, ChatGPT, Spotify...)"
+                    value={offerCombinerSearch}
+                    onChange={(e) => setOfferCombinerSearch(e.target.value)}
+                  />
+                  {offerCombinerSearch && (
+                    <button
+                      type="button"
+                      className="combiner-search-clear"
+                      onClick={() => setOfferCombinerSearch('')}
+                      title="Effacer la recherche"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* All Subscriptions Wrapped & Immediately Visible */}
+                <div className="combiner-chips-wrap">
+                  {filteredCombinerProducts.length === 0 ? (
+                    <div className="combiner-no-results">
+                      <span>Aucun abonnement ne correspond à "{offerCombinerSearch}"</span>
+                      <button
+                        type="button"
+                        className="clear-search-btn"
+                        onClick={() => setOfferCombinerSearch('')}
+                      >
+                        Afficher tous les {products.length} abonnements
+                      </button>
+                    </div>
+                  ) : (
+                    filteredCombinerProducts.map((p) => {
+                      const pId = String(p._id || p.id);
+                      const isSelected = selectedOfferProductIds.includes(pId);
+                      const pImg = p.images?.[0];
+                      const effPlan = getProductEffectivePlan(p);
+                      const displayPrice = effPlan?.price || p.price;
+                      return (
+                        <button
+                          key={pId}
+                          type="button"
+                          className={`product-combiner-chip ${isSelected ? 'selected' : ''}`}
+                          onClick={() => handleToggleProductInOffer(p)}
+                          title={`${p.name} - ${displayPrice} DT`}
+                        >
+                          {pImg && (
+                            <img
+                              src={getImageUrl(pImg)}
+                              alt={p.name}
+                              className="chip-product-icon"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          )}
+                          <span className="chip-name">{p.name}</span>
+                          {isSelected && effPlan?.duration && (
+                            <span className="chip-plan-badge">{effPlan.duration}</span>
+                          )}
+                          <span className="chip-price">{displayPrice} DT</span>
+                          {isSelected && <Check size={13} className="chip-check-icon" />}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Duration / Plan Selector for Products with Multiple Options */}
+                {selectedProductsWithMultiplePlans.length > 0 && (
+                  <div className="combiner-plan-selectors-box">
+                    <div className="plan-selectors-header">
+                      <Clock size={15} className="plan-selectors-icon" />
+                      <span className="plan-selectors-title">
+                        Choisir la durée de l'abonnement pour l'offre :
+                      </span>
+                      <span className="plan-selectors-hint">
+                        (Le prix exact sans remise et le titre du pack s'adaptent automatiquement à la durée)
+                      </span>
+                    </div>
+                    <div className="plan-selectors-list">
+                      {selectedProductsWithMultiplePlans.map((prod) => {
+                        const pId = String(prod._id || prod.id);
+                        const activePlan = getProductEffectivePlan(prod);
+                        const prodImg = prod.images?.[0];
+                        return (
+                          <div key={`plan-selector-${pId}`} className="product-plan-picker-row">
+                            <div className="product-plan-picker-info">
+                              {prodImg && (
+                                <img
+                                  src={getImageUrl(prodImg)}
+                                  alt={prod.name}
+                                  className="plan-picker-prod-thumb"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              )}
+                              <span className="plan-picker-prod-name">{prod.name}</span>
+                              <span className="plan-picker-active-badge">
+                                {activePlan?.duration || 'Standard'} ({activePlan?.price || prod.price} DT)
+                              </span>
+                            </div>
+                            <div className="plan-pills-row">
+                              {prod.plans.map((pl, idx) => {
+                                const isPlanActive =
+                                  (activePlan?.duration && activePlan.duration.trim().toLowerCase() === pl.duration?.trim().toLowerCase()) ||
+                                  (activePlan?._id && pl._id && String(activePlan._id) === String(pl._id)) ||
+                                  (Number(activePlan?.price) === Number(pl.price) && activePlan?.duration === pl.duration);
+                                return (
+                                  <button
+                                    key={pl._id || idx}
+                                    type="button"
+                                    className={`plan-pill-option ${isPlanActive ? 'active' : ''}`}
+                                    onClick={() => handleSelectProductPlan(prod, pl)}
+                                    title={`Choisir ${prod.name} - ${pl.duration} (${pl.price} DT)`}
+                                  >
+                                    <span className="plan-pill-duration">{pl.duration}</span>
+                                    <span className="plan-pill-price">{pl.price} DT</span>
+                                    {isPlanActive && <Check size={12} className="plan-pill-check" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {selectedOfferProductIds.length > 0 && (
+                  <div className="combiner-selected-summary">
+                    <Check size={14} />
+                    <span>{selectedOfferProductIds.length} abonnement(s) sélectionné(s) pour composer ce pack.</span>
+                    <button
+                      type="button"
+                      className="combiner-deselect-all-btn"
+                      onClick={() => {
+                        setSelectedOfferProductIds([]);
+                        setSelectedProductPlans({});
+                      }}
+                    >
+                      Désélectionner tout
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Title & Subtitle */}
+              <div className="form-row-group">
+                <label className="form-label">
+                  Titre du Pack / Offre <span className="req">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  required
+                  placeholder="Ex : Pack Duo : ChatGPT Plus + Midjourney Pro"
+                  value={offerForm.title}
+                  onChange={(e) => setOfferForm({ ...offerForm, title: e.target.value })}
+                />
+              </div>
+
+              <div className="form-row-group">
+                <label className="form-label">
+                  Sous-titre explicatif / Accroche
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Ex : Les deux meilleures IA du monde réunies dans un pack complet à prix réduit."
+                  value={offerForm.subtitle}
+                  onChange={(e) => setOfferForm({ ...offerForm, subtitle: e.target.value })}
+                />
+              </div>
+
+              {/* 3. Type, Badge & Duration */}
+              <div className="form-three-cols">
+                <div className="form-row-group">
+                  <label className="form-label">Type d'offre</label>
+                  <select
+                    className="form-select"
+                    value={offerForm.type}
+                    onChange={(e) => setOfferForm({ ...offerForm, type: e.target.value })}
+                  >
+                    <option value="duo">🤝 Pack Duo (2 abonnements)</option>
+                    <option value="promo">⚡ Super Promo individuelle</option>
+                  </select>
+                </div>
+
+                <div className="form-row-group">
+                  <label className="form-label">Badge accrocheur</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Ex : PACK DUO ÉCONOMIQUE"
+                    value={offerForm.badge}
+                    onChange={(e) => setOfferForm({ ...offerForm, badge: e.target.value })}
+                  />
+                </div>
+
+                <div className="form-row-group">
+                  <label className="form-label">Durée de l'offre</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="Ex : 1 Mois, 3 Mois, 1 An..."
+                    value={offerForm.duration}
+                    onChange={(e) => setOfferForm({ ...offerForm, duration: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* 4. Pricing & Savings calculation */}
+              <div className="form-two-cols">
+                <div className="form-row-group">
+                  <div className="form-label-with-action">
+                    <label className="form-label">
+                      Prix promo final (DT) <span className="req">*</span>
+                    </label>
+                    {selectedProductsSum > 0 && (
+                      <button
+                        type="button"
+                        className="calc-sum-inline-btn"
+                        onClick={() => setOfferForm((prev) => ({ ...prev, price: selectedProductsSum }))}
+                        title="Appliquer la somme exacte des abonnements sans remise"
+                      >
+                        <Calculator size={13} />
+                        <span>Somme sans remise : {selectedProductsSum} DT</span>
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="number"
+                    className="form-input price-input-highlight"
+                    required
+                    min="1"
+                    placeholder={selectedProductsSum ? `Ex : ${selectedProductsSum}` : "Ex : 69"}
+                    value={offerForm.price}
+                    onChange={(e) => setOfferForm({ ...offerForm, price: e.target.value })}
+                  />
+                  {selectedProductsSum > 0 && (
+                    <div className="price-sub-helpers">
+                      <button
+                        type="button"
+                        className={`price-pill-btn ${Number(offerForm.price) === selectedProductsSum ? 'active' : ''}`}
+                        onClick={() => setOfferForm((prev) => ({ ...prev, price: selectedProductsSum }))}
+                        title="Fixer le prix promo sur la somme exacte des abonnements"
+                      >
+                        <Check size={12} className="pill-check-icon" />
+                        <span>Somme abonnements : <strong>{selectedProductsSum} DT</strong></span>
+                      </button>
+                      {selectedProductsOrigSum > selectedProductsSum && (
+                        <button
+                          type="button"
+                          className={`price-pill-btn ${Number(offerForm.price) === selectedProductsOrigSum ? 'active' : ''}`}
+                          onClick={() => setOfferForm((prev) => ({ ...prev, price: selectedProductsOrigSum }))}
+                          title="Fixer sur le total des prix d'origine sans remise"
+                        >
+                          <span>Prix d'origine : <strong>{selectedProductsOrigSum} DT</strong></span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                <div className="form-row-group">
+                  <div className="form-label-with-action">
+                    <label className="form-label">
+                      Prix d'origine sans remise (DT)
+                    </label>
+                    {selectedProductsOrigSum > 0 && Number(offerForm.originalPrice) !== selectedProductsOrigSum && (
+                      <button
+                        type="button"
+                        className="calc-sum-inline-btn"
+                        onClick={() => setOfferForm((prev) => ({ ...prev, originalPrice: selectedProductsOrigSum }))}
+                        title="Rétablir le prix d'origine calculé"
+                      >
+                        <Calculator size={13} />
+                        <span>Origine : {selectedProductsOrigSum} DT</span>
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="number"
+                    className="form-input"
+                    min="1"
+                    placeholder="Ex : 90"
+                    value={offerForm.originalPrice}
+                    onChange={(e) => setOfferForm({ ...offerForm, originalPrice: e.target.value })}
+                  />
+                  {selectedProductsOrigSum > 0 && (
+                    <div className="price-sub-helpers">
+                      <span className="price-sub-info">
+                        Somme d'origine ({currentOfferProducts.length} abt.) : <strong>{selectedProductsOrigSum} DT</strong>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Dynamic Savings Display */}
+              {offerForm.price && offerForm.originalPrice && Number(offerForm.originalPrice) > Number(offerForm.price) && (
+                <div className="offer-dynamic-savings-banner">
+                  <Tag size={16} />
+                  <span>
+                    Économie offerte au client : <strong>{Number(offerForm.originalPrice) - Number(offerForm.price)} DT</strong>
+                    {' '}(soit une réduction immédiate de <strong>{Math.round(((Number(offerForm.originalPrice) - Number(offerForm.price)) / Number(offerForm.originalPrice)) * 100)}%</strong>)
+                  </span>
+                </div>
+              )}
+
+              {/* 5. Contenu inclus (Items) */}
+              <div className="form-row-group">
+                <label className="form-label">
+                  Abonnements / Éléments inclus dans ce pack (1 par ligne)
+                </label>
+                <textarea
+                  className="form-textarea"
+                  rows="3"
+                  placeholder="ChatGPT Plus (Compte officiel garanti)&#10;Midjourney Pro (Génération illimitée)"
+                  value={offerForm.itemsText}
+                  onChange={(e) => setOfferForm({ ...offerForm, itemsText: e.target.value })}
+                />
+                <span className="form-help-tip">
+                  Ces éléments s'afficheront séparés par un signe "+" stylisé sur la fiche de l'offre.
+                </span>
+              </div>
+
+              {/* 6. Caractéristiques & Avantages */}
+              <div className="form-row-group">
+                <label className="form-label">
+                  Avantages et garanties (1 par ligne)
+                </label>
+                <textarea
+                  className="form-textarea"
+                  rows="3"
+                  placeholder="Accès privé et individuel 100% garanti&#10;Livraison express sur votre email&#10;Assistance technique 7j/7"
+                  value={offerForm.featuresText}
+                  onChange={(e) => setOfferForm({ ...offerForm, featuresText: e.target.value })}
+                />
+              </div>
+
+              {/* 7. Image Management Section (Per-Item Images & Cover Image) */}
+              <div className="offer-images-mgmt-section">
+                <div className="images-mgmt-header">
+                  <ImageIcon size={18} className="images-mgmt-icon" />
+                  <div>
+                    <h4>📸 Personnalisation des photos & logos des abonnements :</h4>
+                    <p>
+                      Modifiez l'image individuelle de chaque abonnement du pack. Elles s'afficheront en éventail dynamique sur le site.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Grid of Item Image Customizers */}
+                {displayOfferItems.length > 0 && (
+                  <div className="offer-items-images-grid">
+                    {displayOfferItems.map((item, itemIdx) => {
+                      const currentItemImg =
+                        offerForm.itemImages?.[itemIdx] ||
+                        resolveOfferItemImage(item, itemIdx, offerForm, products) ||
+                        '/images/logo.png';
+                      const cleanItemName = item.split(/[-—–(]/)[0].trim();
+
+                      return (
+                        <div key={itemIdx} className="offer-item-image-card">
+                          <div className="item-card-header">
+                            <span className="item-index-badge">Abonnement {itemIdx + 1}</span>
+                            <span className="item-card-name" title={item}>{cleanItemName}</span>
+                          </div>
+
+                          <div className="item-image-preview-and-actions">
+                            <div className="item-thumbnail-box">
+                              <img
+                                src={getImageUrl(currentItemImg)}
+                                alt={cleanItemName}
+                                className="item-preview-img"
+                                onError={(e) => {
+                                  e.currentTarget.src = '/images/logo.png';
+                                }}
+                              />
+                            </div>
+
+                            <div className="item-image-inputs">
+                              <div className="upload-and-url-row">
+                                <input
+                                  type="text"
+                                  className="form-input form-input-sm"
+                                  placeholder="Coller l'URL de l'image..."
+                                  value={offerForm.itemImages?.[itemIdx] || ''}
+                                  onChange={(e) => handleItemImageUrlChange(e.target.value, itemIdx)}
+                                />
+                                <label className="upload-btn-styled" title="Téléverser une image depuis votre appareil">
+                                  <Upload size={14} />
+                                  <span>Téléverser</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    onChange={(e) => handleItemImageUpload(e.target.files?.[0], itemIdx)}
+                                  />
+                                </label>
+                              </div>
+
+                              {/* Quick pick from catalog product images */}
+                              {products.length > 0 && (
+                                <div className="quick-logo-picker">
+                                  <span className="quick-logo-label">Logos rapides :</span>
+                                  <div className="quick-logo-chips">
+                                    {products.slice(0, 8).map((prod) => {
+                                      const prodImg = prod.images?.[0];
+                                      if (!prodImg) return null;
+                                      const isCurrent = currentItemImg === prodImg;
+                                      return (
+                                        <button
+                                          key={prod._id || prod.id}
+                                          type="button"
+                                          className={`quick-logo-chip ${isCurrent ? 'active' : ''}`}
+                                          onClick={() => handleItemImageUrlChange(prodImg, itemIdx)}
+                                          title={`Utiliser le logo de ${prod.name}`}
+                                        >
+                                          <img src={getImageUrl(prodImg)} alt={prod.name} />
+                                          <span>{prod.name.split(/[-—–(]/)[0].trim().slice(0, 10)}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Main Cover Image & Color Halo */}
+                <div className="form-two-cols offer-cover-halo-row">
+                  <div className="form-row-group">
+                    <label className="form-label">
+                      Image de couverture principale (Vignette globale)
+                    </label>
+                    <div className="offer-main-img-wrap">
+                      <div className="main-thumb-box">
+                        <img
+                          src={getImageUrl(offerForm.image || '/images/logo.png')}
+                          alt="Cover"
+                          className="main-preview-img"
+                          onError={(e) => {
+                            e.currentTarget.src = '/images/logo.png';
+                          }}
+                        />
+                      </div>
+                      <div className="main-img-inputs">
+                        <div className="offer-img-picker-row">
+                          <input
+                            type="text"
+                            className="form-input"
+                            placeholder="URL de l'image de couverture"
+                            value={offerForm.image}
+                            onChange={(e) => setOfferForm({ ...offerForm, image: e.target.value })}
+                          />
+                          <label className="upload-inline-btn" title="Téléverser une image de couverture">
+                            <Upload size={16} />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              style={{ display: 'none' }}
+                              onChange={handleOfferImageUpload}
+                            />
+                          </label>
+                        </div>
+                        {offerForm.itemImages && offerForm.itemImages.length > 0 && (
+                          <div className="copy-item-img-actions">
+                            <span className="copy-label">Remplacer par :</span>
+                            {offerForm.itemImages.map((img, idx) => {
+                              if (!img) return null;
+                              return (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  className="copy-img-btn"
+                                  onClick={() => setOfferForm((prev) => ({ ...prev, image: img }))}
+                                >
+                                  Image Abonnement {idx + 1}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="form-row-group">
+                    <label className="form-label">Couleur d'ambiance (Halo)</label>
+                    <div className="offer-color-picker-row">
+                      <input
+                        type="color"
+                        className="hero-native-color-picker"
+                        value={offerForm.bgColor || '#ff5722'}
+                        onChange={(e) => setOfferForm({ ...offerForm, bgColor: e.target.value })}
+                      />
+                      <input
+                        type="text"
+                        className="form-input"
+                        value={offerForm.bgColor || '#ff5722'}
+                        onChange={(e) => setOfferForm({ ...offerForm, bgColor: e.target.value })}
+                      />
+                    </div>
+                    {/* Preset color dots */}
+                    <div className="offer-color-presets">
+                      {['#ff5722', '#10a37f', '#00c4cc', '#6366f1', '#ec4899', '#f59e0b', '#3b82f6'].map((hex) => (
+                        <button
+                          key={hex}
+                          type="button"
+                          className={`color-dot-btn ${(offerForm.bgColor || '').toLowerCase() === hex.toLowerCase() ? 'active' : ''}`}
+                          style={{ background: hex }}
+                          onClick={() => setOfferForm({ ...offerForm, bgColor: hex })}
+                          title={hex}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mini Live Fanned Deck Preview inside Modal */}
+                {displayOfferItems.length > 0 && (
+                  <div className="offer-modal-live-preview">
+                    <div className="modal-preview-title">
+                      <Sparkles size={14} />
+                      <span>Aperçu direct de l'affichage des cartes sur le site :</span>
+                    </div>
+                    <div
+                      className="modal-fanned-preview-box"
+                      style={{
+                        background: `radial-gradient(ellipse 90% 75% at 50% 34%, ${offerForm.bgColor || '#ff5722'}25 0%, rgba(15, 23, 42, 0.8) 60%, #060913 100%)`,
+                        borderColor: `${offerForm.bgColor || '#ff5722'}40`,
+                      }}
+                    >
+                      <div className="offer-fanned-deck">
+                        {displayOfferItems.map((item, itemIdx) => {
+                          const itemImg =
+                            offerForm.itemImages?.[itemIdx] ||
+                            resolveOfferItemImage(item, itemIdx, offerForm, products) ||
+                            '/images/logo.png';
+                          const totalItems = displayOfferItems.length;
+                          let fanPosClass = 'fan-single';
+                          if (totalItems === 2) {
+                            fanPosClass = itemIdx === 0 ? 'fan-left' : 'fan-right';
+                          } else if (totalItems >= 3) {
+                            fanPosClass = itemIdx === 0 ? 'fan-left' : itemIdx === 1 ? 'fan-center' : 'fan-right';
+                          }
+                          const cleanName = item.split(/[-—–(]/)[0].trim();
+
+                          return (
+                            <div key={itemIdx} className={`fanned-product-card ${fanPosClass}`} title={item}>
+                              <div className="fanned-card-inner">
+                                <img
+                                  src={getImageUrl(itemImg)}
+                                  alt={item}
+                                  className="fanned-card-img"
+                                  onError={(e) => {
+                                    e.currentTarget.src = '/images/logo.png';
+                                  }}
+                                />
+                                <div className="fanned-card-overlay-badge">
+                                  <span className="badge-name">{cleanName}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {displayOfferItems.length === 2 && (
+                          <div className="fanned-plus-connector" title="Pack Combiné">
+                            <Plus size={13} strokeWidth={3} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 8. Active Checkbox */}
+              <div className="form-checkbox-row">
+                <label className="checkbox-custom-label">
+                  <input
+                    type="checkbox"
+                    checked={offerForm.isActive}
+                    onChange={(e) => setOfferForm({ ...offerForm, isActive: e.target.checked })}
+                  />
+                  <span>Rendre cette offre immédiatement active et visible sur le site</span>
+                </label>
+              </div>
+
+              <div className="modal-footer-actions">
+                <button
+                  type="button"
+                  className="admin-btn secondary"
+                  onClick={() => setIsOfferModalOpen(false)}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="admin-btn primary"
+                  disabled={isSaving}
+                >
+                  <Check size={18} />
+                  <span>{editingOfferId ? 'Enregistrer les modifications' : 'Publier cette offre'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

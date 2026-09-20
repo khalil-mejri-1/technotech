@@ -13,13 +13,17 @@ import {
   ArrowRight,
   ShieldCheck,
   ChevronDown,
+  Zap,
+  Flame,
+  Check,
+  Headphones
 } from 'lucide-react';
 
 export default function ContactPage({ onNavigate, showToast }) {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
-    subject: 'Renseignement sur un produit',
+    subject: 'Renseignement sur un abonnement',
     message: '',
   });
 
@@ -79,7 +83,7 @@ export default function ContactPage({ onNavigate, showToast }) {
 
   const openWhatsAppDirect = () => {
     const text = encodeURIComponent(
-      `Bonjour TechnoTech, je vous contacte concernant : ${formData.subject}.%0A%0A*Nom :* ${formData.name || 'Client'}%0A*Téléphone :* ${formData.phone || ''}%0A*Message :* ${formData.message || 'Bonjour, j\'ai une question.'}`
+      `Bonjour TechnoTech ! 👋\nJe vous contacte concernant : *${formData.subject}*\n\n👤 *Nom :* ${formData.name || 'Client'}\n📞 *Téléphone :* ${formData.phone || ''}\n💬 *Message :* ${formData.message || 'Bonjour, j\'ai une question sur vos abonnements.'}`
     );
     window.open(`https://wa.me/21696086581?text=${text}`, '_blank');
   };
@@ -87,299 +91,459 @@ export default function ContactPage({ onNavigate, showToast }) {
   const faqs = [
     {
       q: 'Comment s\'effectue l\'activation après ma commande ?',
-      a: 'Une fois votre commande enregistrée, notre équipe vous contacte immédiatement via WhatsApp ou par téléphone pour vous transmettre vos accès officiels ou procéder à l\'invitation directe sur votre e-mail personnel.',
+      a: 'Une fois votre commande enregistrée, notre équipe vous contacte immédiatement via WhatsApp ou par téléphone pour vous transmettre vos accès officiels ou procéder à l\'invitation directe sur votre e-mail personnel en moins de 15 minutes.',
     },
     {
       q: 'Quels sont les modes de paiement acceptés en Tunisie ?',
       a: 'Nous acceptons les règlements par D17, virement bancaire local instantané, ou paiement en espèces à la livraison selon le type de produit. Vous n\'avez besoin d\'aucune carte internationale en devises.',
     },
     {
-      q: 'Est-ce que tous les abonnements sont garantis ?',
+      q: 'Est-ce que tous les abonnements sont 100% garantis ?',
       a: 'Absolument. Tous nos comptes sont 100% officiels et assortis d\'une garantie de remplacement immédiat pendant toute la durée de votre période de souscription.',
     },
     {
       q: 'Puis-je commander pour une entreprise ou une agence ?',
-      a: 'Oui, nous fournissons des formules multi-utilisateurs et des licences en volume adaptées aux agences de marketing, équipes de développement et entreprises en Tunisie.',
+      a: 'Oui, nous fournissons des formules multi-utilisateurs et des licences en volume adaptées aux agences de marketing, équipes de développement et entreprises partout en Tunisie avec facturation officielle.',
+    },
+    {
+      q: 'Que faire si j\'ai un problème de connexion avec mon compte ?',
+      a: 'Notre support technique est joignable 7j/7 sur WhatsApp. Il vous suffit d\'envoyer un message et notre technicien prend en charge votre demande en quelques minutes.',
     },
   ];
 
   return (
-    <div className="subpage-container">
-      {/* Ambient background glow */}
-      <div className="subpage-ambient-orb" />
-
-      {/* Hero Header */}
-      <section className="contact-hero-section">
-        <div className="contact-hero-badge">
-          <Sparkles size={15} />
-          <span>CONTACTEZ-NOUS &bull; SERVICE CLIENT 7J/7</span>
-        </div>
-
-        <h1 className="contact-hero-title">
-          Une question ? Besoin d'<span className="gradient-text-orange">assistance</span> ?
-        </h1>
-
-        <p className="contact-hero-subtitle">
-          Notre équipe tunisienne est à votre entière disposition pour vous guider, vous assister dans l'activation 
-          de vos services ou répondre à toutes vos interrogations.
-        </p>
-      </section>
-
-      {/* Quick Direct Channels Cards */}
-      <section className="contact-channels-grid">
-        {/* WhatsApp Card */}
-        <div className="channel-card whatsapp-featured">
-          <div className="channel-icon-circle whatsapp">
-            <MessageCircle size={26} />
-          </div>
-          <span className="channel-tag">CANAL RECOMMANDÉ</span>
-          <h3>WhatsApp Direct</h3>
-          <p className="channel-detail">+216 96 086 581</p>
-          <span className="channel-subtext">Réponse en direct en moins de 10 minutes ⚡</span>
-          <a
-            href="https://wa.me/21696086581?text=Bonjour%20TechnoTech,%20je%20souhaite%20un%20renseignement."
-            target="_blank"
-            rel="noopener noreferrer"
-            className="channel-btn whatsapp"
-          >
-            <MessageCircle size={16} />
-            <span>Discuter sur WhatsApp</span>
-          </a>
-        </div>
-
-        {/* Phone Call Card */}
-        <div className="channel-card">
-          <div className="channel-icon-circle phone">
-            <Phone size={26} />
-          </div>
-          <span className="channel-tag">APPEL TÉLÉPHONIQUE</span>
-          <h3>Assistance Vocale</h3>
-          <p className="channel-detail">+216 96 086 581</p>
-          <span className="channel-subtext">Disponible 7j/7 de 9h00 à 22h00</span>
-          <a href="tel:+21696086581" className="channel-btn phone">
-            <Phone size={16} />
-            <span>Appeler notre équipe</span>
-          </a>
-        </div>
-
-        {/* Location & Email Card */}
-        <div className="channel-card">
-          <div className="channel-icon-circle email">
-            <MapPin size={26} />
-          </div>
-          <span className="channel-tag">COUVERTURE NATIONALE</span>
-          <h3>Toute la Tunisie</h3>
-          <p className="channel-detail">Grand Tunis &amp; Régions</p>
-          <span className="channel-subtext">contact@technotech.tn</span>
-          <a href="mailto:contact@technotech.tn" className="channel-btn email">
-            <Mail size={16} />
-            <span>Envoyer un e-mail</span>
-          </a>
-        </div>
-      </section>
-
-      {/* Split Section: Contact Form + FAQ */}
-      <section className="contact-split-section">
-        {/* Left Column: Form */}
-        <div className="contact-form-card">
-          <div className="form-card-header">
-            <span className="form-card-tag">FORMULAIRE DE MESSAGE</span>
-            <h2>Envoyez-nous un message</h2>
-            <p>Remplissez le formulaire ci-dessous et notre conseiller prendra contact avec vous sans délai.</p>
+    <div className="offers-page-root contact-page-root">
+      {/* 1. Dark Top Section with Slanted / Angled Bottom (Matching OffersPage) */}
+      <section className="offers-dark-hero-slanted">
+        <div className="offers-hero-content-wrap">
+          {/* Header Badge */}
+          <div className="offers-header-badge">
+            <Sparkles size={14} className="badge-sparkle-icon" />
+            <span>SERVICE CLIENT 7J/7 &bull; CONTACTEZ-NOUS</span>
           </div>
 
-          {submitted ? (
-            <div className="contact-success-box">
-              <CheckCircle2 size={52} className="success-icon" />
-              <h3>Message envoyé avec succès !</h3>
-              <p>Merci pour votre confiance. Notre équipe vous recontactera sur votre numéro dans les plus brefs délais.</p>
-              <div className="success-actions">
-                <button
-                  type="button"
-                  className="channel-btn whatsapp"
-                  onClick={openWhatsAppDirect}
-                >
-                  <MessageCircle size={17} />
-                  <span>Accélérer sur WhatsApp</span>
-                </button>
-                <button
-                  type="button"
-                  className="channel-btn secondary"
-                  onClick={() => {
-                    setSubmitted(false);
-                    setFormData({ name: '', phone: '', subject: 'Renseignement sur un produit', message: '' });
-                  }}
-                >
-                  <span>Envoyer un autre message</span>
-                </button>
-              </div>
+          {/* Main Title */}
+          <h1 className="offers-main-title">
+            Une Question ? Besoin d'<span className="highlight-gradient">Assistance</span> Immédiate ?
+          </h1>
+
+          {/* Subtitle */}
+          <p className="offers-sub-title">
+            Notre équipe tunisienne est à votre entière disposition 7j/7 pour vous guider, vous assister 
+            dans l'activation de vos abonnements ou répondre à toutes vos interrogations.
+          </p>
+
+          {/* Reassurance Trust Pills (Same as OffersPage) */}
+          <div className="offers-trust-pills">
+            <div className="trust-pill">
+              <MessageCircle size={14} className="trust-icon zap" />
+              <span>Réponse WhatsApp &lt; 10 Min</span>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="contact-form" noValidate>
-              {errorMsg && (
-                <div className="contact-error-notice animate-shake">
-                  <AlertTriangle size={18} />
-                  <span>{errorMsg}</span>
-                </div>
-              )}
+            <div className="trust-pill">
+              <Phone size={14} className="trust-icon shield" />
+              <span>Assistance Vocale 9h - 22h</span>
+            </div>
+            <div className="trust-pill">
+              <ShieldCheck size={14} className="trust-icon gift" />
+              <span>Garantie &amp; Suivi Dédié</span>
+            </div>
+          </div>
+        </div>
+      </section>
 
-              {/* Name Field */}
-              <div className="form-field-group">
-                <label className="form-label" htmlFor="contact-name">
-                  <span>Nom complet (الاسم واللقب)</span>
-                  <span className="required-star">*</span>
-                </label>
-                <div className={`form-input-wrapper ${touched.name && !isNameValid ? 'has-error' : ''}`}>
-                  <input
-                    id="contact-name"
-                    type="text"
-                    className="form-input"
-                    placeholder="Ex: Mohamed Ben Ali"
-                    value={formData.name}
-                    onChange={handleNameChange}
-                    onBlur={() => setTouched((p) => ({ ...p, name: true }))}
-                    required
-                  />
-                  {touched.name && isNameValid && (
-                    <span className="valid-check-badge">✓</span>
-                  )}
-                </div>
-                {touched.name && hasDigitsInName && (
-                  <span className="field-hint-error">Le nom ne doit contenir aucun chiffre.</span>
-                )}
+      {/* 2. White Section Below with Contact Cards (Matching OffersPage Style) */}
+      <section className="offers-white-body-section contact-white-section">
+        <div className="offers-cards-container">
+          {/* Section Header */}
+          <div className="about-section-header-block">
+            <span className="about-section-tag">
+              <Flame size={13} />
+              <span>CANAUX DE CONTACT DIRECTS</span>
+            </span>
+            <h2 className="about-section-main-heading">
+              Comment Préférez-Vous Nous Joindre ?
+            </h2>
+            <p className="about-section-subheading">
+              Choisissez le canal qui vous convient le mieux. Notre équipe réagit en direct pour vous garantir une satisfaction totale.
+            </p>
+          </div>
+
+          {/* 3 Channels Grid (Styled identically to the Offer Cards) */}
+          <div className="contact-channels-trio-grid">
+            {/* Card 1: WhatsApp Direct (Featured) */}
+            <div className="offer-card contact-channel-card whatsapp-highlighted">
+              <div className="offer-card-glow whatsapp-glow" />
+
+              <div className="offer-card-header">
+                <span className="offer-badge-pill whatsapp-badge">
+                  <Flame size={12} />
+                  <span>CANAL RECOMMANDÉ</span>
+                </span>
+                <span className="offer-duration-pill">
+                  <Zap size={11} />
+                  <span>&lt; 10 min</span>
+                </span>
               </div>
 
-              {/* Phone Field */}
-              <div className="form-field-group">
-                <label className="form-label" htmlFor="contact-phone">
-                  <span>Numéro de téléphone (رقم الهاتف)</span>
-                  <span className="required-star">* (8 chiffres)</span>
-                </label>
-                <div className={`form-input-wrapper ${touched.phone && !isPhoneValid ? 'has-error' : ''}`}>
-                  <span className="input-country-prefix">+216</span>
-                  <input
-                    id="contact-phone"
-                    type="tel"
-                    inputMode="numeric"
-                    className="form-input"
-                    placeholder="Ex: 98 123 456"
-                    value={formData.phone}
-                    onChange={handlePhoneChange}
-                    onBlur={() => setTouched((p) => ({ ...p, phone: true }))}
-                    maxLength={8}
-                    required
-                  />
-                  {touched.phone && isPhoneValid && (
-                    <span className="valid-check-badge">✓</span>
-                  )}
+              <div className="offer-card-body">
+                <div className="channel-icon-top whatsapp">
+                  <MessageCircle size={28} />
                 </div>
-                {touched.phone && !isPhoneValid && (
-                  <span className="field-hint-error">Le numéro doit comporter exactement 8 chiffres.</span>
-                )}
-              </div>
+                <h2 className="offer-card-title">WhatsApp Direct</h2>
+                <p className="offer-card-subtitle">
+                  Le moyen le plus rapide pour obtenir une réponse immédiate, commander un abonnement ou demander une assistance technique en direct.
+                </p>
 
-              {/* Subject Dropdown */}
-              <div className="form-field-group">
-                <label className="form-label" htmlFor="contact-subject">
-                  <span>Sujet de votre demande</span>
-                </label>
-                <div className="form-input-wrapper">
-                  <select
-                    id="contact-subject"
-                    className="form-select"
-                    value={formData.subject}
-                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  >
-                    <option value="Renseignement sur un produit">Renseignement sur un produit ou abonnement</option>
-                    <option value="Abonnement IA (ChatGPT, Claude...)">Abonnements Intelligence Artificielle</option>
-                    <option value="Licence Windows ou Office">Licences Logicielles (Windows, Office...)</option>
-                    <option value="Assistance & Activation">Assistance à l'activation</option>
-                    <option value="Demande Entreprise / Agence">Demande de devis Entreprise / Agence</option>
-                    <option value="Autre demande">Autre demande</option>
-                  </select>
+                <div className="channel-info-pill-box">
+                  <span className="channel-info-label">Numéro WhatsApp :</span>
+                  <span className="channel-info-val">+216 96 086 581</span>
                 </div>
+
+                <ul className="offer-features-list">
+                  <li className="offer-feature-item">
+                    <Check size={12} className="feature-check" strokeWidth={3} />
+                    <span>Réponse instantanée garantie 7j/7</span>
+                  </li>
+                  <li className="offer-feature-item">
+                    <Check size={12} className="feature-check" strokeWidth={3} />
+                    <span>Envoi instantané des identifiants et accès</span>
+                  </li>
+                </ul>
               </div>
 
-              {/* Message Field */}
-              <div className="form-field-group">
-                <label className="form-label" htmlFor="contact-message">
-                  <span>Votre message</span>
-                  <span className="required-star">*</span>
-                </label>
-                <textarea
-                  id="contact-message"
-                  rows={4}
-                  className="form-textarea"
-                  placeholder="Décrivez votre besoin ou posez votre question en toute simplicité..."
-                  value={formData.message}
-                  onChange={(e) => {
-                    setFormData({ ...formData, message: e.target.value });
-                    if (errorMsg) setErrorMsg(null);
-                  }}
-                  required
-                />
-              </div>
-
-              <div className="form-actions-row">
-                <button type="submit" className="contact-submit-btn">
-                  <Send size={16} />
-                  <span>Envoyer ma demande</span>
-                </button>
-
-                <button
-                  type="button"
-                  className="contact-whatsapp-alt-btn"
-                  onClick={openWhatsAppDirect}
-                  title="Envoyer directement sur WhatsApp"
+              <div className="offer-card-footer">
+                <a
+                  href="https://wa.me/21696086581?text=Bonjour%20TechnoTech%20!%20👋%20Je%20souhaite%20un%20renseignement%20sur%20vos%20abonnements."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="offer-order-btn channel-whatsapp-cta"
                 >
                   <MessageCircle size={16} />
-                  <span>Envoyer via WhatsApp</span>
-                </button>
+                  <span>Discuter sur WhatsApp</span>
+                </a>
               </div>
-            </form>
-          )}
-        </div>
+            </div>
 
-        {/* Right Column: FAQ Accordion */}
-        <div className="contact-faq-wrapper">
-          <div className="faq-card-header">
-            <span className="form-card-tag">QUESTIONS FRÉQUENTES</span>
-            <h2>Réponses rapides</h2>
-            <p>Retrouvez les réponses aux questions les plus posées par nos clients.</p>
-          </div>
+            {/* Card 2: Phone Call */}
+            <div className="offer-card contact-channel-card">
+              <div className="offer-card-glow" />
 
-          <div className="faq-accordion-list">
-            {faqs.map((faq, idx) => (
-              <div
-                key={idx}
-                className={`faq-item-card ${expandedFaq === idx ? 'expanded' : ''}`}
-                onClick={() => setExpandedFaq(expandedFaq === idx ? null : idx)}
-              >
-                <div className="faq-question-row">
-                  <div className="faq-q-left">
-                    <HelpCircle size={18} className="faq-icon" />
-                    <h4>{faq.q}</h4>
-                  </div>
-                  <ChevronDown
-                    size={18}
-                    className={`faq-chevron ${expandedFaq === idx ? 'open' : ''}`}
-                  />
+              <div className="offer-card-header">
+                <span className="offer-badge-pill">
+                  <Phone size={12} />
+                  <span>APPEL DIRECT</span>
+                </span>
+                <span className="offer-duration-pill">
+                  <Clock size={11} />
+                  <span>9h00 - 22h00</span>
+                </span>
+              </div>
+
+              <div className="offer-card-body">
+                <div className="channel-icon-top phone">
+                  <Phone size={28} />
                 </div>
-                {expandedFaq === idx && (
-                  <div className="faq-answer-content">
-                    <p>{faq.a}</p>
-                  </div>
-                )}
+                <h2 className="offer-card-title">Assistance Téléphonique</h2>
+                <p className="offer-card-subtitle">
+                  Vous préférez échanger de vive voix avec un conseiller ? Nous sommes disponibles par téléphone chaque jour.
+                </p>
+
+                <div className="channel-info-pill-box">
+                  <span className="channel-info-label">Ligne directe :</span>
+                  <span className="channel-info-val">+216 96 086 581</span>
+                </div>
+
+                <ul className="offer-features-list">
+                  <li className="offer-feature-item">
+                    <Check size={12} className="feature-check" strokeWidth={3} />
+                    <span>Conseils personnalisés pour le choix d'offres</span>
+                  </li>
+                  <li className="offer-feature-item">
+                    <Check size={12} className="feature-check" strokeWidth={3} />
+                    <span>Disponible du Lundi au Dimanche</span>
+                  </li>
+                </ul>
               </div>
-            ))}
+
+              <div className="offer-card-footer">
+                <a href="tel:+21696086581" className="offer-whatsapp-btn channel-phone-cta">
+                  <Phone size={15} />
+                  <span>Appeler notre équipe</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Card 3: Email & National Coverage */}
+            <div className="offer-card contact-channel-card">
+              <div className="offer-card-glow" />
+
+              <div className="offer-card-header">
+                <span className="offer-badge-pill">
+                  <Mail size={12} />
+                  <span>E-MAIL &amp; PRO</span>
+                </span>
+                <span className="offer-duration-pill">
+                  <Clock size={11} />
+                  <span>&lt; 2 heures</span>
+                </span>
+              </div>
+
+              <div className="offer-card-body">
+                <div className="channel-icon-top email">
+                  <Mail size={28} />
+                </div>
+                <h2 className="offer-card-title">E-mail &amp; Devis Entreprise</h2>
+                <p className="offer-card-subtitle">
+                  Pour les demandes d'entreprises, factures officielles, devis en volume ou questions administratives.
+                </p>
+
+                <div className="channel-info-pill-box">
+                  <span className="channel-info-label">E-mail officiel :</span>
+                  <span className="channel-info-val">contact@technotech.tn</span>
+                </div>
+
+                <ul className="offer-features-list">
+                  <li className="offer-feature-item">
+                    <Check size={12} className="feature-check" strokeWidth={3} />
+                    <span>Facturation pro et licences en volume</span>
+                  </li>
+                  <li className="offer-feature-item">
+                    <Check size={12} className="feature-check" strokeWidth={3} />
+                    <span>Couverture sur toute la Tunisie</span>
+                  </li>
+                </ul>
+              </div>
+
+              <div className="offer-card-footer">
+                <a href="mailto:contact@technotech.tn" className="offer-whatsapp-btn channel-email-cta">
+                  <Mail size={15} />
+                  <span>Envoyer un e-mail</span>
+                </a>
+              </div>
+            </div>
           </div>
 
-          {/* Guarantee Pill */}
-          <div className="contact-trust-box">
-            <ShieldCheck size={22} className="trust-shield-icon" />
-            <div>
-              <strong>100% Satisfaction Garantie</strong>
-              <span>Tous nos produits bénéficient d'un support technique personnalisé jusqu'à parfaite activation.</span>
+          {/* Split Section: Luxury Form + Interactive FAQ */}
+          <div className="contact-split-layout">
+            {/* Left: Contact Form in Luxury Dark Card */}
+            <div className="offer-card contact-form-card-luxury">
+              <div className="offer-card-glow" />
+
+              <div className="form-luxury-header">
+                <div className="offer-badge-pill">
+                  <Send size={12} />
+                  <span>MESSAGE SÉCURISÉ</span>
+                </div>
+                <h2 className="offer-card-title">Envoyez-nous un Message</h2>
+                <p className="offer-card-subtitle">
+                  Remplissez le formulaire ci-dessous et notre conseiller prendra contact avec vous immédiatement.
+                </p>
+              </div>
+
+              {submitted ? (
+                <div className="contact-success-box-luxury">
+                  <CheckCircle2 size={54} className="success-icon-glow" />
+                  <h3>Message Envoyé avec Succès !</h3>
+                  <p>Merci pour votre confiance. Notre équipe vous répondra par WhatsApp ou téléphone dans les plus brefs délais.</p>
+
+                  <div className="success-actions-row">
+                    <button
+                      type="button"
+                      className="offer-order-btn channel-whatsapp-cta"
+                      onClick={openWhatsAppDirect}
+                    >
+                      <MessageCircle size={16} />
+                      <span>Accélérer sur WhatsApp</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="offer-whatsapp-btn"
+                      onClick={() => {
+                        setSubmitted(false);
+                        setFormData({ name: '', phone: '', subject: 'Renseignement sur un abonnement', message: '' });
+                      }}
+                    >
+                      <span>Envoyer un autre message</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="contact-form-inner" noValidate>
+                  {errorMsg && (
+                    <div className="contact-error-notice animate-shake">
+                      <AlertTriangle size={18} />
+                      <span>{errorMsg}</span>
+                    </div>
+                  )}
+
+                  {/* Name Field */}
+                  <div className="form-field-group">
+                    <label className="form-label" htmlFor="contact-name">
+                      <span>Nom complet (الاسم واللقب)</span>
+                      <span className="required-star">*</span>
+                    </label>
+                    <div className={`form-input-wrapper ${touched.name && !isNameValid ? 'has-error' : ''}`}>
+                      <input
+                        id="contact-name"
+                        type="text"
+                        className="form-input"
+                        placeholder="Ex: Mohamed Ben Ali"
+                        value={formData.name}
+                        onChange={handleNameChange}
+                        onBlur={() => setTouched((p) => ({ ...p, name: true }))}
+                        required
+                      />
+                      {touched.name && isNameValid && (
+                        <span className="valid-check-badge">✓</span>
+                      )}
+                    </div>
+                    {touched.name && hasDigitsInName && (
+                      <span className="field-hint-error">Le nom ne doit contenir aucun chiffre.</span>
+                    )}
+                  </div>
+
+                  {/* Phone Field */}
+                  <div className="form-field-group">
+                    <label className="form-label" htmlFor="contact-phone">
+                      <span>Numéro de téléphone (رقم الهاتف)</span>
+                      <span className="required-star">* (8 chiffres)</span>
+                    </label>
+                    <div className={`form-input-wrapper ${touched.phone && !isPhoneValid ? 'has-error' : ''}`}>
+                      <span className="input-country-prefix">+216</span>
+                      <input
+                        id="contact-phone"
+                        type="tel"
+                        inputMode="numeric"
+                        className="form-input"
+                        placeholder="Ex: 98 123 456"
+                        value={formData.phone}
+                        onChange={handlePhoneChange}
+                        onBlur={() => setTouched((p) => ({ ...p, phone: true }))}
+                        maxLength={8}
+                        required
+                      />
+                      {touched.phone && isPhoneValid && (
+                        <span className="valid-check-badge">✓</span>
+                      )}
+                    </div>
+                    {touched.phone && !isPhoneValid && (
+                      <span className="field-hint-error">Le numéro doit comporter exactement 8 chiffres.</span>
+                    )}
+                  </div>
+
+                  {/* Subject Field */}
+                  <div className="form-field-group">
+                    <label className="form-label" htmlFor="contact-subject">
+                      <span>Sujet de votre demande</span>
+                    </label>
+                    <div className="form-input-wrapper">
+                      <select
+                        id="contact-subject"
+                        className="form-select"
+                        value={formData.subject}
+                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                      >
+                        <option value="Renseignement sur un abonnement">Renseignement sur un produit ou abonnement</option>
+                        <option value="Pack Spécial ou Duo">Renseignement sur une Offre / Pack Spécial</option>
+                        <option value="Abonnement IA (ChatGPT, Claude...)">Abonnements Intelligence Artificielle</option>
+                        <option value="Licence Windows ou Office">Licences Logicielles (Windows, Office...)</option>
+                        <option value="Assistance & Activation">Assistance à l'activation</option>
+                        <option value="Demande Entreprise / Agence">Demande de devis Entreprise / Agence</option>
+                        <option value="Autre demande">Autre demande</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Message Field */}
+                  <div className="form-field-group">
+                    <label className="form-label" htmlFor="contact-message">
+                      <span>Votre message</span>
+                      <span className="required-star">*</span>
+                    </label>
+                    <textarea
+                      id="contact-message"
+                      rows={4}
+                      className="form-textarea"
+                      placeholder="Décrivez votre besoin ou posez votre question en toute simplicité..."
+                      value={formData.message}
+                      onChange={(e) => {
+                        setFormData({ ...formData, message: e.target.value });
+                        if (errorMsg) setErrorMsg(null);
+                      }}
+                      required
+                    />
+                  </div>
+
+                  {/* Form Actions */}
+                  <div className="contact-form-actions-luxury">
+                    <button type="submit" className="offer-order-btn contact-submit-btn-luxury">
+                      <Send size={15} />
+                      <span>Envoyer ma Demande</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="offer-whatsapp-btn contact-whatsapp-btn-luxury"
+                      onClick={openWhatsAppDirect}
+                      title="Envoyer directement sur WhatsApp"
+                    >
+                      <MessageCircle size={15} />
+                      <span>Envoyer via WhatsApp</span>
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+
+            {/* Right: FAQ Accordion in Luxury Styling */}
+            <div className="contact-faq-column-luxury">
+              <div className="faq-column-header">
+                <span className="about-section-tag">
+                  <HelpCircle size={13} />
+                  <span>QUESTIONS FRÉQUENTES</span>
+                </span>
+                <h3 className="faq-main-heading">Réponses Immédiates</h3>
+                <p className="faq-sub-heading">
+                  Retrouvez en un clic les explications aux questions les plus courantes.
+                </p>
+              </div>
+
+              <div className="faq-luxury-accordion-list">
+                {faqs.map((faq, idx) => (
+                  <div
+                    key={idx}
+                    className={`faq-luxury-card ${expandedFaq === idx ? 'expanded' : ''}`}
+                    onClick={() => setExpandedFaq(expandedFaq === idx ? null : idx)}
+                  >
+                    <div className="faq-question-luxury-row">
+                      <div className="faq-q-left">
+                        <span className="faq-index-number">0{idx + 1}</span>
+                        <h4>{faq.q}</h4>
+                      </div>
+                      <ChevronDown
+                        size={18}
+                        className={`faq-chevron-luxury ${expandedFaq === idx ? 'open' : ''}`}
+                      />
+                    </div>
+                    {expandedFaq === idx && (
+                      <div className="faq-answer-luxury-content">
+                        <p>{faq.a}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Trust Box */}
+              <div className="contact-trust-card-luxury">
+                <div className="trust-card-icon-circle">
+                  <ShieldCheck size={24} />
+                </div>
+                <div className="trust-card-text">
+                  <h4>100% Satisfaction ou Remplacement</h4>
+                  <p>Chaque commande bénéficie d'une garantie totale avec assistance technique directe sur WhatsApp.</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
