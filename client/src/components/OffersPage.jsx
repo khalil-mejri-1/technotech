@@ -21,8 +21,12 @@ export default function OffersPage({
   onNavigate,
   onAddToCart,
   onOpenCart,
+  whatsappNumber = '96086581',
 }) {
   const filteredOffers = offers.filter((offer) => offer.isActive);
+
+  const cleanDigits = String(whatsappNumber || '96086581').replace(/\D/g, '');
+  const fullIntlPhone = cleanDigits.startsWith('216') ? cleanDigits : `216${cleanDigits}`;
 
   const handleOrderPack = (offer) => {
     if (!onAddToCart) return;
@@ -42,7 +46,7 @@ export default function OffersPage({
     const message = encodeURIComponent(
       `Bonjour TechnoTech ! 👋\nJe souhaite commander l'offre spéciale :\n✨ *${offer.title}*\n💰 Prix : *${offer.price} DT* (au lieu de ${offer.originalPrice || offer.price} DT)\n⏳ Durée : *${offer.duration || '1 Mois'}*\n\nPouvez-vous m'indiquer la procédure d'activation s'il vous plaît ?`
     );
-    return `https://wa.me/21655123456?text=${message}`;
+    return `https://wa.me/${fullIntlPhone}?text=${message}`;
   };
 
   return (

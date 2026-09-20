@@ -19,13 +19,16 @@ function FacebookIcon({ size = 17 }) {
   );
 }
 
-export default function Footer({ onNavigate }) {
+export default function Footer({ onNavigate, whatsappNumber = '96086581' }) {
+  const cleanDigits = String(whatsappNumber || '96086581').replace(/\D/g, '');
+  const fullIntlPhone = cleanDigits.startsWith('216') ? cleanDigits : `216${cleanDigits}`;
+
   return (
     <footer className="footer" id="footer-section">
       {/* Bottom Left Social & Portfolio Icons */}
       <div className="footer-socials">
         <a
-          href="https://wa.me/21696086581"
+          href={`https://wa.me/${fullIntlPhone}`}
           target="_blank"
           rel="noopener noreferrer"
           className="social-link"

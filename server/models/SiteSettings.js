@@ -23,6 +23,14 @@ const siteSettingsSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    whatsappNumber: {
+      type: String,
+      default: '96086581',
+    },
+    imgbbApiKey: {
+      type: String,
+      default: '***REDACTED***',
+    },
   },
   {
     timestamps: true,

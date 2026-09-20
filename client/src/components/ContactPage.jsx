@@ -19,7 +19,12 @@ import {
   Headphones
 } from 'lucide-react';
 
-export default function ContactPage({ onNavigate, showToast }) {
+export default function ContactPage({ onNavigate, showToast, whatsappNumber = '96086581' }) {
+  const cleanDigits = String(whatsappNumber || '96086581').replace(/\D/g, '');
+  const rawLocalPhone = cleanDigits.startsWith('216') ? cleanDigits.slice(3) : cleanDigits;
+  const fullIntlPhone = cleanDigits.startsWith('216') ? cleanDigits : `216${cleanDigits}`;
+  const displayPhone = `+216 ${rawLocalPhone.replace(/(\d{2})(\d{3})(\d{3})/, '$1 $2 $3') || rawLocalPhone}`;
+
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -85,7 +90,7 @@ export default function ContactPage({ onNavigate, showToast }) {
     const text = encodeURIComponent(
       `Bonjour TechnoTech ! 👋\nJe vous contacte concernant : *${formData.subject}*\n\n👤 *Nom :* ${formData.name || 'Client'}\n📞 *Téléphone :* ${formData.phone || ''}\n💬 *Message :* ${formData.message || 'Bonjour, j\'ai une question sur vos abonnements.'}`
     );
-    window.open(`https://wa.me/21696086581?text=${text}`, '_blank');
+    window.open(`https://wa.me/${fullIntlPhone}?text=${text}`, '_blank');
   };
 
   const faqs = [
@@ -196,7 +201,7 @@ export default function ContactPage({ onNavigate, showToast }) {
 
                 <div className="channel-info-pill-box">
                   <span className="channel-info-label">Numéro WhatsApp :</span>
-                  <span className="channel-info-val">+216 96 086 581</span>
+                  <span className="channel-info-val">{displayPhone}</span>
                 </div>
 
                 <ul className="offer-features-list">
@@ -213,7 +218,7 @@ export default function ContactPage({ onNavigate, showToast }) {
 
               <div className="offer-card-footer">
                 <a
-                  href="https://wa.me/21696086581?text=Bonjour%20TechnoTech%20!%20👋%20Je%20souhaite%20un%20renseignement%20sur%20vos%20abonnements."
+                  href={`https://wa.me/${fullIntlPhone}?text=Bonjour%20TechnoTech%20!%20👋%20Je%20souhaite%20un%20renseignement%20sur%20vos%20abonnements.`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="offer-order-btn channel-whatsapp-cta"
@@ -250,7 +255,7 @@ export default function ContactPage({ onNavigate, showToast }) {
 
                 <div className="channel-info-pill-box">
                   <span className="channel-info-label">Ligne directe :</span>
-                  <span className="channel-info-val">+216 96 086 581</span>
+                  <span className="channel-info-val">{displayPhone}</span>
                 </div>
 
                 <ul className="offer-features-list">
@@ -266,7 +271,7 @@ export default function ContactPage({ onNavigate, showToast }) {
               </div>
 
               <div className="offer-card-footer">
-                <a href="tel:+21696086581" className="offer-whatsapp-btn channel-phone-cta">
+                <a href={`tel:+${fullIntlPhone}`} className="offer-whatsapp-btn channel-phone-cta">
                   <Phone size={15} />
                   <span>Appeler notre équipe</span>
                 </a>
