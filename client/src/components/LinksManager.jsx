@@ -7,53 +7,50 @@ import {
   Trash2,
   RefreshCw,
   ExternalLink,
-  Layers,
   Sparkles,
-  Package,
   AlertCircle,
-  Clock,
-  Search,
   CheckCircle2,
-  XCircle,
   Loader2,
-  ArrowRight,
-  ShieldAlert,
+  Minus,
 } from 'lucide-react';
 import { linkService } from '../services/linkService.js';
 
-export default function LinksManager({ products = [], notify }) {
-  const [linksData, setLinksData] = useState({ links: [], stats: { totalLinks: 0, availableCount: 0, usedCount: 0, byProduct: [] } });
+const TARGET_PRODUCT = 'Gemini Pro';
+
+export default function LinksManager({ notify }) {
+  const [links, setLinks] = useState([]);
+  const [availableCount, setAvailableCount] = useState(0);
+  const [usedCount, setUsedCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Form State: Add Links
-  const [selectedProductForAdd, setSelectedProductForAdd] = useState('');
-  const [customProductName, setCustomProductName] = useState('');
-  const [linksInputText, setLinksInputText] = useState('');
-  const [notesInput, setNotesInput] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Form: Ajouter des liens
+  const [inputText, setInputText] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Quick Import State (استيراد رابط)
-  const [selectedProductForImport, setSelectedProductForImport] = useState('');
-  const [isImporting, setIsImporting] = useState(false);
-  const [lastClaimedResult, setLastClaimedResult] = useState(null);
-  const [copiedLink, setCopiedLink] = useState(false);
+  // Extraction: Extraire des liens
+  const [extractCount, setExtractCount] = useState(1);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractedLinks, setExtractedLinks] = useState([]);
+  const [copiedAll, setCopiedAll] = useState(false);
+  const [copiedIndex, setCopiedIndex] = useState(null);
 
-  // View Filter State
-  const [filterStatus, setFilterStatus] = useState('all'); // 'all' | 'available' | 'used'
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeSubTab, setActiveSubTab] = useState('byProduct'); // 'byProduct' | 'allLinks'
-
-  // Fetch Links from API
-  const fetchLinks = async (showLoading = false) => {
+  // Charger les liens de Gemini Pro
+  const fetchGeminiLinks = async (showLoading = false) => {
     if (showLoading) setIsLoading(true);
     setIsRefreshing(true);
     try {
-      const res = await linkService.getAll();
-      setLinksData(res || { links: [], stats: { totalLinks: 0, availableCount: 0, usedCount: 0, byProduct: [] } });
+      const res = await linkService.getAll({ productName: TARGET_PRODUCT });
+      const allLinks = Array.isArray(res?.links) ? res.links : [];
+      const geminiLinks = allLinks.filter(
+        (l) => l.productName?.toLowerCase() === TARGET_PRODUCT.toLowerCase()
+      );
+      setLinks(geminiLinks);
+      setAvailableCount(geminiLinks.filter((l) => !l.isUsed).length);
+      setUsedCount(geminiLinks.filter((l) => l.isUsed).length);
     } catch (err) {
-      console.error('Erreur chargement liens :', err);
-      if (notify) notify('Erreur lors du chargement des liens.');
+      console.error('Erreur chargement liens Gemini Pro :', err);
+      if (notify) notify('Erreur de chargement du stock');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -61,660 +58,391 @@ export default function LinksManager({ products = [], notify }) {
   };
 
   useEffect(() => {
-    fetchLinks(true);
+    fetchGeminiLinks(true);
   }, []);
 
-  // Calculate parsed link count from textarea
-  const parsedLinks = linksInputText
+  // Détection des liens saisis
+  const parsedLinks = inputText
     .split(/[\r\n,]+/)
     .map((l) => l.trim())
     .filter((l) => l.length > 0);
 
-  // Handle Add Links
+  // 1. Ajouter des liens au stock
   const handleAddLinks = async (e) => {
     e.preventDefault();
-    const finalProductName =
-      selectedProductForAdd === 'custom' || !selectedProductForAdd
-        ? customProductName.trim()
-        : selectedProductForAdd.trim();
-
-    if (!finalProductName) {
-      alert('Veuillez sélectionner ou entrer un nom de produit/service.');
-      return;
-    }
-
     if (parsedLinks.length === 0) {
-      alert('Veuillez saisir au moins un lien valide.');
+      alert('Veuillez saisir au moins un lien.');
       return;
     }
 
-    setIsSubmitting(true);
+    setIsSaving(true);
     try {
-      const selectedProdObj = products.find(
-        (p) => p.name && p.name.trim().toLowerCase() === finalProductName.toLowerCase()
-      );
-
-      const res = await linkService.addLinks({
-        productName: finalProductName,
-        productId: selectedProdObj ? selectedProdObj._id || selectedProdObj.id : '',
+      await linkService.addLinks({
+        productName: TARGET_PRODUCT,
         urls: parsedLinks,
-        notes: notesInput,
       });
 
       if (notify) {
-        notify(`✅ ${parsedLinks.length} lien(s) enregistré(s) avec succès pour "${finalProductName}" !`);
+        notify(`✅ ${parsedLinks.length} lien(s) ajouté(s) au stock de ${TARGET_PRODUCT} !`);
       }
 
-      setLinksInputText('');
-      setNotesInput('');
-      fetchLinks(false);
+      setInputText('');
+      fetchGeminiLinks(false);
     } catch (err) {
-      console.error('Erreur ajout liens :', err);
       alert(err.message || 'Erreur lors de l’enregistrement des liens.');
     } finally {
-      setIsSubmitting(false);
+      setIsSaving(false);
     }
   };
 
-  // Handle Quick Claim / Import Link (زر استيراد رابط)
-  const handleClaimLink = async (targetProductName = '') => {
-    const prodName = targetProductName || selectedProductForImport;
-    setIsImporting(true);
-    setCopiedLink(false);
+  // 2. Extraire un ou plusieurs liens du stock
+  const handleExtractLinks = async () => {
+    if (extractCount <= 0) return;
+    if (availableCount < extractCount) {
+      alert(`Stock insuffisant. Vous demandez ${extractCount} lien(s) mais seulement ${availableCount} disponible(s).`);
+      return;
+    }
+
+    setIsExtracting(true);
+    setCopiedAll(false);
+    setCopiedIndex(null);
 
     try {
       const res = await linkService.claimLink({
-        productName: prodName,
+        productName: TARGET_PRODUCT,
+        count: extractCount,
       });
 
-      if (res && res.link) {
-        setLastClaimedResult({
-          link: res.link.url,
-          productName: res.link.productName,
-          remainingCount: res.remainingCount,
-          claimedAt: new Date(),
-        });
+      const claimed = Array.isArray(res?.links) ? res.links : (res?.link ? [res.link] : []);
+      setExtractedLinks(claimed);
 
-        if (notify) {
-          notify(`⚡ الرابط جاهز! المتبقي: ${res.remainingCount} رابط (${res.link.productName})`);
-        }
-
-        // Refresh stock
-        fetchLinks(false);
+      if (notify) {
+        notify(`⚡ ${claimed.length} lien(s) extrait(s) ! Stock restant : ${res.remainingCount}`);
       }
+
+      fetchGeminiLinks(false);
     } catch (err) {
-      console.error('Erreur importation lien :', err);
-      alert(err.message || 'Aucun lien disponible.');
+      alert(err.message || 'Erreur lors de l’extraction.');
     } finally {
-      setIsImporting(false);
+      setIsExtracting(false);
     }
   };
 
-  // Handle Copy Link
-  const handleCopy = (text) => {
-    if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2500);
-    if (notify) notify('تم نسخ الرابط بنجاح! 📋');
+  // Copier un seul lien
+  const handleCopySingle = (url, idx) => {
+    navigator.clipboard.writeText(url);
+    setCopiedIndex(idx);
+    setTimeout(() => setCopiedIndex(null), 2000);
+    if (notify) notify('Lien copié ! 📋');
   };
 
-  // Handle Delete Single Link
+  // Copier tous les liens extraits
+  const handleCopyAll = () => {
+    if (extractedLinks.length === 0) return;
+    const text = extractedLinks.map((l) => l.url).join('\n');
+    navigator.clipboard.writeText(text);
+    setCopiedAll(true);
+    setTimeout(() => setCopiedAll(false), 2000);
+    if (notify) notify(`${extractedLinks.length} lien(s) copié(s) dans le presse-papier ! 📋`);
+  };
+
+  // Supprimer un lien individuel du stock
   const handleDeleteLink = async (id) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce lien ?')) return;
+    if (!window.confirm('Voulez-vous supprimer ce lien ?')) return;
     try {
       await linkService.deleteLink(id);
-      fetchLinks(false);
+      fetchGeminiLinks(false);
       if (notify) notify('Lien supprimé.');
     } catch (err) {
-      console.error('Erreur suppression :', err);
+      console.error(err);
     }
   };
 
-  // Handle Clear Used Links
-  const handleClearUsed = async () => {
-    if (!window.confirm('Voulez-vous vraiment effacer tous les liens déjà utilisés / importés ?')) return;
-    try {
-      const res = await linkService.clearUsedLinks();
-      fetchLinks(false);
-      if (notify) notify(`🧹 ${res.deletedCount || ''} lien(s) utilisé(s) nettoyé(s).`);
-    } catch (err) {
-      console.error('Erreur nettoyage :', err);
-    }
-  };
-
-  // Filtered links list
-  const filteredLinks = (linksData.links || []).filter((l) => {
-    const matchesStatus =
-      filterStatus === 'all'
-        ? true
-        : filterStatus === 'available'
-        ? !l.isUsed
-        : l.isUsed;
-
-    const q = searchQuery.toLowerCase().trim();
-    const matchesSearch =
-      !q ||
-      (l.productName && l.productName.toLowerCase().includes(q)) ||
-      (l.url && l.url.toLowerCase().includes(q)) ||
-      (l.usedByOrderNumber && l.usedByOrderNumber.toLowerCase().includes(q));
-
-    return matchesStatus && matchesSearch;
-  });
-
-  // Available count for selected import product
-  const selectedProdStats = linksData.stats?.byProduct?.find(
-    (p) => p.productName.toLowerCase() === selectedProductForImport.toLowerCase()
-  );
-  const currentImportAvailable = selectedProductForImport
-    ? selectedProdStats?.availableCount || 0
-    : linksData.stats?.availableCount || 0;
+  const unusedLinks = links.filter((l) => !l.isUsed);
 
   return (
-    <div className="links-manager-wrapper">
+    <div className="gemini-links-container">
       {/* -------------------------------------------------------------
-          TOP BAR: TITLE & REFRESH
+          HEADER SIMPLE & ÉPURÉ
           ------------------------------------------------------------- */}
-      <div className="links-header-banner">
-        <div className="links-header-info">
-          <div className="links-header-icon-box">
-            <Link2 size={28} />
+      <div className="gemini-header-box">
+        <div className="gemini-header-left">
+          <div className="gemini-icon-circle">
+            <Link2 size={26} />
           </div>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h2 className="links-header-title">إدارة الروابط الجاهزة والمخزون الرقمي</h2>
-              <span className="links-admin-only-tag">قسم الأدمن فقط 🔒</span>
+            <div className="gemini-title-row">
+              <h2>Gestion des Liens — Gemini Pro</h2>
+              <span className="admin-lock-badge">Section Admin Privée 🔒</span>
             </div>
-            <p className="links-header-subtitle">
-              سجّل روابط الحسابات والاشتراكات الجاهزة مسبقاً، واستورد رابطاً فورياً بضغطة زر مع إنقاص الكمية تلقائياً من المخزون. (غير مرئي للمستخدمين في المتجر).
+            <p className="gemini-subtitle">
+              Enregistrez vos liens d'invitation Gemini Pro et extrayez-les du stock à la demande en 1 clic.
             </p>
           </div>
         </div>
 
-        <button
-          type="button"
-          className="refresh-orders-btn"
-          onClick={() => fetchLinks(false)}
-          disabled={isRefreshing}
-          title="Actualiser la liste des liens"
-        >
-          <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
-          <span>تحديث المخزون</span>
-        </button>
-      </div>
-
-      {/* -------------------------------------------------------------
-          STATS CARDS
-          ------------------------------------------------------------- */}
-      <div className="orders-stats-grid">
-        <div className="order-stat-card total">
-          <div className="stat-card-icon" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6' }}>
-            <Layers size={22} />
-          </div>
-          <div className="stat-card-data">
-            <span className="stat-card-label">إجمالي الروابط المسجلة</span>
-            <span className="stat-card-value">{linksData.stats?.totalLinks || 0}</span>
-          </div>
-        </div>
-
-        <div className="order-stat-card confirmed" style={{ borderColor: 'rgba(34, 197, 94, 0.4)' }}>
-          <div className="stat-card-icon" style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }}>
-            <CheckCircle2 size={22} />
-          </div>
-          <div className="stat-card-data">
-            <span className="stat-card-label">الروابط المتوفرة (الكمية المتاحة)</span>
-            <span className="stat-card-value" style={{ color: '#22c55e' }}>
-              {linksData.stats?.availableCount || 0}
+        {/* Stock Status Badge */}
+        <div className="gemini-header-right">
+          <div className="gemini-stock-counter">
+            <span className="stock-counter-label">Stock Disponible</span>
+            <span className="stock-counter-value">
+              {isLoading ? '...' : availableCount}
+              <small> lien{availableCount > 1 ? 's' : ''}</small>
             </span>
           </div>
-        </div>
 
-        <div className="order-stat-card pending">
-          <div className="stat-card-icon" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b' }}>
-            <Clock size={22} />
-          </div>
-          <div className="stat-card-data">
-            <span className="stat-card-label">الروابط المستوردة / المستخدمة</span>
-            <span className="stat-card-value">{linksData.stats?.usedCount || 0}</span>
-          </div>
-        </div>
-
-        <div className="order-stat-card revenue">
-          <div className="stat-card-icon" style={{ background: 'rgba(226, 88, 22, 0.15)', color: '#e25816' }}>
-            <Package size={22} />
-          </div>
-          <div className="stat-card-data">
-            <span className="stat-card-label">المنتجات المغطاة بروابط</span>
-            <span className="stat-card-value">{linksData.stats?.byProduct?.length || 0}</span>
-          </div>
+          <button
+            type="button"
+            className="gemini-refresh-btn"
+            onClick={() => fetchGeminiLinks(false)}
+            disabled={isRefreshing}
+            title="Actualiser le stock"
+          >
+            <RefreshCw size={15} className={isRefreshing ? 'animate-spin' : ''} />
+            <span>Actualiser</span>
+          </button>
         </div>
       </div>
 
       {/* -------------------------------------------------------------
-          MAIN 2-COLUMN ACTION PANELS: QUICK IMPORT & ADD LINKS
+          DEUX BLOCS SIMPLES : AJOUTER & EXTRAIRE
           ------------------------------------------------------------- */}
-      <div className="links-actions-grid">
-        {/* PANEL 1: زر استيراد رابط (Quick Claim / Import Link) */}
-        <div className="links-action-card import-card">
-          <div className="action-card-header">
-            <div className="action-card-title-group">
-              <Sparkles size={20} className="action-title-icon text-orange" />
-              <h3>استيراد رابط فوري (جلب وإنقاص الكمية)</h3>
-            </div>
-            <span className="stock-pill">
-              الكمية المتوفرة: <strong>{currentImportAvailable}</strong>
-            </span>
-          </div>
-
-          <p className="action-card-desc">
-            اختر المنتج واضغط على زر الاستيراد لجلب رابط جاهز متاح فوراً وإنقاصه من الكمية المسجلة.
-          </p>
-
-          <div className="import-controls-row">
-            <div className="import-select-box">
-              <label className="input-label-sm">حدد المنتج المطلوب :</label>
-              <select
-                className="links-native-select"
-                value={selectedProductForImport}
-                onChange={(e) => {
-                  setSelectedProductForImport(e.target.value);
-                  setLastClaimedResult(null);
-                }}
-              >
-                <option value="">-- أي رابط متاح في المخزون --</option>
-                {(linksData.stats?.byProduct || []).map((p) => (
-                  <option key={p.productName} value={p.productName}>
-                    {p.productName} ({p.availableCount} متوفر)
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              type="button"
-              className="claim-link-btn"
-              onClick={() => handleClaimLink()}
-              disabled={isImporting || (selectedProductForImport ? currentImportAvailable === 0 : linksData.stats?.availableCount === 0)}
-            >
-              {isImporting ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  <span>جاري الجلب...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles size={18} />
-                  <span>استيراد رابط الآن</span>
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Result Alert of Last Claimed Link */}
-          {lastClaimedResult && (
-            <div className="claimed-result-box">
-              <div className="claimed-result-header">
-                <span className="claimed-badge">
-                  <CheckCircle2 size={14} /> تم استيراد الرابط بنجاح!
-                </span>
-                <span className="remaining-alert">
-                  الكمية المتبقية الآن: <strong>{lastClaimedResult.remainingCount}</strong>
-                </span>
-              </div>
-
-              <div className="claimed-link-row">
-                <div className="claimed-url-display" title={lastClaimedResult.link}>
-                  {lastClaimedResult.link}
-                </div>
-                <button
-                  type="button"
-                  className={`copy-btn ${copiedLink ? 'copied' : ''}`}
-                  onClick={() => handleCopy(lastClaimedResult.link)}
-                  title="نسخ الرابط إلى الحافظة"
-                >
-                  {copiedLink ? <Check size={16} /> : <Copy size={16} />}
-                  <span>{copiedLink ? 'تم النسخ!' : 'نسخ الرابط'}</span>
-                </button>
-              </div>
-
-              <div className="claimed-details-bar">
-                <span>المنتج: <strong>{lastClaimedResult.productName}</strong></span>
-                <span>تاريخ الاستيراد: <strong>{new Date().toLocaleTimeString('ar-TN')}</strong></span>
-              </div>
-            </div>
-          )}
-
-          {currentImportAvailable === 0 && (
-            <div className="stock-exhausted-alert">
-              <AlertCircle size={16} />
-              <span>لا توجد روابط متوفرة حالياً لهذا المنتج. يمكنك تسجيل روابط جديدة عبر النموذج المجاور.</span>
-            </div>
-          )}
-        </div>
-
-        {/* PANEL 2: تسجيل روابط جاهزة جديدة (Add Links) */}
-        <div className="links-action-card add-card">
-          <div className="action-card-header">
-            <div className="action-card-title-group">
-              <Plus size={20} className="action-title-icon text-blue" />
-              <h3>تسجيل روابط جاهزة جديدة</h3>
+      <div className="gemini-cards-grid">
+        {/* BLOC 1 : AJOUTER DES LIENS (ENTRÉE DE STOCK) */}
+        <div className="gemini-card add-card">
+          <div className="gemini-card-header">
+            <div className="card-header-title">
+              <Plus size={18} className="text-blue" />
+              <h3>1. Enregistrer des liens (Entrée)</h3>
             </div>
             {parsedLinks.length > 0 && (
-              <span className="parsed-count-badge">
-                {parsedLinks.length} رابط تم كشفه
+              <span className="badge-pill blue">
+                {parsedLinks.length} lien{parsedLinks.length > 1 ? 's' : ''} détecté{parsedLinks.length > 1 ? 's' : ''}
               </span>
             )}
           </div>
 
-          <form onSubmit={handleAddLinks} className="add-links-form">
-            <div className="form-group-sm">
-              <label className="input-label-sm">المنتج أو الخدمة :</label>
-              <select
-                className="links-native-select"
-                value={selectedProductForAdd}
-                onChange={(e) => setSelectedProductForAdd(e.target.value)}
-              >
-                <option value="">-- اختر منتجاً من الكتالوج --</option>
-                {products.map((p) => (
-                  <option key={p._id || p.id || p.name} value={p.name}>
-                    {p.name}
-                  </option>
-                ))}
-                <option value="custom">✏️ إدخال اسم خدمة / منتج يدوي...</option>
-              </select>
-            </div>
+          <p className="gemini-card-help">
+            Collez vos liens d'invitation Gemini Pro ci-dessous (un lien par ligne) :
+          </p>
 
-            {(selectedProductForAdd === 'custom' || (!selectedProductForAdd && customProductName)) && (
-              <div className="form-group-sm">
-                <input
-                  type="text"
-                  className="links-native-input"
-                  placeholder="مثال: ChatGPT Plus, Canva Pro, Netflix..."
-                  value={customProductName}
-                  onChange={(e) => setCustomProductName(e.target.value)}
-                  required
-                />
-              </div>
-            )}
-
-            <div className="form-group-sm">
-              <label className="input-label-sm">
-                الروابط (يمكنك لصق روابط متعددة دفعة واحدة، رابط في كل سطر) :
-              </label>
-              <textarea
-                className="links-native-textarea"
-                rows={4}
-                placeholder="https://chatgpt.com/invite/...&#10;https://chatgpt.com/invite/...&#10;https://chatgpt.com/invite/..."
-                value={linksInputText}
-                onChange={(e) => setLinksInputText(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="form-group-sm">
-              <input
-                type="text"
-                className="links-native-input"
-                placeholder="ملاحظات اختيارية (مثال: دفعة مارس 2026، حسابات 1 شهر)"
-                value={notesInput}
-                onChange={(e) => setNotesInput(e.target.value)}
-              />
-            </div>
+          <form onSubmit={handleAddLinks} className="gemini-form">
+            <textarea
+              className="gemini-textarea"
+              rows={5}
+              placeholder="https://g.co/gemini/invite/...&#10;https://g.co/gemini/invite/...&#10;https://g.co/gemini/invite/..."
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              required
+            />
 
             <button
               type="submit"
-              className="save-links-btn"
-              disabled={isSubmitting || parsedLinks.length === 0}
+              className="gemini-submit-btn blue"
+              disabled={isSaving || parsedLinks.length === 0}
             >
-              {isSubmitting ? (
+              {isSaving ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
-                  <span>جاري التسجيل...</span>
+                  <span>Enregistrement...</span>
                 </>
               ) : (
                 <>
                   <Plus size={16} />
-                  <span>تسجيل {parsedLinks.length > 0 ? `(${parsedLinks.length})` : ''} في المخزون</span>
+                  <span>
+                    Ajouter {parsedLinks.length > 0 ? `(${parsedLinks.length}) ` : ''}au Stock Gemini Pro
+                  </span>
                 </>
               )}
             </button>
           </form>
         </div>
+
+        {/* BLOC 2 : EXTRAIRE DES LIENS (SORTIE DE STOCK) */}
+        <div className="gemini-card extract-card">
+          <div className="gemini-card-header">
+            <div className="card-header-title">
+              <Sparkles size={18} className="text-orange" />
+              <h3>2. Extraire des liens (Sortie)</h3>
+            </div>
+            <span className={`badge-pill ${availableCount > 0 ? 'green' : 'red'}`}>
+              {availableCount > 0 ? `${availableCount} disponible(s)` : 'Stock épuisé'}
+            </span>
+          </div>
+
+          <p className="gemini-card-help">
+            Choisissez combien de liens vous voulez récupérer. Chaque lien extrait est automatiquement déduit du stock.
+          </p>
+
+          <div className="gemini-extract-controls">
+            <div className="extract-qty-selector">
+              <label className="selector-label">Nombre de liens à extraire :</label>
+              <div className="qty-input-group">
+                <button
+                  type="button"
+                  className="qty-btn"
+                  onClick={() => setExtractCount((prev) => Math.max(1, prev - 1))}
+                  disabled={extractCount <= 1}
+                >
+                  <Minus size={14} />
+                </button>
+                <input
+                  type="number"
+                  min="1"
+                  max={Math.max(1, availableCount)}
+                  className="qty-number-input"
+                  value={extractCount}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    setExtractCount(isNaN(val) ? 1 : Math.max(1, val));
+                  }}
+                />
+                <button
+                  type="button"
+                  className="qty-btn"
+                  onClick={() => setExtractCount((prev) => prev + 1)}
+                  disabled={availableCount > 0 && extractCount >= availableCount}
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+
+              {/* Boutons rapides */}
+              <div className="quick-qty-pills">
+                {[1, 2, 5, 10].map((num) => (
+                  <button
+                    key={num}
+                    type="button"
+                    className={`quick-pill ${extractCount === num ? 'active' : ''}`}
+                    onClick={() => setExtractCount(num)}
+                    disabled={availableCount > 0 && num > availableCount}
+                  >
+                    {num} lien{num > 1 ? 's' : ''}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="gemini-submit-btn orange"
+              onClick={handleExtractLinks}
+              disabled={isExtracting || availableCount === 0 || extractCount > availableCount}
+            >
+              {isExtracting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Extraction en cours...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles size={16} />
+                  <span>
+                    Extraire {extractCount} lien{extractCount > 1 ? 's' : ''} maintenant
+                  </span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* RÉSULTAT : LIENS EXTRAITS */}
+          {extractedLinks.length > 0 && (
+            <div className="extracted-result-box">
+              <div className="extracted-result-top">
+                <span className="extracted-success-label">
+                  <CheckCircle2 size={15} />
+                  <strong>{extractedLinks.length} lien{extractedLinks.length > 1 ? 's' : ''} extrait{extractedLinks.length > 1 ? 's' : ''} avec succès !</strong>
+                </span>
+
+                <button
+                  type="button"
+                  className={`copy-all-btn ${copiedAll ? 'copied' : ''}`}
+                  onClick={handleCopyAll}
+                >
+                  {copiedAll ? <Check size={14} /> : <Copy size={14} />}
+                  <span>{copiedAll ? 'Tous copiés !' : 'Copier tout'}</span>
+                </button>
+              </div>
+
+              <div className="extracted-links-list">
+                {extractedLinks.map((item, idx) => (
+                  <div key={item._id || idx} className="extracted-link-row">
+                    <span className="link-num">{idx + 1}.</span>
+                    <span className="link-text" title={item.url}>{item.url}</span>
+                    <button
+                      type="button"
+                      className={`copy-single-btn ${copiedIndex === idx ? 'copied' : ''}`}
+                      onClick={() => handleCopySingle(item.url, idx)}
+                      title="Copier ce lien"
+                    >
+                      {copiedIndex === idx ? <Check size={13} /> : <Copy size={13} />}
+                      <span>{copiedIndex === idx ? 'Copié' : 'Copier'}</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="extracted-footer-note">
+                Stock Gemini Pro restant : <strong>{availableCount} lien{availableCount > 1 ? 's' : ''}</strong>
+              </div>
+            </div>
+          )}
+
+          {availableCount === 0 && (
+            <div className="gemini-empty-alert">
+              <AlertCircle size={16} />
+              <span>Le stock est vide. Ajoutez de nouveaux liens via le formulaire à gauche.</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* -------------------------------------------------------------
-          TABLE & STOCK BREAKDOWN TABS
+          BLOC 3 : APERÇU DES LIENS EN STOCK (SIMPLE & DISCRET)
           ------------------------------------------------------------- */}
-      <div className="links-table-section">
-        <div className="links-table-header-bar">
-          <div className="links-subtabs-group">
-            <button
-              type="button"
-              className={`links-subtab ${activeSubTab === 'byProduct' ? 'active' : ''}`}
-              onClick={() => setActiveSubTab('byProduct')}
-            >
-              <Package size={16} />
-              <span>المخزون حسب المنتج ({linksData.stats?.byProduct?.length || 0})</span>
-            </button>
-            <button
-              type="button"
-              className={`links-subtab ${activeSubTab === 'allLinks' ? 'active' : ''}`}
-              onClick={() => setActiveSubTab('allLinks')}
-            >
-              <Link2 size={16} />
-              <span>سجل كافة الروابط ({linksData.stats?.totalLinks || 0})</span>
-            </button>
-          </div>
-
-          <div className="links-table-tools">
-            {activeSubTab === 'allLinks' && (
-              <>
-                <div className="links-filter-pills">
-                  <button
-                    type="button"
-                    className={`pill-btn ${filterStatus === 'all' ? 'active' : ''}`}
-                    onClick={() => setFilterStatus('all')}
-                  >
-                    الكل
-                  </button>
-                  <button
-                    type="button"
-                    className={`pill-btn available ${filterStatus === 'available' ? 'active' : ''}`}
-                    onClick={() => setFilterStatus('available')}
-                  >
-                    المتوفرة ({linksData.stats?.availableCount || 0})
-                  </button>
-                  <button
-                    type="button"
-                    className={`pill-btn used ${filterStatus === 'used' ? 'active' : ''}`}
-                    onClick={() => setFilterStatus('used')}
-                  >
-                    المستوردة ({linksData.stats?.usedCount || 0})
-                  </button>
-                </div>
-
-                {linksData.stats?.usedCount > 0 && (
-                  <button
-                    type="button"
-                    className="clear-used-btn"
-                    onClick={handleClearUsed}
-                    title="حذف الروابط التي تم استيرادها مسبقاً"
-                  >
-                    <Trash2 size={14} />
-                    <span>تنظيف المستوردة</span>
-                  </button>
-                )}
-              </>
-            )}
-
-            <div className="links-search-box">
-              <Search size={15} />
-              <input
-                type="text"
-                placeholder="بحث عن منتج، رابط..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
+      <div className="gemini-stock-preview">
+        <div className="preview-header">
+          <h4>Liens actuellement en attente dans le stock ({unusedLinks.length})</h4>
+          <span className="preview-subtitle">Ces liens n'ont pas encore été extraits</span>
         </div>
 
-        {/* SUBTAB 1: BY PRODUCT BREAKDOWN */}
-        {activeSubTab === 'byProduct' && (
-          <div className="links-product-grid">
-            {(linksData.stats?.byProduct || []).length === 0 ? (
-              <div className="links-empty-state">
-                <Link2 size={40} className="empty-icon" />
-                <h4>لا توجد روابط مسجلة في المخزون حتى الآن</h4>
-                <p>استخدم نموذج "تسجيل روابط جاهزة" في الأعلى لإضافة روابط اشتراكاتك الأولى.</p>
+        {unusedLinks.length === 0 ? (
+          <p className="no-links-text">Aucun lien en attente dans le stock.</p>
+        ) : (
+          <div className="simple-links-list">
+            {unusedLinks.map((l, idx) => (
+              <div key={l._id || idx} className="simple-link-item">
+                <span className="item-index">#{idx + 1}</span>
+                <span className="item-url" title={l.url}>{l.url}</span>
+                <div className="item-actions">
+                  <button
+                    type="button"
+                    className="item-btn copy"
+                    onClick={() => handleCopySingle(l.url, `list-${idx}`)}
+                    title="Copier"
+                  >
+                    {copiedIndex === `list-${idx}` ? <Check size={13} /> : <Copy size={13} />}
+                  </button>
+                  <a
+                    href={l.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="item-btn external"
+                    title="Tester le lien"
+                  >
+                    <ExternalLink size={13} />
+                  </a>
+                  <button
+                    type="button"
+                    className="item-btn delete"
+                    onClick={() => handleDeleteLink(l._id)}
+                    title="Supprimer du stock"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               </div>
-            ) : (
-              (linksData.stats?.byProduct || [])
-                .filter((p) => !searchQuery || p.productName.toLowerCase().includes(searchQuery.toLowerCase()))
-                .map((item) => (
-                  <div key={item.productName} className="stock-product-card">
-                    <div className="stock-card-top">
-                      <h4 className="stock-prod-name">{item.productName}</h4>
-                      <span className={`stock-qty-badge ${item.availableCount > 0 ? 'in-stock' : 'out-of-stock'}`}>
-                        {item.availableCount > 0 ? `${item.availableCount} متاح` : 'نفدت الكمية'}
-                      </span>
-                    </div>
-
-                    <div className="stock-card-metrics">
-                      <div className="metric-row">
-                        <span>إجمالي المسجل:</span>
-                        <strong>{item.totalCount}</strong>
-                      </div>
-                      <div className="metric-row">
-                        <span>المستورد:</span>
-                        <strong>{item.usedCount}</strong>
-                      </div>
-                      <div className="metric-row">
-                        <span>الكمية المتبقية:</span>
-                        <strong className={item.availableCount > 0 ? 'text-green' : 'text-red'}>
-                          {item.availableCount}
-                        </strong>
-                      </div>
-                    </div>
-
-                    <div className="stock-card-actions">
-                      <button
-                        type="button"
-                        className="stock-btn claim"
-                        onClick={() => handleClaimLink(item.productName)}
-                        disabled={item.availableCount === 0 || isImporting}
-                        title="استيراد رابط فوري وإنقاص الكمية"
-                      >
-                        <Sparkles size={14} />
-                        <span>استيراد رابط</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        className="stock-btn add"
-                        onClick={() => {
-                          setSelectedProductForAdd(item.productName);
-                          window.scrollTo({ top: 100, behavior: 'smooth' });
-                        }}
-                        title="إضافة المزيد من الروابط لهذا المنتج"
-                      >
-                        <Plus size={14} />
-                        <span>إضافة روابط</span>
-                      </button>
-                    </div>
-                  </div>
-                ))
-            )}
-          </div>
-        )}
-
-        {/* SUBTAB 2: ALL LINKS TABLE */}
-        {activeSubTab === 'allLinks' && (
-          <div className="links-table-container">
-            {filteredLinks.length === 0 ? (
-              <div className="links-empty-state">
-                <Search size={36} className="empty-icon" />
-                <h4>لا توجد روابط مطابقة للبحث أو الفلتر</h4>
-              </div>
-            ) : (
-              <table className="links-native-table">
-                <thead>
-                  <tr>
-                    <th>المنتج / الخدمة</th>
-                    <th>الرابط المسجل</th>
-                    <th>الحالة</th>
-                    <th>تاريخ الإضافة / الاستيراد</th>
-                    <th>رقم الطلب</th>
-                    <th>إجراءات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredLinks.map((l) => (
-                    <tr key={l._id || l.url} className={l.isUsed ? 'row-used' : 'row-available'}>
-                      <td className="cell-product">
-                        <strong>{l.productName}</strong>
-                        {l.notes && <span className="cell-notes">{l.notes}</span>}
-                      </td>
-                      <td className="cell-url">
-                        <span className="url-truncate" title={l.url}>
-                          {l.url}
-                        </span>
-                      </td>
-                      <td className="cell-status">
-                        {l.isUsed ? (
-                          <span className="status-badge used">
-                            <CheckCircle2 size={12} /> مستورد
-                          </span>
-                        ) : (
-                          <span className="status-badge available">
-                            <Sparkles size={12} /> متاح
-                          </span>
-                        )}
-                      </td>
-                      <td className="cell-date">
-                        {l.isUsed && l.usedAt
-                          ? `استورد: ${new Date(l.usedAt).toLocaleDateString('fr-FR')} à ${new Date(l.usedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
-                          : `أضيف: ${new Date(l.createdAt).toLocaleDateString('fr-FR')}`}
-                      </td>
-                      <td className="cell-order">
-                        {l.usedByOrderNumber ? (
-                          <span className="order-pill">{l.usedByOrderNumber}</span>
-                        ) : (
-                          <span className="text-muted">-</span>
-                        )}
-                      </td>
-                      <td className="cell-actions">
-                        <button
-                          type="button"
-                          className="table-action-btn copy"
-                          onClick={() => handleCopy(l.url)}
-                          title="نسخ الرابط"
-                        >
-                          <Copy size={13} />
-                        </button>
-                        <a
-                          href={l.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="table-action-btn external"
-                          title="فتح الرابط"
-                        >
-                          <ExternalLink size={13} />
-                        </a>
-                        <button
-                          type="button"
-                          className="table-action-btn delete"
-                          onClick={() => handleDeleteLink(l._id)}
-                          title="حذف الرابط"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            ))}
           </div>
         )}
       </div>

@@ -738,10 +738,11 @@ router.post('/links', async (req, res) => {
   }
 });
 
-// 3. Import / Claim a ready link (جلب رابط وإنقاص الكمية)
+// 3. Import / Claim ready links (جلب رابط أو أكثر وإنقاص الكمية)
 router.post('/links/claim', async (req, res) => {
   try {
-    const { productName, productId, orderNumber } = req.body;
+    const { productName = 'Gemini Pro', productId, orderNumber, count = 1 } = req.body;
+    const numToClaim = Math.max(1, parseInt(count, 10) || 1);
 
     const query = { isUsed: false };
 
@@ -751,20 +752,12 @@ router.post('/links/claim', async (req, res) => {
       query.productId = productId.trim();
     }
 
-    // Find oldest unused link matching criteria (FIFO)
-    const claimedLink = await PredefinedLink.findOneAndUpdate(
-      query,
-      {
-        $set: {
-          isUsed: true,
-          usedAt: new Date(),
-          usedByOrderNumber: orderNumber ? String(orderNumber).trim() : '',
-        },
-      },
-      { sort: { createdAt: 1 }, new: true }
-    );
+    // Find up to numToClaim unused links matching criteria (FIFO)
+    const linksToClaim = await PredefinedLink.find(query)
+      .sort({ createdAt: 1 })
+      .limit(numToClaim);
 
-    if (!claimedLink) {
+    if (!linksToClaim || linksToClaim.length === 0) {
       return res.status(404).json({
         success: false,
         error: productName
@@ -774,17 +767,40 @@ router.post('/links/claim', async (req, res) => {
       });
     }
 
-    // Get remaining available quantity for this product
+    const ids = linksToClaim.map((l) => l._id);
+    const now = new Date();
+
+    await PredefinedLink.updateMany(
+      { _id: { $in: ids } },
+      {
+        $set: {
+          isUsed: true,
+          usedAt: now,
+          usedByOrderNumber: orderNumber ? String(orderNumber).trim() : '',
+        },
+      }
+    );
+
+    const claimedLinks = linksToClaim.map((l) => ({
+      ...l.toObject(),
+      isUsed: true,
+      usedAt: now,
+      usedByOrderNumber: orderNumber ? String(orderNumber).trim() : '',
+    }));
+
+    const targetProduct = linksToClaim[0].productName;
     const remainingCount = await PredefinedLink.countDocuments({
-      productName: claimedLink.productName,
+      productName: targetProduct,
       isUsed: false,
     });
     const totalAvailable = await PredefinedLink.countDocuments({ isUsed: false });
 
     res.json({
       success: true,
-      message: 'Lien importé avec succès ! Quantité mise à jour.',
-      link: claimedLink,
+      message: `${claimedLinks.length} lien(s) extrait(s) avec succès !`,
+      links: claimedLinks,
+      link: claimedLinks[0],
+      count: claimedLinks.length,
       remainingCount,
       totalAvailable,
     });
@@ -793,6 +809,7 @@ router.post('/links/claim', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // 4. Delete single link
 router.delete('/links/:id', async (req, res) => {

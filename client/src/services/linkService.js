@@ -135,14 +135,14 @@ export const linkService = {
   },
 
   /**
-   * Claim / Import a ready link (جلب رابط وإنقاص الكمية)
+   * Claim / Import ready link(s) (جلب رابط أو أكثر وإنقاص الكمية)
    */
-  async claimLink({ productName = '', productId = '', orderNumber = '' } = {}) {
+  async claimLink({ productName = 'Gemini Pro', count = 1, productId = '', orderNumber = '' } = {}) {
     try {
       const response = await fetch(`${LINKS_ENDPOINT}/claim`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productName, productId, orderNumber }),
+        body: JSON.stringify({ productName, count, productId, orderNumber }),
       });
       const data = await response.json();
       if (!response.ok) {
@@ -152,15 +152,19 @@ export const linkService = {
     } catch (err) {
       console.warn('Fallback local pour l’importation de lien :', err.message);
       const localLinks = this._getLocalLinks();
-      const idx = localLinks.findIndex((l) => {
-        if (l.isUsed) return false;
+      const numToClaim = Math.max(1, parseInt(count, 10) || 1);
+
+      const matchingIndices = [];
+      localLinks.forEach((l, idx) => {
+        if (matchingIndices.length >= numToClaim) return;
+        if (l.isUsed) return;
         if (productName && l.productName.toLowerCase() !== productName.toLowerCase().trim()) {
-          return false;
+          return;
         }
-        return true;
+        matchingIndices.push(idx);
       });
 
-      if (idx === -1) {
+      if (matchingIndices.length === 0) {
         throw new Error(
           productName
             ? `Aucun lien disponible pour "${productName}". La quantité est épuisée (0).`
@@ -168,29 +172,37 @@ export const linkService = {
         );
       }
 
-      const claimed = {
-        ...localLinks[idx],
-        isUsed: true,
-        usedAt: new Date().toISOString(),
-        usedByOrderNumber: orderNumber || '',
-      };
-      localLinks[idx] = claimed;
+      const claimedLinks = [];
+      matchingIndices.forEach((idx) => {
+        const claimed = {
+          ...localLinks[idx],
+          isUsed: true,
+          usedAt: new Date().toISOString(),
+          usedByOrderNumber: orderNumber || '',
+        };
+        localLinks[idx] = claimed;
+        claimedLinks.push(claimed);
+      });
+
       this._saveLocalLinks(localLinks);
 
       const remainingCount = localLinks.filter(
-        (l) => l.productName === claimed.productName && !l.isUsed
+        (l) => l.productName.toLowerCase() === productName.toLowerCase().trim() && !l.isUsed
       ).length;
       const totalAvailable = localLinks.filter((l) => !l.isUsed).length;
 
       return {
         success: true,
-        message: 'Lien importé avec succès ! (Mode local)',
-        link: claimed,
+        message: `${claimedLinks.length} lien(s) extrait(s) avec succès ! (Mode local)`,
+        links: claimedLinks,
+        link: claimedLinks[0],
+        count: claimedLinks.length,
         remainingCount,
         totalAvailable,
       };
     }
   },
+
 
   /**
    * Delete single link
