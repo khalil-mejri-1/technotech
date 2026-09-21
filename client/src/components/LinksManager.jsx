@@ -15,11 +15,13 @@ import {
   X,
 } from 'lucide-react';
 import { linkService } from '../services/linkService.js';
+import { productService } from '../services/productService.js';
 
 const TARGET_PRODUCT = 'Gemini Pro';
 
 export default function LinksManager({ notify }) {
   const [links, setLinks] = useState([]);
+  const [productId, setProductId] = useState('');
   const [availableCount, setAvailableCount] = useState(0);
   const [usedCount, setUsedCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -78,6 +80,19 @@ export default function LinksManager({ notify }) {
     if (showLoading) setIsLoading(true);
     setIsRefreshing(true);
     try {
+      // Trouver l'ID du produit Gemini Pro dans la BD
+      try {
+        const prods = await productService.getAll();
+        const geminiProd = (prods || []).find(
+          (p) => p.name?.toLowerCase().includes('gemini')
+        );
+        if (geminiProd) {
+          setProductId(geminiProd._id || geminiProd.id || '');
+        }
+      } catch (prodErr) {
+        console.warn('Erreur récupération id Gemini Pro :', prodErr);
+      }
+
       const res = await linkService.getAll({ productName: TARGET_PRODUCT });
       const allLinks = Array.isArray(res?.links) ? res.links : [];
       const geminiLinks = allLinks.filter(
@@ -101,7 +116,7 @@ export default function LinksManager({ notify }) {
 
   const validLinks = linkInputs.map((l) => l.trim()).filter((l) => l.length > 0);
 
-  // 1. Ajouter les liens au stock
+  // 1. Ajouter les liens au stock en Base de Données
   const handleAddLinks = async (e) => {
     e.preventDefault();
     if (validLinks.length === 0) {
@@ -113,11 +128,12 @@ export default function LinksManager({ notify }) {
     try {
       await linkService.addLinks({
         productName: TARGET_PRODUCT,
+        productId,
         urls: validLinks,
       });
 
       if (notify) {
-        notify(`✅ ${validLinks.length} lien(s) ajouté(s) au stock de ${TARGET_PRODUCT} !`);
+        notify(`✅ ${validLinks.length} lien(s) enregistré(s) en BD pour ${TARGET_PRODUCT} !`);
       }
 
       setLinkInputs(['']);
@@ -144,6 +160,7 @@ export default function LinksManager({ notify }) {
     try {
       const res = await linkService.claimLink({
         productName: TARGET_PRODUCT,
+        productId,
         count: extractCount,
       });
 
