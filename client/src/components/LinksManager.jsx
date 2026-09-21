@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   Loader2,
   Minus,
+  X,
 } from 'lucide-react';
 import { linkService } from '../services/linkService.js';
 
@@ -24,9 +25,46 @@ export default function LinksManager({ notify }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Form: Ajouter des liens
-  const [inputText, setInputText] = useState('');
+  // Form: Chaque lien dans son propre champ (input dédié)
+  const [linkInputs, setLinkInputs] = useState(['']);
   const [isSaving, setIsSaving] = useState(false);
+
+  const handleInputChange = (index, value) => {
+    setLinkInputs((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  };
+
+  const handleInputPaste = (index, e) => {
+    const text = e.clipboardData.getData('text');
+    if (!text) return;
+    const lines = text
+      .split(/[\r\n,]+/)
+      .map((l) => l.trim())
+      .filter((l) => l.length > 0);
+
+    if (lines.length > 1) {
+      e.preventDefault();
+      setLinkInputs((prev) => {
+        const next = [...prev];
+        next.splice(index, 1, ...lines);
+        return next;
+      });
+    }
+  };
+
+  const handleAddInputRow = () => {
+    setLinkInputs((prev) => [...prev, '']);
+  };
+
+  const handleRemoveInputRow = (index) => {
+    setLinkInputs((prev) => {
+      if (prev.length <= 1) return [''];
+      return prev.filter((_, i) => i !== index);
+    });
+  };
 
   // Extraction: Extraire des liens
   const [extractCount, setExtractCount] = useState(1);
@@ -61,17 +99,13 @@ export default function LinksManager({ notify }) {
     fetchGeminiLinks(true);
   }, []);
 
-  // Détection des liens saisis
-  const parsedLinks = inputText
-    .split(/[\r\n,]+/)
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0);
+  const validLinks = linkInputs.map((l) => l.trim()).filter((l) => l.length > 0);
 
-  // 1. Ajouter des liens au stock
+  // 1. Ajouter les liens au stock
   const handleAddLinks = async (e) => {
     e.preventDefault();
-    if (parsedLinks.length === 0) {
-      alert('Veuillez saisir au moins un lien.');
+    if (validLinks.length === 0) {
+      alert('Veuillez saisir au moins un lien valide.');
       return;
     }
 
@@ -79,14 +113,14 @@ export default function LinksManager({ notify }) {
     try {
       await linkService.addLinks({
         productName: TARGET_PRODUCT,
-        urls: parsedLinks,
+        urls: validLinks,
       });
 
       if (notify) {
-        notify(`✅ ${parsedLinks.length} lien(s) ajouté(s) au stock de ${TARGET_PRODUCT} !`);
+        notify(`✅ ${validLinks.length} lien(s) ajouté(s) au stock de ${TARGET_PRODUCT} !`);
       }
 
-      setInputText('');
+      setLinkInputs(['']);
       fetchGeminiLinks(false);
     } catch (err) {
       alert(err.message || 'Erreur lors de l’enregistrement des liens.');
@@ -215,42 +249,69 @@ export default function LinksManager({ notify }) {
               <Plus size={18} className="text-blue" />
               <h3>1. Enregistrer des liens (Entrée)</h3>
             </div>
-            {parsedLinks.length > 0 && (
+            {validLinks.length > 0 && (
               <span className="badge-pill blue">
-                {parsedLinks.length} lien{parsedLinks.length > 1 ? 's' : ''} détecté{parsedLinks.length > 1 ? 's' : ''}
+                {validLinks.length} lien{validLinks.length > 1 ? 's' : ''} prêt{validLinks.length > 1 ? 's' : ''}
               </span>
             )}
           </div>
 
           <p className="gemini-card-help">
-            Collez vos liens d'invitation Gemini Pro ci-dessous (un lien par ligne) :
+            Saisissez chaque lien dans son champ dédié ci-dessous :
           </p>
 
           <form onSubmit={handleAddLinks} className="gemini-form">
-            <textarea
-              className="gemini-textarea"
-              rows={3}
-              placeholder="https://g.co/gemini/invite/...&#10;https://g.co/gemini/invite/...&#10;https://g.co/gemini/invite/..."
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              required
-            />
+            <div className="gemini-inputs-list">
+              {linkInputs.map((val, idx) => (
+                <div key={idx} className="gemini-input-row">
+                  <span className="input-row-idx">#{idx + 1}</span>
+                  <input
+                    type="text"
+                    className="gemini-single-input"
+                    placeholder="https://g.co/gemini/invite/..."
+                    value={val}
+                    onChange={(e) => handleInputChange(idx, e.target.value)}
+                    onPaste={(e) => handleInputPaste(idx, e)}
+                    required={idx === 0 && validLinks.length === 0}
+                  />
+                  {linkInputs.length > 1 && (
+                    <button
+                      type="button"
+                      className="input-row-remove-btn"
+                      onClick={() => handleRemoveInputRow(idx)}
+                      title="Supprimer ce champ"
+                    >
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className="gemini-add-row-btn"
+              onClick={handleAddInputRow}
+            >
+              <Plus size={13} />
+              <span>+ Ajouter un autre champ</span>
+            </button>
 
             <button
               type="submit"
               className="gemini-submit-btn blue"
-              disabled={isSaving || parsedLinks.length === 0}
+              disabled={isSaving || validLinks.length === 0}
             >
               {isSaving ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" />
+                  <Loader2 size={15} className="animate-spin" />
                   <span>Enregistrement...</span>
                 </>
               ) : (
                 <>
-                  <Plus size={16} />
+                  <Plus size={15} />
                   <span>
-                    Ajouter {parsedLinks.length > 0 ? `(${parsedLinks.length}) ` : ''}au Stock Gemini Pro
+                    Ajouter {validLinks.length > 0 ? `(${validLinks.length}) ` : ''}au Stock Gemini Pro
                   </span>
                 </>
               )}
