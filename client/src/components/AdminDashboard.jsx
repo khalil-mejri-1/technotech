@@ -41,15 +41,18 @@ import {
   Unlock,
   Key,
   MessageCircle,
-  Phone
+  Phone,
+  Link2
 } from 'lucide-react';
 import { INITIAL_PRODUCTS } from '../data/productsData.js';
 import { productService } from '../services/productService.js';
 import { orderService } from '../services/orderService.js';
 import { offerService } from '../services/offerService.js';
+import { linkService } from '../services/linkService.js';
 import { getImageUrl } from '../config/api.js';
 import { resolveOfferItemImage } from '../data/offersData.js';
 import OrdersManager, { playOrderChime } from './OrdersManager.jsx';
+import LinksManager from './LinksManager.jsx';
 
 const getThumbnailLabel = (name = '') => {
   if (!name) return '';
@@ -67,12 +70,34 @@ export default function AdminDashboard({
   siteSettings = {},
   onUpdateSettings
 }) {
-  const [activeTab, setActiveTab] = useState('products'); // 'products' | 'hero' | 'orders' | 'offers' | 'security'
+  const [activeTab, setActiveTab] = useState('products'); // 'products' | 'hero' | 'orders' | 'offers' | 'security' | 'links'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusNotice, setStatusNotice] = useState(null);
+  const [availableLinksCount, setAvailableLinksCount] = useState(0);
+
+  // Background polling for available links count badge
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLinksCount = async () => {
+      try {
+        const res = await linkService.getAll();
+        if (isMounted && res?.stats?.availableCount !== undefined) {
+          setAvailableLinksCount(res.stats.availableCount);
+        }
+      } catch (e) {
+        // silent
+      }
+    };
+    fetchLinksCount();
+    const timer = setInterval(fetchLinksCount, 10000);
+    return () => {
+      isMounted = false;
+      clearInterval(timer);
+    };
+  }, [activeTab]);
 
   // Security & Content Protection Settings State
   const [securityForm, setSecurityForm] = useState({
@@ -1676,6 +1701,20 @@ export default function AdminDashboard({
               {securityForm.disableInspect || securityForm.disableRightClick ? 'Protégé' : 'Inactif'}
             </span>
           </button>
+
+          <button
+            type="button"
+            className={`admin-tab-item ${activeTab === 'links' ? 'active' : ''}`}
+            onClick={() => setActiveTab('links')}
+          >
+            <Link2 size={17} />
+            <span>الروابط الجاهزة (المخزون)</span>
+            {availableLinksCount > 0 && (
+              <span className="tab-count-badge links-badge" title={`${availableLinksCount} رابط متوفر`}>
+                {availableLinksCount}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
@@ -1858,6 +1897,13 @@ export default function AdminDashboard({
             ================================================================ */}
         {activeTab === 'orders' && (
           <OrdersManager notify={notify} onOrdersChange={handleOrdersChange} />
+        )}
+
+        {/* ================================================================
+            READY LINKS & DIGITAL STOCK MANAGEMENT VIEW (قسم الأدمن)
+            ================================================================ */}
+        {activeTab === 'links' && (
+          <LinksManager products={products} notify={notify} />
         )}
 
         {/* ================================================================

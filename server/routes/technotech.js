@@ -10,6 +10,7 @@ import Offer from '../models/Offer.js';
 import Order from '../models/Order.js';
 import AdminPushToken from '../models/AdminPushToken.js';
 import SiteSettings from '../models/SiteSettings.js';
+import PredefinedLink from '../models/PredefinedLink.js';
 import { sendExpoPushNotification } from '../utils/pushNotification.js';
 
 const router = express.Router();
@@ -607,6 +608,222 @@ router.delete('/orders/:id', async (req, res) => {
     res.json({ message: 'Commande supprimée avec succès', id: req.params.id });
   } catch (err) {
     console.error('Erreur suppression commande :', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// Predefined Links Management (Stock Liens & Import)
+// ==========================================
+
+// 1. Get links and stock statistics
+router.get('/links', async (req, res) => {
+  try {
+    const { productName, status } = req.query;
+    const filter = {};
+
+    if (productName && productName.trim() !== '') {
+      filter.productName = { $regex: new RegExp(`^${productName.trim()}$`, 'i') };
+    }
+
+    if (status === 'available') {
+      filter.isUsed = false;
+    } else if (status === 'used') {
+      filter.isUsed = true;
+    }
+
+    const links = await PredefinedLink.find(filter).sort({ createdAt: -1 });
+
+    // Calculate overall statistics
+    const totalLinks = await PredefinedLink.countDocuments();
+    const availableCount = await PredefinedLink.countDocuments({ isUsed: false });
+    const usedCount = await PredefinedLink.countDocuments({ isUsed: true });
+
+    // Group breakdown by product name
+    const byProductAggregation = await PredefinedLink.aggregate([
+      {
+        $group: {
+          _id: '$productName',
+          productId: { $first: '$productId' },
+          total: { $sum: 1 },
+          available: {
+            $sum: { $cond: [{ $eq: ['$isUsed', false] }, 1, 0] },
+          },
+          used: {
+            $sum: { $cond: [{ $eq: ['$isUsed', true] }, 1, 0] },
+          },
+          lastAdded: { $max: '$createdAt' },
+        },
+      },
+      { $sort: { available: -1, _id: 1 } },
+    ]);
+
+    const byProduct = byProductAggregation.map((item) => ({
+      productName: item._id,
+      productId: item.productId || '',
+      totalCount: item.total,
+      availableCount: item.available,
+      usedCount: item.used,
+      lastAdded: item.lastAdded,
+    }));
+
+    res.json({
+      links,
+      stats: {
+        totalLinks,
+        availableCount,
+        usedCount,
+        byProduct,
+      },
+    });
+  } catch (err) {
+    console.error('Erreur récupération des liens :', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. Register ready links (Bulk or single)
+router.post('/links', async (req, res) => {
+  try {
+    const { productName, productId = '', urls, notes = '' } = req.body;
+
+    if (!productName || typeof productName !== 'string' || productName.trim() === '') {
+      return res.status(400).json({ error: 'Le nom du produit ou du service est obligatoire.' });
+    }
+
+    // Extract list of URLs (supports array or multiline string)
+    let urlList = [];
+    if (Array.isArray(urls)) {
+      urlList = urls.map((u) => String(u).trim()).filter((u) => u.length > 0);
+    } else if (typeof urls === 'string') {
+      urlList = urls
+        .split(/[\r\n,]+/)
+        .map((u) => u.trim())
+        .filter((u) => u.length > 0);
+    }
+
+    if (urlList.length === 0) {
+      return res.status(400).json({ error: 'Veuillez fournir au moins un lien valide.' });
+    }
+
+    const cleanProductName = productName.trim();
+    const docs = urlList.map((url) => ({
+      productName: cleanProductName,
+      productId: productId.trim(),
+      url,
+      notes: notes.trim(),
+      isUsed: false,
+    }));
+
+    const inserted = await PredefinedLink.insertMany(docs);
+
+    // Get new available count for this product
+    const availableCount = await PredefinedLink.countDocuments({
+      productName: cleanProductName,
+      isUsed: false,
+    });
+    const totalAvailable = await PredefinedLink.countDocuments({ isUsed: false });
+
+    res.status(201).json({
+      success: true,
+      message: `${inserted.length} lien(s) enregistré(s) avec succès pour "${cleanProductName}".`,
+      count: inserted.length,
+      availableCount,
+      totalAvailable,
+      inserted,
+    });
+  } catch (err) {
+    console.error('Erreur enregistrement liens :', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. Import / Claim a ready link (جلب رابط وإنقاص الكمية)
+router.post('/links/claim', async (req, res) => {
+  try {
+    const { productName, productId, orderNumber } = req.body;
+
+    const query = { isUsed: false };
+
+    if (productName && productName.trim() !== '') {
+      query.productName = { $regex: new RegExp(`^${productName.trim()}$`, 'i') };
+    } else if (productId && productId.trim() !== '') {
+      query.productId = productId.trim();
+    }
+
+    // Find oldest unused link matching criteria (FIFO)
+    const claimedLink = await PredefinedLink.findOneAndUpdate(
+      query,
+      {
+        $set: {
+          isUsed: true,
+          usedAt: new Date(),
+          usedByOrderNumber: orderNumber ? String(orderNumber).trim() : '',
+        },
+      },
+      { sort: { createdAt: 1 }, new: true }
+    );
+
+    if (!claimedLink) {
+      return res.status(404).json({
+        success: false,
+        error: productName
+          ? `Aucun lien disponible pour "${productName}". La quantité est épuisée (0).`
+          : 'Aucun lien disponible en stock.',
+        availableCount: 0,
+      });
+    }
+
+    // Get remaining available quantity for this product
+    const remainingCount = await PredefinedLink.countDocuments({
+      productName: claimedLink.productName,
+      isUsed: false,
+    });
+    const totalAvailable = await PredefinedLink.countDocuments({ isUsed: false });
+
+    res.json({
+      success: true,
+      message: 'Lien importé avec succès ! Quantité mise à jour.',
+      link: claimedLink,
+      remainingCount,
+      totalAvailable,
+    });
+  } catch (err) {
+    console.error('Erreur importation de lien :', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 4. Delete single link
+router.delete('/links/:id', async (req, res) => {
+  try {
+    const deleted = await PredefinedLink.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Lien introuvable.' });
+    }
+    res.json({ success: true, message: 'Lien supprimé avec succès.', id: req.params.id });
+  } catch (err) {
+    console.error('Erreur suppression lien :', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 5. Clear used links (cleanup)
+router.delete('/links/cleanup/used', async (req, res) => {
+  try {
+    const { productName } = req.query;
+    const filter = { isUsed: true };
+    if (productName && productName.trim() !== '') {
+      filter.productName = { $regex: new RegExp(`^${productName.trim()}$`, 'i') };
+    }
+    const result = await PredefinedLink.deleteMany(filter);
+    res.json({
+      success: true,
+      message: `${result.deletedCount} lien(s) utilisé(s) supprimé(s).`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (err) {
+    console.error('Erreur nettoyage des liens :', err);
     res.status(500).json({ error: err.message });
   }
 });

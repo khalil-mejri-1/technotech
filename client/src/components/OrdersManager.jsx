@@ -23,8 +23,13 @@ import {
   ChevronDown,
   ArrowUpRight,
   X,
+  Link2,
+  Copy,
+  Sparkles,
+  Check,
 } from 'lucide-react';
 import { orderService } from '../services/orderService.js';
+import { linkService } from '../services/linkService.js';
 import { getImageUrl } from '../config/api.js';
 
 // Play a pleasant luxury notification chime using Web Audio API
@@ -75,6 +80,46 @@ export default function OrdersManager({ notify, onOrdersChange }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
+
+  // Ready Links Claiming State in Order Modal
+  const [orderClaimedLinks, setOrderClaimedLinks] = useState({});
+  const [isClaimingLink, setIsClaimingLink] = useState(false);
+  const [copiedLinkKey, setCopiedLinkKey] = useState(null);
+
+  const handleClaimLinkForOrderItem = async (item, itemIdx, order) => {
+    setIsClaimingLink(true);
+    const key = `${order.orderNumber}-${itemIdx}`;
+    try {
+      const res = await linkService.claimLink({
+        productName: item.name,
+        orderNumber: order.orderNumber,
+      });
+      if (res && res.link) {
+        setOrderClaimedLinks((prev) => ({
+          ...prev,
+          [key]: {
+            url: res.link.url,
+            productName: item.name,
+            remainingCount: res.remainingCount,
+          },
+        }));
+        if (notify) {
+          notify(`⚡ تم استيراد رابط لـ "${item.name}"! الكمية المتبقية: ${res.remainingCount}`);
+        }
+      }
+    } catch (err) {
+      alert(err.message || 'Aucun lien disponible.');
+    } finally {
+      setIsClaimingLink(false);
+    }
+  };
+
+  const handleCopyOrderLink = (key, url) => {
+    navigator.clipboard.writeText(url);
+    setCopiedLinkKey(key);
+    setTimeout(() => setCopiedLinkKey(null), 2500);
+    if (notify) notify('تم نسخ الرابط! 📋');
+  };
 
   // Track known orders to detect newly arrived orders during live polling
   const knownOrderIdsRef = useRef(new Set());
@@ -743,27 +788,98 @@ export default function OrdersManager({ notify, onOrdersChange }) {
                   </div>
                 </div>
 
-                {/* Items Table */}
+                {/* Items Table with Link Claiming Action */}
                 <div className="modal-section-card">
-                  <h4>Articles &amp; Formules commandés</h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h4 style={{ margin: 0 }}>Articles &amp; Formules commandés</h4>
+                    <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                      الروابط الجاهزة: قسم الأدمن فقط 🔒
+                    </span>
+                  </div>
                   <div className="modal-items-table">
-                    {(activeOrderModal.items || []).map((it, idx) => (
-                      <div key={idx} className="modal-table-row">
-                        <img
-                          src={getImageUrl(it.image)}
-                          alt={it.name}
-                          className="modal-table-thumb"
-                        />
-                        <div className="modal-table-name">
-                          <strong>{it.name}</strong>
-                          <span>{it.size || 'Standard'} &bull; Activation immédiate</span>
+                    {(activeOrderModal.items || []).map((it, idx) => {
+                      const itemKey = `${activeOrderModal.orderNumber}-${idx}`;
+                      const claimed = orderClaimedLinks[itemKey];
+                      const waItemMsg = claimed
+                        ? encodeURIComponent(
+                            `Bonjour ${activeOrderModal.customerName}, voici votre lien d'activation pour ${it.name} :\n${claimed.url}\nMerci pour votre confiance chez TechnoTech !`
+                          )
+                        : '';
+                      const waItemUrl = `https://wa.me/216${activeOrderModal.customerPhone}?text=${waItemMsg}`;
+
+                      return (
+                        <div key={idx} className="modal-table-row-container">
+                          <div className="modal-table-row">
+                            <img
+                              src={getImageUrl(it.image)}
+                              alt={it.name}
+                              className="modal-table-thumb"
+                            />
+                            <div className="modal-table-name">
+                              <strong>{it.name}</strong>
+                              <span>{it.size || 'Standard'} &bull; Activation immédiate</span>
+                            </div>
+                            <div className="modal-table-qty">Qté: <strong>{it.quantity}</strong></div>
+                            <div className="modal-table-price">
+                              {(Number(it.price) || 0) * (Number(it.quantity) || 1)} DT
+                            </div>
+                            <div className="modal-table-link-action">
+                              {!claimed ? (
+                                <button
+                                  type="button"
+                                  className="claim-order-item-btn"
+                                  onClick={() => handleClaimLinkForOrderItem(it, idx, activeOrderModal)}
+                                  disabled={isClaimingLink}
+                                  title="استيراد رابط جاهز لهذا المنتج وإنقاصه من المخزون"
+                                >
+                                  {isClaimingLink ? (
+                                    <Loader2 size={13} className="animate-spin" />
+                                  ) : (
+                                    <Sparkles size={13} />
+                                  )}
+                                  <span>استيراد رابط</span>
+                                </button>
+                              ) : (
+                                <span className="item-claimed-pill">
+                                  <Check size={12} /> تم الاستيراد
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Claimed Link Details Box */}
+                          {claimed && (
+                            <div className="order-item-claimed-box">
+                              <div className="claimed-box-top">
+                                <span className="claimed-label">
+                                  <Link2 size={13} /> الرابط المستورد (المتبقي في المخزون: {claimed.remainingCount})
+                                </span>
+                                <div className="claimed-box-actions">
+                                  <button
+                                    type="button"
+                                    className="claimed-quick-btn copy"
+                                    onClick={() => handleCopyOrderLink(itemKey, claimed.url)}
+                                  >
+                                    {copiedLinkKey === itemKey ? <Check size={13} /> : <Copy size={13} />}
+                                    <span>{copiedLinkKey === itemKey ? 'تم النسخ' : 'نسخ'}</span>
+                                  </button>
+                                  <a
+                                    href={waItemUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="claimed-quick-btn whatsapp"
+                                  >
+                                    <MessageCircle size={13} />
+                                    <span>إرسال عبر واتساب</span>
+                                  </a>
+                                </div>
+                              </div>
+                              <div className="claimed-box-url">{claimed.url}</div>
+                            </div>
+                          )}
                         </div>
-                        <div className="modal-table-qty">Qté: <strong>{it.quantity}</strong></div>
-                        <div className="modal-table-price">
-                          {(Number(it.price) || 0) * (Number(it.quantity) || 1)} DT
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   <div className="modal-total-summary">
