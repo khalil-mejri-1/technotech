@@ -32,6 +32,15 @@ function App() {
   const [cartItems, setCartItems] = useState([]);
   const [toastMessage, setToastMessage] = useState(null);
 
+  // Clean up any lingering theme attributes or custom cursor classes
+  useEffect(() => {
+    try {
+      localStorage.removeItem('technotech_theme');
+    } catch (e) {}
+    document.documentElement.removeAttribute('data-theme');
+    document.body.classList.remove('theme-dark', 'theme-light', 'has-custom-cursor');
+  }, []);
+
   // Sync browser back/forward buttons
   useEffect(() => {
     const handlePopState = () => {
