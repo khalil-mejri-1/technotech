@@ -12455,26 +12455,85 @@ body {
   gap: 0.55rem;
 }
 
-.gemini-textarea {
-  width: 100%;
+.gemini-inputs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 160px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.gemini-input-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.input-row-idx {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 700;
+  min-width: 20px;
+}
+
+.gemini-single-input {
+  flex: 1;
   background: #0f172a;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
-  padding: 0.5rem 0.7rem;
+  border-radius: 7px;
+  padding: 0.42rem 0.65rem;
   color: #ffffff;
   font-family: ui-monospace, monospace;
   font-size: 0.76rem;
-  line-height: 1.4;
   outline: none;
-  resize: vertical;
-  min-height: 65px;
-  transition: all 0.2s ease;
+  transition: all 0.18s ease;
 }
 
-.gemini-textarea:focus {
+.gemini-single-input:focus {
   border-color: #38bdf8;
   box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
 }
+
+.input-row-remove-btn {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #f87171;
+  border-radius: 5px;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s ease;
+}
+
+.input-row-remove-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.gemini-add-row-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  color: #38bdf8;
+  border-radius: 7px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  transition: all 0.18s ease;
+}
+
+.gemini-add-row-btn:hover {
+  background: rgba(56, 189, 248, 0.1);
+  border-color: #38bdf8;
+}
+
 
 .gemini-submit-btn {
   display: flex;
