@@ -9,6 +9,7 @@ import CartDrawer from './components/CartDrawer.jsx';
 import CheckoutModal from './components/CheckoutModal.jsx';
 import AboutPage from './components/AboutPage.jsx';
 import ContactPage from './components/ContactPage.jsx';
+import WhatsAppFloatingButton from './components/WhatsAppFloatingButton.jsx';
 import { Sparkles, Gift, ArrowRight } from 'lucide-react';
 import { getStoredProducts, saveStoredProducts, INITIAL_PRODUCTS, getStoredHeroSlides, saveStoredHeroSlides } from './data/productsData.js';
 import { getStoredOffers, saveStoredOffers } from './data/offersData.js';
@@ -484,6 +485,9 @@ function App() {
         items={cartItems}
         onOrderSuccess={handleOrderSuccess}
       />
+
+      {/* Floating WhatsApp Action Button */}
+      <WhatsAppFloatingButton whatsappNumber={siteSettings?.whatsappNumber} />
 
       {/* Interactive Toast Notification */}
       <div className={`toast-notice ${toastMessage ? 'show' : ''}`}>
