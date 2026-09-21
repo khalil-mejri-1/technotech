@@ -1708,9 +1708,9 @@ export default function AdminDashboard({
             onClick={() => setActiveTab('links')}
           >
             <Link2 size={17} />
-            <span>الروابط الجاهزة (المخزون)</span>
+            <span>Stock Liens (Gemini Pro)</span>
             {availableLinksCount > 0 && (
-              <span className="tab-count-badge links-badge" title={`${availableLinksCount} رابط متوفر`}>
+              <span className="tab-count-badge links-badge" title={`${availableLinksCount} lien(s) disponible(s)`}>
                 {availableLinksCount}
               </span>
             )}
