@@ -51,6 +51,17 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Track page views & session engagement in Google Analytics (GA4) on SPA route changes
+  useEffect(() => {
+    if (typeof window.gtag === 'function') {
+      window.gtag('config', 'G-EQQZHW6ZWQ', {
+        page_path: currentPath,
+        page_location: window.location.href,
+        page_title: document.title,
+      });
+    }
+  }, [currentPath]);
+
   // Synchronize products, hero slides and offers directly with MongoDB Atlas database
   useEffect(() => {
     let isMounted = true;
