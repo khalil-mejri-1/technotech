@@ -3,13 +3,14 @@
  * La configuration est définie UNIQUEMENT dans le fichier .env via VITE_API_URL
  */
 
-// الرابط يتم جلبه حصراً من ملف .env
-export const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+// الرابط يتم جلبه من .env أو الرابط الافتراضي للإنتاج
+export const API_BASE_URL =
+  import.meta.env.VITE_API_URL || 'https://technotech-api.vercel.app/api/technotech';
 
 // استخراج دومين السيرفر تلقائياً من رابط API_BASE_URL المحدد في .env
 export const BACKEND_URL =
   import.meta.env.VITE_BACKEND_URL ||
-  (API_BASE_URL ? API_BASE_URL.replace(/\/api\/technotech\/?$/, '').replace(/\/api\/?$/, '') : '');
+  (API_BASE_URL ? API_BASE_URL.replace(/\/api\/technotech\/?$/, '').replace(/\/api\/?$/, '') : 'https://technotech-api.vercel.app');
 
 /**
  * دالة لتصحيح روابط الصور تلقائياً بالاعتماد على رابط السيرفر المحدد في .env
