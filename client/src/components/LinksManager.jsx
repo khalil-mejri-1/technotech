@@ -229,7 +229,7 @@ export default function LinksManager({ notify }) {
           <form onSubmit={handleAddLinks} className="gemini-form">
             <textarea
               className="gemini-textarea"
-              rows={5}
+              rows={3}
               placeholder="https://g.co/gemini/invite/...&#10;https://g.co/gemini/invite/...&#10;https://g.co/gemini/invite/..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
