@@ -13,6 +13,7 @@ import {
   Loader2,
   Minus,
   X,
+  AlertTriangle,
 } from 'lucide-react';
 import { linkService } from '../services/linkService.js';
 import { productService } from '../services/productService.js';
@@ -26,6 +27,10 @@ export default function LinksManager({ notify }) {
   const [usedCount, setUsedCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Modal de confirmation de suppression professionnelle
+  const [deleteConfirmLink, setDeleteConfirmLink] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form: Chaque lien dans son propre champ (input dédié)
   const [linkInputs, setLinkInputs] = useState(['']);
@@ -197,15 +202,19 @@ export default function LinksManager({ notify }) {
     if (notify) notify(`${extractedLinks.length} lien(s) copié(s) dans le presse-papier ! 📋`);
   };
 
-  // Supprimer un lien individuel du stock
-  const handleDeleteLink = async (id) => {
-    if (!window.confirm('Voulez-vous supprimer ce lien ?')) return;
+  // Supprimer un lien individuel du stock (Confirmation via Modal Professionnelle)
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmLink) return;
+    setIsDeleting(true);
     try {
-      await linkService.deleteLink(id);
+      await linkService.deleteLink(deleteConfirmLink._id);
+      setDeleteConfirmLink(null);
       fetchGeminiLinks(false);
-      if (notify) notify('Lien supprimé.');
+      if (notify) notify('Lien supprimé de la base de données. 🗑️');
     } catch (err) {
-      console.error(err);
+      alert(err.message || 'Erreur lors de la suppression.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -513,7 +522,7 @@ export default function LinksManager({ notify }) {
                   <button
                     type="button"
                     className="item-btn delete"
-                    onClick={() => handleDeleteLink(l._id)}
+                    onClick={() => setDeleteConfirmLink(l)}
                     title="Supprimer du stock"
                   >
                     <Trash2 size={13} />
@@ -524,6 +533,69 @@ export default function LinksManager({ notify }) {
           </div>
         )}
       </div>
+
+      {/* -------------------------------------------------------------
+          MODAL DE CONFIRMATION DE SUPPRESSION PROFESSIONNELLE
+          ------------------------------------------------------------- */}
+      {deleteConfirmLink && (
+        <div
+          className="admin-dialog-backdrop"
+          onClick={() => !isDeleting && setDeleteConfirmLink(null)}
+        >
+          <div
+            className="admin-confirm-box"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="confirm-icon danger">
+              <Trash2 size={28} />
+            </div>
+
+            <h3>Supprimer ce lien ?</h3>
+            <p>
+              Êtes-vous sûr de vouloir supprimer définitivement ce lien de Gemini Pro de la base de données ?
+            </p>
+
+            <div className="gemini-confirm-link-preview">
+              {deleteConfirmLink.url}
+            </div>
+
+            <div className="gemini-confirm-warning">
+              <AlertTriangle size={15} />
+              <span>Cette action est irréversible et retirera le lien du stock.</span>
+            </div>
+
+            <div className="confirm-buttons">
+              <button
+                type="button"
+                className="admin-btn secondary"
+                onClick={() => setDeleteConfirmLink(null)}
+                disabled={isDeleting}
+              >
+                Annuler
+              </button>
+
+              <button
+                type="button"
+                className="admin-btn danger"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 size={15} className="animate-spin" />
+                    <span>Suppression...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 size={15} />
+                    <span>Oui, supprimer</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
