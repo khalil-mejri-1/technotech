@@ -14,36 +14,20 @@ export default function Preloader({ onFinish }) {
       return;
     }
 
-    const barFill = preloaderEl.querySelector('.initial-preloader-bar-fill');
-    const statusText = preloaderEl.querySelector('.initial-preloader-status');
-
-    // Complete the loading bar after the glowing circle completes its draw
+    // Fade out overlay smoothly after the glowing circle finishes drawing
     const t1 = setTimeout(() => {
-      if (barFill) {
-        barFill.style.width = '100%';
-        barFill.style.animation = 'none';
-      }
-      if (statusText) {
-        statusText.textContent = 'Bienvenue';
-        statusText.style.color = '#00d2ff';
-      }
-    }, 1250);
-
-    // Fade out overlay smoothly after the animation sequence completes
-    const t2 = setTimeout(() => {
       preloaderEl.classList.add('fade-out');
-    }, 1800);
+    }, 1350);
 
     // Remove from layout after fade transition finishes
-    const t3 = setTimeout(() => {
+    const t2 = setTimeout(() => {
       preloaderEl.style.display = 'none';
       if (onFinish) onFinish();
-    }, 2350);
+    }, 1850);
 
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
-      clearTimeout(t3);
     };
   }, [onFinish]);
 
