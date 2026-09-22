@@ -258,6 +258,16 @@ export default function Hero({
   };
 
   const outgoingSlide = outgoingIndex !== null ? activeSlides[outgoingIndex] : null;
+  const outgoingProduct = outgoingSlide
+    ? products.find(
+        (p) =>
+          (p._id && (p._id === outgoingSlide.productId || p._id === outgoingSlide.id)) ||
+          (p.id && (p.id === outgoingSlide.productId || p.id === outgoingSlide.id)) ||
+          (p.name && outgoingSlide.name && p.name.trim().toLowerCase() === outgoingSlide.name.trim().toLowerCase())
+      )
+    : null;
+  const outgoingName = outgoingProduct?.name || outgoingSlide?.name;
+  const outgoingDesc = outgoingProduct?.description || outgoingSlide?.description;
 
   const handleOrderClick = () => {
     if (!onAddToCart) return;
@@ -311,23 +321,54 @@ export default function Hero({
           </button>
         </div>
 
-        {/* Dynamic Product Headline from Product Data */}
-        <h1 className="hero-title">
-          {displayName && displayName.includes(' ') ? (
-            <>
-              <span className="hero-title-main">{displayName.split(' ')[0]}</span>
-              <span className="hero-title-accent">{displayName.split(' ').slice(1).join(' ')}</span>
-            </>
-          ) : (
-            <span className="hero-title-main">{displayName}</span>
+        {/* Dynamic Product Headline and Description inside smooth transition stage */}
+        <div className="hero-text-stage">
+          {/* Outgoing text: smoothly floats up, fades out and blurs */}
+          {isTransitioning && outgoingSlide && (
+            <div
+              key={`outgoing-text-${outgoingSlide.id || outgoingIndex}`}
+              className="hero-text-group hero-text-exit"
+              aria-hidden="true"
+            >
+              <div className="hero-title">
+                {outgoingName && outgoingName.includes(' ') ? (
+                  <>
+                    <span className="hero-title-main">{outgoingName.split(' ')[0]}</span>
+                    <span className="hero-title-accent">{outgoingName.split(' ').slice(1).join(' ')}</span>
+                  </>
+                ) : (
+                  <span className="hero-title-main">{outgoingName}</span>
+                )}
+              </div>
+              <p className="hero-description">
+                {outgoingDesc ||
+                  "Votre plateforme d'excellence pour acquérir les meilleurs abonnements officiels et produits digitaux authentiques avec activation immédiate et garantie totale."}
+              </p>
+            </div>
           )}
-        </h1>
 
-        {/* Narrative Description Copy from Product Data */}
-        <p className="hero-description">
-          {displayDesc ||
-            "Votre plateforme d'excellence pour acquérir les meilleurs abonnements officiels et produits digitaux authentiques avec activation immédiate et garantie totale."}
-        </p>
+          {/* Incoming/Current text: glides up smoothly with subtle blur-to-crisp and stagger */}
+          <div
+            key={`current-text-${currentSlide?.id || safeIndex}`}
+            className={`hero-text-group ${isTransitioning ? 'hero-text-enter' : ''}`}
+          >
+            <h1 className="hero-title">
+              {displayName && displayName.includes(' ') ? (
+                <>
+                  <span className="hero-title-main">{displayName.split(' ')[0]}</span>
+                  <span className="hero-title-accent">{displayName.split(' ').slice(1).join(' ')}</span>
+                </>
+              ) : (
+                <span className="hero-title-main">{displayName}</span>
+              )}
+            </h1>
+
+            <p className="hero-description">
+              {displayDesc ||
+                "Votre plateforme d'excellence pour acquérir les meilleurs abonnements officiels et produits digitaux authentiques avec activation immédiate et garantie totale."}
+            </p>
+          </div>
+        </div>
 
         {/* Hero Actions Group */}
         <div className="hero-actions-group">
@@ -425,7 +466,10 @@ export default function Hero({
       <section className="hero-right">
         <div className="hero-control-card" style={{ '--slide-accent': activeColor }}>
           {/* 1. Header / Price Badge Area */}
-          <div className="hero-price-panel">
+          <div
+            key={`price-panel-${safeIndex}`}
+            className={`hero-price-panel ${isTransitioning ? 'hero-panel-fade-enter' : ''}`}
+          >
             <div className="hero-badge-status">
               <span className="pulse-dot" style={{ backgroundColor: activeColor }} />
               <span className="status-label">EN STOCK • ACTIVATION IMMÉDIATE</span>
@@ -464,7 +508,10 @@ export default function Hero({
 
           {/* 2. Options: Plans or Key Guarantees */}
           {plans.length > 0 ? (
-            <div className="plan-selection-group">
+            <div
+              key={`plans-group-${safeIndex}`}
+              className={`plan-selection-group ${isTransitioning ? 'hero-plans-fade-enter' : ''}`}
+            >
               <div className="group-header">
                 <div className="group-label-wrap">
                   <span className="group-label-dot" />
@@ -507,7 +554,10 @@ export default function Hero({
               </div>
             </div>
           ) : isApparel ? (
-            <div className="plan-selection-group">
+            <div
+              key={`size-group-${safeIndex}`}
+              className={`plan-selection-group ${isTransitioning ? 'hero-plans-fade-enter' : ''}`}
+            >
               <div className="group-header">
                 <span className="group-label">Choisissez votre taille</span>
                 <span className="active-plan-badge">Taille {selectedSize}</span>
@@ -529,7 +579,10 @@ export default function Hero({
             </div>
           ) : (
             /* Digital product without multiple plans: Showcase trust & features */
-            <div className="plan-selection-group">
+            <div
+              key={`feature-group-${safeIndex}`}
+              className={`plan-selection-group ${isTransitioning ? 'hero-plans-fade-enter' : ''}`}
+            >
               <div className="group-header">
                 <span className="group-label">Avantages inclus</span>
                 <span className="active-plan-badge">100% Officiel</span>
@@ -554,7 +607,10 @@ export default function Hero({
             <div className="group-header">
               <span className="group-label">Sélection du Carrousel</span>
               <div className="carousel-header-controls">
-                <span className="carousel-counter-badge">
+                <span
+                  key={`counter-${safeIndex}`}
+                  className={`carousel-counter-badge ${isTransitioning ? 'counter-num-enter' : ''}`}
+                >
                   {String(safeIndex + 1).padStart(2, '0')} / {String(activeSlides.length).padStart(2, '0')}
                 </span>
                 <div className="carousel-mini-arrows">

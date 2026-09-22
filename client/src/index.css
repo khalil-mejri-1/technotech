@@ -484,6 +484,83 @@ body {
   transform: scale(1.08);
 }
 
+/* Hero Text Stage for Seamless Carousel Transitions */
+.hero-text-stage {
+  position: relative;
+  width: 100%;
+}
+
+.hero-text-group {
+  width: 100%;
+}
+
+.hero-text-group.hero-text-exit {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+  animation: heroTextExitAnim 0.38s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.hero-text-group.hero-text-enter {
+  position: relative;
+  z-index: 2;
+}
+
+.hero-text-group.hero-text-enter .hero-title {
+  animation: heroTitleEnterAnim 0.58s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hero-text-group.hero-text-enter .hero-description {
+  animation: heroDescEnterAnim 0.62s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both;
+}
+
+@keyframes heroTextExitAnim {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.98);
+    filter: blur(5px);
+  }
+}
+
+@keyframes heroTitleEnterAnim {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.98);
+    filter: blur(6px);
+  }
+  40% {
+    opacity: 0.85;
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+@keyframes heroDescEnterAnim {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0px);
+  }
+}
+
 /* Headline */
 .hero-title {
   font-family: var(--font-display);
@@ -1363,6 +1440,110 @@ body {
 
 .plan-chip-btn.active .plan-chip-currency {
   color: #ffaa6b;
+}
+
+/* Carousel Transition Animations for Price, Plans and Badges */
+.hero-panel-fade-enter {
+  animation: heroCardItemEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hero-panel-fade-enter .current-price {
+  animation: heroPriceNumPop 0.52s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hero-panel-fade-enter .discount-pill {
+  animation: heroDiscountPillPop 0.5s cubic-bezier(0.18, 0.9, 0.32, 1.25) 0.06s both;
+}
+
+.hero-panel-fade-enter .savings-badge {
+  animation: heroSavingsBadgeEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+}
+
+.hero-plans-fade-enter {
+  animation: heroCardItemEnter 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+}
+
+.hero-plans-fade-enter .plan-chip-btn {
+  animation: heroChipStagger 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.hero-plans-fade-enter .plan-chip-btn:nth-child(1) { animation-delay: 0.03s; }
+.hero-plans-fade-enter .plan-chip-btn:nth-child(2) { animation-delay: 0.07s; }
+.hero-plans-fade-enter .plan-chip-btn:nth-child(3) { animation-delay: 0.11s; }
+.hero-plans-fade-enter .plan-chip-btn:nth-child(4) { animation-delay: 0.15s; }
+
+.counter-num-enter {
+  animation: counterBadgePop 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes heroCardItemEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0px);
+  }
+}
+
+@keyframes heroPriceNumPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(6px);
+    filter: blur(3px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0px);
+  }
+}
+
+@keyframes heroDiscountPillPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.65) rotate(-5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes heroSavingsBadgeEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroChipStagger {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes counterBadgePop {
+  0% {
+    opacity: 0.25;
+    transform: scale(0.88);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Apparel size selection */
@@ -2787,13 +2968,15 @@ body {
     padding: 1rem 0.85rem 2rem;
   }
 
-  .brand-logo-img {
-    width: 40px;
-    height: 40px;
+  .brand-logo-img,
+  .navbar.navbar-floating-neon .brand-logo-img {
+    width: 44px;
+    height: 44px;
   }
 
-  .brand-name {
-    font-size: 1.35rem;
+  .brand-name,
+  .navbar.navbar-floating-neon .brand-name {
+    font-size: 1.55rem;
     font-weight: 800;
     letter-spacing: -0.02em;
   }
@@ -3053,13 +3236,15 @@ body {
 
 /* Extra Compact Mobile Phones (<= 400px) */
 @media (max-width: 400px) {
-  .brand-logo-img {
-    width: 36px;
-    height: 36px;
+  .brand-logo-img,
+  .navbar.navbar-floating-neon .brand-logo-img {
+    width: 38px;
+    height: 38px;
   }
 
-  .brand-name {
-    font-size: 1.22rem;
+  .brand-name,
+  .navbar.navbar-floating-neon .brand-name {
+    font-size: 1.38rem;
     font-weight: 800;
     letter-spacing: -0.02em;
   }
