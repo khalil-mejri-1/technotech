@@ -17,13 +17,18 @@ export const orderService = {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || `Erreur de commande (${response.status})`);
+        const error = new Error(data.error || `Erreur de commande (${response.status})`);
+        error.isValidationError = true;
+        throw error;
       }
 
       // Sync local cache
       this._saveToLocalCache(data);
       return data;
     } catch (err) {
+      if (err.isValidationError) {
+        throw err;
+      }
       console.warn('API non disponible, sauvegarde locale de la commande :', err.message);
       // Fallback local storage for offline resilience
       const fallbackOrder = {

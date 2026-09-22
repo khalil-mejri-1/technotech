@@ -7518,6 +7518,20 @@ body {
   flex-shrink: 0;
 }
 
+.checkout-turnstile-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0.4rem 0 1.2rem;
+  width: 100%;
+  min-height: 65px;
+}
+
+.turnstile-widget-slot {
+  display: flex;
+  justify-content: center;
+}
+
 .checkout-submit-btn {
   width: 100%;
   padding: 14px;
