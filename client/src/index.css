@@ -289,12 +289,31 @@ body {
 }
 
 .brand-name {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  color: #ffffff;
-  text-transform: uppercase;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 1.55rem;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  display: inline-flex;
+  align-items: center;
+  text-transform: none;
+  line-height: 1;
+}
+
+.brand-techno {
+  color: #030e43;
+  -webkit-text-stroke: 0.6px rgba(255, 255, 255, 0.7);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+.brand-tech {
+  background: linear-gradient(135deg, #00d2ff 0%, #0072ff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  filter: drop-shadow(0 0 12px rgba(0, 210, 255, 0.5));
 }
 
 /* Center Glass Capsule Navigation */
@@ -9554,7 +9573,6 @@ body {
 }
 
 .offers-view-active .brand-name {
-  color: #ffffff !important;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4) !important;
 }
 
@@ -13450,16 +13468,14 @@ body {
 }
 
 .preloader-brand-title {
-  font-family: 'Cinzel', 'Playfair Display', serif;
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: 0.35em;
-  color: #ffffff;
-  background: linear-gradient(180deg, #ffffff 0%, #d8dbe6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 26px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
   margin-bottom: 8px;
-  text-transform: uppercase;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
 }
 
 .preloader-subtitle {
