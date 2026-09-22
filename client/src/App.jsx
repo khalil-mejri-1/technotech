@@ -17,6 +17,7 @@ import { productService } from './services/productService.js';
 import { offerService } from './services/offerService.js';
 import { settingsService, DEFAULT_SITE_SETTINGS } from './services/settingsService.js';
 import { analytics } from './services/analytics.js';
+import Preloader from './components/Preloader.jsx';
 
 function App() {
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
@@ -367,6 +368,9 @@ function App() {
 
   return (
     <div className={`app-container ${isOffersPage ? 'offers-view-active' : ''} ${isAboutPage ? 'about-view-active' : ''} ${isContactPage ? 'contact-view-active' : ''} ${siteSettings.disableImageDragging ? 'disable-img-drag' : ''}`}>
+      {/* Luxury Minimalist Preloader */}
+      <Preloader />
+
       {/* 1. Top Yellow Gift Announcement Bar */}
       <div className="top-gift-announcement-bar">
         <div className="announcement-content-wrap">
