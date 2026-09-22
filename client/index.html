@@ -263,211 +263,422 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Cinzel:wght@600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
     rel="stylesheet">
+  <!-- Critical Anti-FOUC & Instant Luxury Preloader Styles -->
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: #07090e !important;
+      color: #ffffff;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow-x: hidden;
+    }
+
+    #site-preloader {
+      position: fixed;
+      inset: 0;
+      z-index: 99999999;
+      background: #07090e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.45s ease;
+      pointer-events: all;
+    }
+
+    #site-preloader.fade-out {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .initial-preloader-glow {
+      position: absolute;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 210, 255, 0.22) 0%, rgba(0, 132, 255, 0.08) 50%, transparent 70%);
+      filter: blur(40px);
+      pointer-events: none;
+      animation: preloaderPulse 2.4s ease-in-out infinite;
+    }
+
+    .initial-preloader-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .initial-preloader-logo-wrap {
+      position: relative;
+      width: 84px;
+      height: 84px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 22px;
+    }
+
+    .initial-preloader-glow-ring {
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(0, 210, 255, 0.35) 0%, transparent 70%);
+      animation: preloaderRingRotate 4s linear infinite;
+    }
+
+    .initial-preloader-logo {
+      width: 68px;
+      height: 68px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 20px rgba(0, 210, 255, 0.65));
+      animation: preloaderFloat 2.6s ease-in-out infinite;
+      display: block;
+    }
+
+    .initial-preloader-title {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin-bottom: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-shadow: none !important;
+      filter: none !important;
+    }
+
+    .brand-techno {
+      color: #ffffff !important;
+      text-shadow: none !important;
+      filter: none !important;
+      -webkit-text-fill-color: #ffffff !important;
+    }
+
+    .brand-tech {
+      background: linear-gradient(90deg, #00d2ff 0%, #0084ff 100%) !important;
+      -webkit-background-clip: text !important;
+      background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      color: #00d2ff !important;
+    }
+
+    .initial-preloader-sub {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      color: rgba(255, 255, 255, 0.45);
+      text-transform: uppercase;
+      margin-bottom: 26px;
+    }
+
+    .initial-preloader-bar-track {
+      width: 170px;
+      height: 2.5px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 99px;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .initial-preloader-bar-fill {
+      height: 100%;
+      width: 35%;
+      background: linear-gradient(90deg, #00d2ff 0%, #0084ff 50%, #00d2ff 100%);
+      background-size: 200% 100%;
+      border-radius: 99px;
+      box-shadow: 0 0 12px rgba(0, 210, 255, 0.85);
+      transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+      animation: preloaderGradientFlow 2s linear infinite;
+    }
+
+    .initial-preloader-status {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.38);
+      letter-spacing: 0.08em;
+      min-height: 16px;
+      transition: color 0.3s ease;
+    }
+
+    @keyframes preloaderPulse {
+      0%, 100% { transform: scale(0.95); opacity: 0.7; }
+      50% { transform: scale(1.12); opacity: 1; }
+    }
+
+    @keyframes preloaderFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-7px); }
+    }
+
+    @keyframes preloaderRingRotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes preloaderGradientFlow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Semantic SEO content is present in DOM for search engines & crawlers, but does not cause FOUC */
+    .seo-crawler-content {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  </style>
 </head>
 
 <body>
+  <!-- Instant Luxury Preloader (Active immediately upon HTML parse to prevent any FOUC) -->
+  <div id="site-preloader" aria-hidden="true">
+    <div class="initial-preloader-glow"></div>
+    <div class="initial-preloader-content">
+      <div class="initial-preloader-logo-wrap">
+        <div class="initial-preloader-glow-ring"></div>
+        <img
+          src="/images/logo.png"
+          alt="TechnoTech Logo"
+          width="68"
+          height="68"
+          class="initial-preloader-logo"
+        />
+      </div>
+      <div class="initial-preloader-title">
+        <span class="brand-techno">Techno</span><span class="brand-tech">Tech</span>
+      </div>
+      <div class="initial-preloader-sub">PRODUITS DIGITAUX &amp; ABONNEMENTS OFFICIELS</div>
+      <div class="initial-preloader-bar-track">
+        <div class="initial-preloader-bar-fill"></div>
+      </div>
+      <div class="initial-preloader-status">Initialisation sécurisée...</div>
+    </div>
+  </div>
+
   <!-- Pre-rendered Semantic Content for Search Engines & Crawlers (replaced seamlessly when React mounts) -->
   <div id="root">
-    <header class="seo-crawler-header">
-      <nav aria-label="Navigation Principale TechnoTech">
-        <a href="/" title="TechnoTech Accueil">
-          <img src="/logo.png" alt="TechnoTech Logo" width="160" height="48" />
-        </a>
-        <ul>
-          <li><a href="/" title="Boutique TechnoTech">Boutique</a></li>
-          <li><a href="/#store-products-section" title="Catalogue Produits">Catalogue</a></li>
-          <li><a href="/offers" title="Packs et Offres Spéciales">Offres Spéciales</a></li>
-          <li><a href="/about" title="À Propos de TechnoTech">À Propos</a></li>
-          <li><a href="/contact" title="Contactez TechnoTech">Contact</a></li>
-        </ul>
-      </nav>
-    </header>
-
-    <main class="seo-crawler-main">
-      <article>
-        <header>
-          <h1>TechnoTech — Produits Digitaux, Licences & Abonnements Officiels en Tunisie</h1>
-          <p>
-            Bienvenue sur <strong>TechnoTech</strong>, votre boutique en ligne de référence en Tunisie pour l'acquisition de 
-            produits digitaux haut de gamme, de licences logicielles officielles et d'abonnements premium vérifiés. 
-            Profitez d'une <strong>activation immédiate en moins de 15 minutes</strong>, d'une garantie totale sur toute la durée de votre souscription 
-            et d'un service client réactif disponible 24 heures sur 24 et 7 jours sur 7.
-          </p>
-        </header>
-
-        <section id="store-products-section">
-          <h2>Nos Abonnements & Produits Digitaux Populaires</h2>
-          <p>
-            Découvrez notre sélection exclusive d'outils d'intelligence artificielle, de logiciels de productivité, 
-            de solutions de design graphique et de licences de systèmes d'exploitation aux meilleurs tarifs en dinars tunisiens (TND).
-          </p>
-
-          <div class="seo-products-grid">
-            <article class="seo-product-item">
-              <img src="/images/black_jacket.png" alt="Abonnement ChatGPT Plus Officiel Tunisie" width="300" height="300" loading="lazy" />
-              <h3>ChatGPT Plus — Abonnement Officiel</h3>
-              <p>
-                Accédez à la puissance maximale de l'intelligence artificielle d'OpenAI avec GPT-4o, la génération vidéo Sora, 
-                le mode vocal avancé ultra-réaliste, et l'analyse de documents volumineux en temps réel. Compte privé avec activation immédiate.
-                Idéal pour les étudiants, chercheurs, développeurs et créateurs de contenu en Tunisie.
-              </p>
-              <p><strong>Prix : à partir de 20 DT</strong> (Options disponibles : 1 Mois, 3 Mois, 6 Mois, 1 An Complet).</p>
-              <a href="/#store-products-section" title="Commander ChatGPT Plus">Commander ChatGPT Plus</a>
-            </article>
-
-            <article class="seo-product-item">
-              <img src="/images/orange_jacket.png" alt="Canva Pro Licence Éducation et Entreprise" width="300" height="300" loading="lazy" />
-              <h3>Canva Pro — Éducation & Entreprise</h3>
-              <p>
-                Débloquez l'ensemble des fonctionnalités créatives de Canva Pro : plus de 100 millions de modèles premium, 
-                le redimensionnement magique en un clic, la suppression d'arrière-plan instantanée et 1 To d'espace de stockage cloud.
-                Parfait pour les community managers, agences digitales et graphistes indépendants.
-              </p>
-              <p><strong>Prix : à partir de 15 DT</strong> (Formules : 3 Mois, 6 Mois, 1 An, ou Accès à Vie Lifetime).</p>
-              <a href="/#store-products-section" title="Commander Canva Pro">Commander Canva Pro</a>
-            </article>
-
-            <article class="seo-product-item">
-              <img src="/images/cream_jacket.png" alt="Licence Windows 11 Pro et Office 365 Authentique" width="300" height="300" loading="lazy" />
-              <h3>Windows 11 Pro + Pack Office 365</h3>
-              <p>
-                Clé de licence 100% authentique et certifiée par Microsoft pour Windows 11 Professionnel, accompagnée de la suite bureautique 
-                complète Office 365 (Word, Excel, PowerPoint, Outlook, OneDrive) utilisable sur PC, Mac, tablette et smartphone.
-                Mises à jour de sécurité garanties à vie avec activation en ligne permanente.
-              </p>
-              <p><strong>Prix : à partir de 29 DT</strong> (Licence à vie 1 PC, Pack Famille 3 PCs ou Pack Entreprise 5 PCs).</p>
-              <a href="/#store-products-section" title="Commander Windows 11 Pro">Commander Windows 11 Pro</a>
-            </article>
-
-            <article class="seo-product-item">
-              <img src="/images/gemini_man.png" alt="Google Gemini Advanced et Workspace AI en Tunisie" width="300" height="300" loading="lazy" />
-              <h3>Google Gemini Advanced & Workspace AI</h3>
-              <p>
-                Bénéficiez du modèle le plus performant de Google avec Gemini 1.5 Pro, une fenêtre de contexte géante d'un million de tokens, 
-                et l'intégration native de l'intelligence artificielle dans Google Docs, Gmail, Sheets et Google Drive avec 2 To de stockage cloud inclus.
-              </p>
-              <p><strong>Prix : à partir de 25 DT</strong> (Formules flexibles : 1 Mois, 3 Mois ou 1 An avec garantie).</p>
-              <a href="/#store-products-section" title="Commander Google Gemini Advanced">Commander Gemini Advanced</a>
-            </article>
-
-            <article class="seo-product-item">
-              <img src="/images/orange_jacket.png" alt="Doudoune Puffer Signature TechnoTech" width="300" height="300" loading="lazy" />
-              <h3>Doudoune Puffer — Signature TechnoTech</h3>
-              <p>
-                Doudoune d'hiver haute performance coupe-vent et imperméable, matelassée en duvet thermique avec finition lustrée élégante. 
-                Une pièce vestimentaire exclusive alliant modernité et confort pour affronter l'hiver tunisien avec style.
-              </p>
-              <p><strong>Prix : 149 DT</strong> (Tailles : Standard 36-38 et Grande Taille 40-42).</p>
-              <a href="/#store-products-section" title="Commander la Doudoune Puffer">Commander la Doudoune Puffer</a>
-            </article>
-          </div>
-        </section>
-
-        <section id="special-offers-section">
-          <h2>Packs Économiques & Offres Promotionnelles Jusqu'à -50%</h2>
-          <p>
-            Combinez plusieurs abonnements officiels ou profitez de nos formules promotionnelles avantageuses pour maximiser vos économies. 
-            Découvrez nos packs 2-en-1 exclusifs pour étudiants, freelances, agences et créateurs de contenu en Tunisie :
-          </p>
+    <div class="seo-crawler-content">
+      <header class="seo-crawler-header">
+        <nav aria-label="Navigation Principale TechnoTech">
+          <a href="/" title="TechnoTech Accueil">
+            <img src="/logo.png" alt="TechnoTech Logo" width="160" height="48" />
+          </a>
           <ul>
-            <li><strong>Pack Créateur (Canva Pro + ChatGPT Plus) :</strong> Le duo incontournable pour booster votre productivité et vos visuels marketing.</li>
-            <li><strong>Pack Productivité (Windows 11 Pro + Office 365 + Stockage Cloud) :</strong> Pour équiper votre espace de travail d'outils performants et sécurisés.</li>
-            <li><strong>Pack Développeur & IA :</strong> Accès illimité aux meilleurs modèles de langage pour coder et innover sans contrainte.</li>
+            <li><a href="/" title="Boutique TechnoTech">Boutique</a></li>
+            <li><a href="/#store-products-section" title="Catalogue Produits">Catalogue</a></li>
+            <li><a href="/offers" title="Packs et Offres Spéciales">Offres Spéciales</a></li>
+            <li><a href="/about" title="À Propos de TechnoTech">À Propos</a></li>
+            <li><a href="/contact" title="Contactez TechnoTech">Contact</a></li>
           </ul>
-          <p>
-            Pour toute commande supérieure à <strong>100 DT</strong>, recevez automatiquement un <strong>cadeau exclusif offert</strong> par TechnoTech.
-          </p>
-          <a href="/offers" title="Découvrir toutes les offres spéciales">Voir toutes les offres spéciales</a>
-        </section>
+        </nav>
+      </header>
 
-        <section id="guide-achat-section">
-          <h2>Guide Complet d'Achat des Abonnements & Licences en Tunisie</h2>
-          <p>
-            Dans un marché digital en constante évolution, se procurer des logiciels et abonnements légitimes en Tunisie peut souvent s'avérer complexe 
-            en raison des restrictions de paiement international. TechnoTech élimine ces barrières en vous offrant une passerelle locale 
-            sécurisée avec règlement en dinars tunisiens (TND) et un accompagnement personnalisé pas à pas.
-          </p>
-          <h3>Comment choisir son abonnement d'intelligence artificielle ?</h3>
-          <p>
-            Si vous effectuez de la rédaction, de la programmation ou de l'analyse de données, <strong>ChatGPT Plus</strong> s'impose comme le choix d'excellence. 
-            Il offre des temps de réponse prioritaires, un accès anticipé aux nouveaux modèles d'OpenAI et la possibilité de générer des images et vidéos haute définition.
-          </p>
-          <h3>Pourquoi opter pour une licence logicielle officielle ?</h3>
-          <p>
-            L'utilisation de systèmes d'exploitation ou de suites bureautiques non authentiques expose vos données professionnelles à des risques majeurs de sécurité, 
-            de logiciels malveillants et de perte de fichiers. Nos clés <strong>Windows 11 Pro</strong> et licences <strong>Office 365</strong> proviennent 
-            directement de canaux officiels et vous assurent une tranquillité d'esprit absolue avec des mises à jour système automatiques.
-          </p>
-        </section>
+      <main class="seo-crawler-main">
+        <article>
+          <header>
+            <h1>TechnoTech — Produits Digitaux, Licences & Abonnements Officiels en Tunisie</h1>
+            <p>
+              Bienvenue sur <strong>TechnoTech</strong>, votre boutique en ligne de référence en Tunisie pour l'acquisition de 
+              produits digitaux haut de gamme, de licences logicielles officielles et d'abonnements premium vérifiés. 
+              Profitez d'une <strong>activation immédiate en moins de 15 minutes</strong>, d'une garantie totale sur toute la durée de votre souscription 
+              et d'un service client réactif disponible 24 heures sur 24 et 7 jours sur 7.
+            </p>
+          </header>
 
-        <section id="why-choose-us">
-          <h2>Pourquoi Choisir TechnoTech en Tunisie ?</h2>
+          <section id="store-products-section">
+            <h2>Nos Abonnements & Produits Digitaux Populaires</h2>
+            <p>
+              Découvrez notre sélection exclusive d'outils d'intelligence artificielle, de logiciels de productivité, 
+              de solutions de design graphique et de licences de systèmes d'exploitation aux meilleurs tarifs en dinars tunisiens (TND).
+            </p>
+
+            <div class="seo-products-grid">
+              <article class="seo-product-item">
+                <img src="/images/black_jacket.png" alt="Abonnement ChatGPT Plus Officiel Tunisie" width="300" height="300" loading="lazy" />
+                <h3>ChatGPT Plus — Abonnement Officiel</h3>
+                <p>
+                  Accédez à la puissance maximale de l'intelligence artificielle d'OpenAI avec GPT-4o, la génération vidéo Sora, 
+                  le mode vocal avancé ultra-réaliste, et l'analyse de documents volumineux en temps réel. Compte privé avec activation immédiate.
+                  Idéal pour les étudiants, chercheurs, développeurs et créateurs de contenu en Tunisie.
+                </p>
+                <p><strong>Prix : à partir de 20 DT</strong> (Options disponibles : 1 Mois, 3 Mois, 6 Mois, 1 An Complet).</p>
+                <a href="/#store-products-section" title="Commander ChatGPT Plus">Commander ChatGPT Plus</a>
+              </article>
+
+              <article class="seo-product-item">
+                <img src="/images/orange_jacket.png" alt="Canva Pro Licence Éducation et Entreprise" width="300" height="300" loading="lazy" />
+                <h3>Canva Pro — Éducation & Entreprise</h3>
+                <p>
+                  Débloquez l'ensemble des fonctionnalités créatives de Canva Pro : plus de 100 millions de modèles premium, 
+                  le redimensionnement magique en un clic, la suppression d'arrière-plan instantanée et 1 To d'espace de stockage cloud.
+                  Parfait pour les community managers, agences digitales et graphistes indépendants.
+                </p>
+                <p><strong>Prix : à partir de 15 DT</strong> (Formules : 3 Mois, 6 Mois, 1 An, ou Accès à Vie Lifetime).</p>
+                <a href="/#store-products-section" title="Commander Canva Pro">Commander Canva Pro</a>
+              </article>
+
+              <article class="seo-product-item">
+                <img src="/images/cream_jacket.png" alt="Licence Windows 11 Pro et Office 365 Authentique" width="300" height="300" loading="lazy" />
+                <h3>Windows 11 Pro + Pack Office 365</h3>
+                <p>
+                  Clé de licence 100% authentique et certifiée par Microsoft pour Windows 11 Professionnel, accompagnée de la suite bureautique 
+                  complète Office 365 (Word, Excel, PowerPoint, Outlook, OneDrive) utilisable sur PC, Mac, tablette et smartphone.
+                  Mises à jour de sécurité garanties à vie avec activation en ligne permanente.
+                </p>
+                <p><strong>Prix : à partir de 29 DT</strong> (Licence à vie 1 PC, Pack Famille 3 PCs ou Pack Entreprise 5 PCs).</p>
+                <a href="/#store-products-section" title="Commander Windows 11 Pro">Commander Windows 11 Pro</a>
+              </article>
+
+              <article class="seo-product-item">
+                <img src="/images/gemini_man.png" alt="Google Gemini Advanced et Workspace AI en Tunisie" width="300" height="300" loading="lazy" />
+                <h3>Google Gemini Advanced & Workspace AI</h3>
+                <p>
+                  Bénéficiez du modèle le plus performant de Google avec Gemini 1.5 Pro, une fenêtre de contexte géante d'un million de tokens, 
+                  et l'intégration native de l'intelligence artificielle dans Google Docs, Gmail, Sheets et Google Drive avec 2 To de stockage cloud inclus.
+                </p>
+                <p><strong>Prix : à partir de 25 DT</strong> (Formules flexibles : 1 Mois, 3 Mois ou 1 An avec garantie).</p>
+                <a href="/#store-products-section" title="Commander Google Gemini Advanced">Commander Gemini Advanced</a>
+              </article>
+
+              <article class="seo-product-item">
+                <img src="/images/orange_jacket.png" alt="Doudoune Puffer Signature TechnoTech" width="300" height="300" loading="lazy" />
+                <h3>Doudoune Puffer — Signature TechnoTech</h3>
+                <p>
+                  Doudoune d'hiver haute performance coupe-vent et imperméable, matelassée en duvet thermique avec finition lustrée élégante. 
+                  Une pièce vestimentaire exclusive alliant modernité et confort pour affronter l'hiver tunisien avec style.
+                </p>
+                <p><strong>Prix : 149 DT</strong> (Tailles : Standard 36-38 et Grande Taille 40-42).</p>
+                <a href="/#store-products-section" title="Commander la Doudoune Puffer">Commander la Doudoune Puffer</a>
+              </article>
+            </div>
+          </section>
+
+          <section id="special-offers-section">
+            <h2>Packs Économiques & Offres Promotionnelles Jusqu'à -50%</h2>
+            <p>
+              Combinez plusieurs abonnements officiels ou profitez de nos formules promotionnelles avantageuses pour maximiser vos économies. 
+              Découvrez nos packs 2-en-1 exclusifs pour étudiants, freelances, agences et créateurs de contenu en Tunisie :
+            </p>
+            <ul>
+              <li><strong>Pack Créateur (Canva Pro + ChatGPT Plus) :</strong> Le duo incontournable pour booster votre productivité et vos visuels marketing.</li>
+              <li><strong>Pack Productivité (Windows 11 Pro + Office 365 + Stockage Cloud) :</strong> Pour équiper votre espace de travail d'outils performants et sécurisés.</li>
+              <li><strong>Pack Développeur & IA :</strong> Accès illimité aux meilleurs modèles de langage pour coder et innover sans contrainte.</li>
+            </ul>
+            <p>
+              Pour toute commande supérieure à <strong>100 DT</strong>, recevez automatiquement un <strong>cadeau exclusif offert</strong> par TechnoTech.
+            </p>
+            <a href="/offers" title="Découvrir toutes les offres spéciales">Voir toutes les offres spéciales</a>
+          </section>
+
+          <section id="guide-achat-section">
+            <h2>Guide Complet d'Achat des Abonnements & Licences en Tunisie</h2>
+            <p>
+              Dans un marché digital en constante évolution, se procurer des logiciels et abonnements légitimes en Tunisie peut souvent s'avérer complexe 
+              en raison des restrictions de paiement international. TechnoTech élimine ces barrières en vous offrant une passerelle locale 
+              sécurisée avec règlement en dinars tunisiens (TND) et un accompagnement personnalisé pas à pas.
+            </p>
+            <h3>Comment choisir son abonnement d'intelligence artificielle ?</h3>
+            <p>
+              Si vous effectuez de la rédaction, de la programmation ou de l'analyse de données, <strong>ChatGPT Plus</strong> s'impose comme le choix d'excellence. 
+              Il offre des temps de réponse prioritaires, un accès anticipé aux nouveaux modèles d'OpenAI et la possibilité de générer des images et vidéos haute définition.
+            </p>
+            <h3>Pourquoi opter pour une licence logicielle officielle ?</h3>
+            <p>
+              L'utilisation de systèmes d'exploitation ou de suites bureautiques non authentiques expose vos données professionnelles à des risques majeurs de sécurité, 
+              de logiciels malveillants et de perte de fichiers. Nos clés <strong>Windows 11 Pro</strong> et licences <strong>Office 365</strong> proviennent 
+              directement de canaux officiels et vous assurent une tranquillité d'esprit absolue avec des mises à jour système automatiques.
+            </p>
+          </section>
+
+          <section id="why-choose-us">
+            <h2>Pourquoi Choisir TechnoTech en Tunisie ?</h2>
+            <ul>
+              <li><strong>Activation Ultra-Rapide :</strong> Vos accès officiels sont livrés et activés en moins de 15 minutes après validation.</li>
+              <li><strong>Garantie Totale & Remplacement :</strong> Tous nos comptes et licences sont protégés par une garantie de fonctionnement intégrale.</li>
+              <li><strong>Support Client 24/7 :</strong> Assistance réactive par WhatsApp et téléphone pour vous accompagner lors de la configuration.</li>
+              <li><strong>Paiement Local Sécurisé :</strong> Réglez en toute simplicité en dinars tunisiens à la livraison ou par virement bancaire.</li>
+              <li><strong>Comptes Privés & Sécurisés :</strong> Vos identifiants restent strictement confidentiels et personnalisés.</li>
+            </ul>
+          </section>
+
+          <section id="faq-section">
+            <h2>Foire Aux Questions (FAQ) — Tout ce que vous devez savoir</h2>
+            <details open>
+              <summary><strong>Comment s'effectue l'activation après ma commande ?</strong></summary>
+              <p>
+                Une fois votre commande passée sur notre site, notre équipe technique vous contacte directement sur WhatsApp 
+                ou par téléphone pour procéder à l'invitation sur votre adresse e-mail personnelle ou vous transmettre vos identifiants officiels en moins de 15 minutes.
+              </p>
+            </details>
+            <details>
+              <summary><strong>Vos abonnements sont-ils légaux et officiels ?</strong></summary>
+              <p>
+                Oui, nous fournissons exclusivement des licences authentiques et des abonnements vérifiés garantissant une stabilité sans interruption. 
+                Chaque produit bénéficie d'une garantie totale durant toute la période sélectionnée.
+              </p>
+            </details>
+            <details>
+              <summary><strong>Quels sont les modes de paiement acceptés en Tunisie ?</strong></summary>
+              <p>
+                Nous acceptons le paiement en espèces à la livraison partout en Tunisie, ainsi que les virements bancaires, postaux (D17) et paiements électroniques locaux (Flouci).
+              </p>
+            </details>
+            <details>
+              <summary><strong>Puis-je renouveler mon abonnement existant sans perdre mes données ?</strong></summary>
+              <p>
+                Absolument. Pour Canva Pro, ChatGPT et Office 365, nous pouvons prolonger ou activer l'abonnement directement sur votre compte personnel existant afin de conserver tous vos travaux et historiques.
+              </p>
+            </details>
+            <details>
+              <summary><strong>Que faire si j'ai besoin d'une assistance technique ?</strong></summary>
+              <p>
+                Notre équipe d'assistance est joignable 7j/7 via WhatsApp au +216 96 086 581 ou par formulaire de contact pour résoudre toute demande dans les plus brefs délais.
+              </p>
+            </details>
+          </section>
+        </article>
+      </main>
+
+      <footer class="seo-crawler-footer">
+        <div class="footer-brand-wrap">
+          <img src="/logo.png" alt="TechnoTech - Boutique Produits Digitaux Tunisie" width="140" height="42" loading="lazy" />
+        </div>
+        <nav aria-label="Liens de pied de page">
           <ul>
-            <li><strong>Activation Ultra-Rapide :</strong> Vos accès officiels sont livrés et activés en moins de 15 minutes après validation.</li>
-            <li><strong>Garantie Totale & Remplacement :</strong> Tous nos comptes et licences sont protégés par une garantie de fonctionnement intégrale.</li>
-            <li><strong>Support Client 24/7 :</strong> Assistance réactive par WhatsApp et téléphone pour vous accompagner lors de la configuration.</li>
-            <li><strong>Paiement Local Sécurisé :</strong> Réglez en toute simplicité en dinars tunisiens à la livraison ou par virement bancaire.</li>
-            <li><strong>Comptes Privés & Sécurisés :</strong> Vos identifiants restent strictement confidentiels et personnalisés.</li>
+            <li><a href="/" title="Accueil TechnoTech">Accueil</a></li>
+            <li><a href="/offers" title="Offres Spéciales">Offres Spéciales</a></li>
+            <li><a href="/about" title="À Propos de TechnoTech">À Propos</a></li>
+            <li><a href="/contact" title="Nous Contacter">Contact</a></li>
           </ul>
-        </section>
-
-        <section id="faq-section">
-          <h2>Foire Aux Questions (FAQ) — Tout ce que vous devez savoir</h2>
-          <details open>
-            <summary><strong>Comment s'effectue l'activation après ma commande ?</strong></summary>
-            <p>
-              Une fois votre commande passée sur notre site, notre équipe technique vous contacte directement sur WhatsApp 
-              ou par téléphone pour procéder à l'invitation sur votre adresse e-mail personnelle ou vous transmettre vos identifiants officiels en moins de 15 minutes.
-            </p>
-          </details>
-          <details>
-            <summary><strong>Vos abonnements sont-ils légaux et officiels ?</strong></summary>
-            <p>
-              Oui, nous fournissons exclusivement des licences authentiques et des abonnements vérifiés garantissant une stabilité sans interruption. 
-              Chaque produit bénéficie d'une garantie totale durant toute la période sélectionnée.
-            </p>
-          </details>
-          <details>
-            <summary><strong>Quels sont les modes de paiement acceptés en Tunisie ?</strong></summary>
-            <p>
-              Nous acceptons le paiement en espèces à la livraison partout en Tunisie, ainsi que les virements bancaires, postaux (D17) et paiements électroniques locaux (Flouci).
-            </p>
-          </details>
-          <details>
-            <summary><strong>Puis-je renouveler mon abonnement existant sans perdre mes données ?</strong></summary>
-            <p>
-              Absolument. Pour Canva Pro, ChatGPT et Office 365, nous pouvons prolonger ou activer l'abonnement directement sur votre compte personnel existant afin de conserver tous vos travaux et historiques.
-            </p>
-          </details>
-          <details>
-            <summary><strong>Que faire si j'ai besoin d'une assistance technique ?</strong></summary>
-            <p>
-              Notre équipe d'assistance est joignable 7j/7 via WhatsApp au +216 96 086 581 ou par formulaire de contact pour résoudre toute demande dans les plus brefs délais.
-            </p>
-          </details>
-        </section>
-      </article>
-    </main>
-
-    <footer class="seo-crawler-footer">
-      <div class="footer-brand-wrap">
-        <img src="/logo.png" alt="TechnoTech - Boutique Produits Digitaux Tunisie" width="140" height="42" loading="lazy" />
-      </div>
-      <nav aria-label="Liens de pied de page">
-        <ul>
-          <li><a href="/" title="Accueil TechnoTech">Accueil</a></li>
-          <li><a href="/offers" title="Offres Spéciales">Offres Spéciales</a></li>
-          <li><a href="/about" title="À Propos de TechnoTech">À Propos</a></li>
-          <li><a href="/contact" title="Nous Contacter">Contact</a></li>
-        </ul>
-      </nav>
-      <p>
-        Support WhatsApp : <a href="https://wa.me/21696086581" target="_blank" rel="noopener noreferrer">+216 96 086 581</a> | 
-        Suivez-nous sur <a href="https://facebook.com" target="_blank" rel="noopener noreferrer">Facebook</a> et 
-        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">Instagram</a>.
-      </p>
-      <p>&copy; 2026 TechnoTech — Tous droits réservés. Produits Digitaux, Licences &amp; Abonnements Officiels.</p>
-    </footer>
+        </nav>
+        <p>
+          Support WhatsApp : <a href="https://wa.me/21696086581" target="_blank" rel="noopener noreferrer">+216 96 086 581</a> | 
+          Suivez-nous sur <a href="https://facebook.com" target="_blank" rel="noopener noreferrer">Facebook</a> et 
+          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">Instagram</a>.
+        </p>
+        <p>&copy; 2026 TechnoTech — Tous droits réservés. Produits Digitaux, Licences &amp; Abonnements Officiels.</p>
+      </footer>
+    </div>
   </div>
 
   <script type="module" src="/src/main.jsx"></script>
