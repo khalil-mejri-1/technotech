@@ -2442,13 +2442,14 @@ body {
   }
 
   .brand-logo-img {
-    width: 38px;
-    height: 38px;
+    width: 42px;
+    height: 42px;
   }
 
   .brand-name {
-    font-size: 1.25rem;
-    letter-spacing: 1.2px;
+    font-size: 1.45rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
   }
 
   .nav-pill-menu {
@@ -2784,9 +2785,15 @@ body {
     padding: 1rem 0.85rem 2rem;
   }
 
+  .brand-logo-img {
+    width: 40px;
+    height: 40px;
+  }
+
   .brand-name {
-    font-size: 1.05rem;
-    letter-spacing: 1px;
+    font-size: 1.35rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
   }
 
   .hero-grid {
@@ -3044,6 +3051,17 @@ body {
 
 /* Extra Compact Mobile Phones (<= 400px) */
 @media (max-width: 400px) {
+  .brand-logo-img {
+    width: 36px;
+    height: 36px;
+  }
+
+  .brand-name {
+    font-size: 1.22rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
   .content-layer {
     padding: 0.85rem 0.75rem 1.8rem;
   }
