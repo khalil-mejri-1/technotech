@@ -67,6 +67,7 @@ export default function AdminDashboard({
   offers = [],
   onUpdateOffers,
   onNavigateStore,
+  onLogout,
   siteSettings = {},
   onUpdateSettings
 }) {
@@ -1579,6 +1580,18 @@ export default function AdminDashboard({
             <ArrowLeft size={17} />
             <span>Retour à la boutique</span>
           </button>
+
+          {onLogout && (
+            <button
+              type="button"
+              className="admin-btn secondary admin-logout-btn"
+              onClick={onLogout}
+              title="Verrouiller et fermer la session"
+            >
+              <Lock size={15} />
+              <span>Déconnexion</span>
+            </button>
+          )}
 
           {activeTab === 'products' && (
             <button

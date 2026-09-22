@@ -18,6 +18,7 @@ import { offerService } from './services/offerService.js';
 import { settingsService, DEFAULT_SITE_SETTINGS } from './services/settingsService.js';
 import { analytics } from './services/analytics.js';
 import Preloader from './components/Preloader.jsx';
+import AdminAuthGate from './components/AdminAuthGate.jsx';
 
 function App() {
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
@@ -34,6 +35,29 @@ function App() {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [cartItems, setCartItems] = useState([]);
   const [toastMessage, setToastMessage] = useState(null);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => {
+    try {
+      return sessionStorage.getItem('technotech_admin_auth') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const handleAdminLogin = () => {
+    try {
+      sessionStorage.setItem('technotech_admin_auth', 'true');
+    } catch (e) {}
+    setIsAdminAuthenticated(true);
+    showToast('Accès administrateur déverrouillé avec succès ! 🔓');
+  };
+
+  const handleAdminLogout = () => {
+    try {
+      sessionStorage.removeItem('technotech_admin_auth');
+    } catch (e) {}
+    setIsAdminAuthenticated(false);
+    showToast('Session administrateur verrouillée 🔒');
+  };
 
   // Clean up any lingering theme attributes or custom cursor classes
   useEffect(() => {
@@ -337,8 +361,25 @@ function App() {
     0
   );
 
-  // If URL is /admin or starts with /admin, display the Admin Dashboard
+  // If URL is /admin or starts with /admin, display Admin Auth Gate or Admin Dashboard
   if (currentPath === '/admin' || currentPath.startsWith('/admin')) {
+    if (!isAdminAuthenticated) {
+      return (
+        <div className="admin-auth-page-root">
+          <Preloader />
+          <AdminAuthGate
+            onSuccess={handleAdminLogin}
+            onCancel={() => navigateTo('/')}
+          />
+          {/* Interactive Toast Notification */}
+          <div className={`toast-notice ${toastMessage ? 'show' : ''}`}>
+            <Sparkles size={16} color="#ffa502" />
+            <span>{toastMessage}</span>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="admin-app-root">
         <Preloader />
@@ -350,6 +391,7 @@ function App() {
           offers={offers}
           onUpdateOffers={handleUpdateOffers}
           onNavigateStore={() => navigateTo('/')}
+          onLogout={handleAdminLogout}
           siteSettings={siteSettings}
           onUpdateSettings={handleUpdateSettings}
         />
