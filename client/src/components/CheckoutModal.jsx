@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   User,
@@ -66,13 +66,89 @@ export default function CheckoutModal({
   // Success Screen State
   const [placedOrder, setPlacedOrder] = useState(null);
 
+  // Cloudflare Turnstile Bot Protection State & Refs
+  const [turnstileToken, setTurnstileToken] = useState(null);
+  const turnstileContainerRef = useRef(null);
+  const widgetIdRef = useRef(null);
+
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
       setFormError(null);
       setPlacedOrder(null);
       setShakeField(null);
+      setTurnstileToken(null);
     }
+  }, [isOpen]);
+
+  // Cloudflare Turnstile Lifecycle
+  useEffect(() => {
+    if (!isOpen) {
+      setTurnstileToken(null);
+      return;
+    }
+
+    let isMounted = true;
+    let renderTimer = null;
+
+    const renderTurnstile = () => {
+      if (window.turnstile && turnstileContainerRef.current) {
+        try {
+          if (widgetIdRef.current !== null) {
+            window.turnstile.reset(widgetIdRef.current);
+            setTurnstileToken(null);
+            return;
+          }
+
+          const sitekey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '0x4AAAAAAE_cUo3kOh_G41tU';
+          widgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
+            sitekey,
+            action: 'order',
+            theme: 'dark',
+            callback: (token) => {
+              if (isMounted) {
+                setTurnstileToken(token);
+                setFormError(null);
+              }
+            },
+            'expired-callback': () => {
+              if (isMounted) setTurnstileToken(null);
+            },
+            'error-callback': () => {
+              if (isMounted) setTurnstileToken(null);
+            },
+          });
+        } catch (err) {
+          console.warn('Turnstile render warning:', err);
+        }
+      }
+    };
+
+    if (window.turnstile) {
+      renderTimer = setTimeout(renderTurnstile, 50);
+    } else {
+      const checkInterval = setInterval(() => {
+        if (window.turnstile) {
+          clearInterval(checkInterval);
+          renderTurnstile();
+        }
+      }, 100);
+      return () => {
+        clearInterval(checkInterval);
+        clearTimeout(renderTimer);
+      };
+    }
+
+    return () => {
+      isMounted = false;
+      clearTimeout(renderTimer);
+      if (window.turnstile && widgetIdRef.current !== null) {
+        try {
+          window.turnstile.remove(widgetIdRef.current);
+        } catch (e) {}
+        widgetIdRef.current = null;
+      }
+    };
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -145,6 +221,11 @@ export default function CheckoutModal({
       return;
     }
 
+    if (!turnstileToken) {
+      setFormError('Veuillez compléter la vérification de sécurité Cloudflare Turnstile.');
+      return;
+    }
+
     setIsSubmitting(true);
     setFormError(null);
 
@@ -165,6 +246,8 @@ export default function CheckoutModal({
         })),
         totalAmount,
         paymentMethod: 'Paiement à la livraison / Virement',
+        turnstileToken,
+        'cf-turnstile-response': turnstileToken,
       };
 
       const savedOrder = await orderService.create(orderPayload);
@@ -180,6 +263,13 @@ export default function CheckoutModal({
       }
     } catch (err) {
       console.error('Erreur soumission commande :', err);
+      // Reset Turnstile token on failure for retry
+      if (window.turnstile && widgetIdRef.current !== null) {
+        try {
+          window.turnstile.reset(widgetIdRef.current);
+        } catch (e) {}
+        setTurnstileToken(null);
+      }
       setFormError(err.message || 'Impossible de finaliser la commande. Veuillez réessayer.');
     } finally {
       setIsSubmitting(false);
@@ -483,11 +573,17 @@ export default function CheckoutModal({
                 <span>Paiement à la livraison / D17 &bull; Confirmation ultra-rapide</span>
               </div>
 
+              {/* Cloudflare Turnstile Bot Protection Widget */}
+              <div className="checkout-turnstile-wrapper">
+                <div ref={turnstileContainerRef} id="turnstile-checkout-widget" className="turnstile-widget-slot" />
+              </div>
+
               {/* Submit CTA */}
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !turnstileToken}
                 className="checkout-submit-btn"
+                title={!turnstileToken ? "Veuillez valider la vérification de sécurité Cloudflare" : "Confirmer la commande"}
               >
                 {isSubmitting ? (
                   <>

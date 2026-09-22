@@ -424,6 +424,57 @@ router.post('/orders', async (req, res) => {
       paymentMethod = 'Paiement à la livraison',
     } = req.body;
 
+    // 0. Cloudflare Turnstile Bot Verification (Canonical Siteverify)
+    const turnstileToken = req.body['cf-turnstile-response'] || req.body.turnstileToken;
+    const expectedAction = 'order';
+    const expectedHostnames = new Set(
+      (process.env.TURNSTILE_HOSTNAMES ?? 'technotech.store,www.technotech.store,localhost,127.0.0.1')
+        .split(',')
+        .map((h) => h.trim())
+        .filter(Boolean)
+    );
+
+    if (
+      typeof turnstileToken !== 'string' ||
+      turnstileToken.length === 0 ||
+      turnstileToken.length > 2048
+    ) {
+      return res.status(403).json({
+        error: 'Validation de sécurité Cloudflare Turnstile requise.',
+      });
+    }
+
+    const turnstileSecret = process.env.TURNSTILE_SECRET || '0x4AAAAAAE_cUkFZs4QgTPF6QFIlsRgo6N8';
+    const clientIp = getNodeClientIp(req);
+
+    let turnstileResult;
+    try {
+      const turnstileRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        signal: AbortSignal.timeout(10_000),
+        body: new URLSearchParams({
+          secret: turnstileSecret,
+          response: turnstileToken,
+          remoteip: clientIp,
+        }),
+      });
+      if (!turnstileRes.ok) throw new Error(`siteverify ${turnstileRes.status}`);
+      turnstileResult = await turnstileRes.json();
+    } catch (e) {
+      return res.status(403).json({ error: 'Échec de vérification du Captcha Cloudflare.' });
+    }
+
+    if (
+      !turnstileResult.success ||
+      (turnstileResult.action && turnstileResult.action !== expectedAction) ||
+      (turnstileResult.hostname && expectedHostnames.size > 0 && !expectedHostnames.has(turnstileResult.hostname))
+    ) {
+      return res.status(403).json({
+        error: 'Échec de la validation de sécurité anti-robot. Veuillez réessayer.',
+      });
+    }
+
     // 1. Validate Customer Name (Required, NO digits allowed)
     if (!customerName || typeof customerName !== 'string' || customerName.trim().length < 2) {
       return res.status(400).json({
@@ -1013,21 +1064,43 @@ router.post('/security/log-attempt', async (req, res) => {
     let city = req.headers['x-vercel-ip-city'] || '';
     let region = req.headers['x-vercel-ip-country-region'] || '';
 
-    // If no header location and public IP, attempt quick lookup
-    if (!country && ip && !ip.startsWith('127.') && !ip.startsWith('192.168.') && !ip.startsWith('10.') && ip !== '::1' && ip !== 'localhost') {
+    // If no header location and public IP, attempt quick lookup (supports IPv4 & IPv6 via ipwho.is with fallback)
+    let flagEmoji = '';
+    if (ip && !ip.startsWith('127.') && !ip.startsWith('192.168.') && !ip.startsWith('10.') && ip !== '::1' && ip !== 'localhost') {
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 1200);
-        const geoRes = await fetch(`https://ipapi.co/${ip}/json/`, { signal: controller.signal });
+        const timeout = setTimeout(() => controller.abort(), 2000);
+        const geoRes = await fetch(`https://ipwho.is/${encodeURIComponent(ip)}`, { signal: controller.signal });
         clearTimeout(timeout);
         if (geoRes.ok) {
           const geoData = await geoRes.json();
-          country = geoData.country_name || geoData.country_code || country;
-          city = geoData.city || city;
-          region = geoData.region || region;
+          if (geoData && geoData.success) {
+            country = geoData.country || country;
+            city = geoData.city || city;
+            region = geoData.region || region;
+            flagEmoji = geoData.flag?.emoji || '';
+          }
         }
       } catch (geoErr) {
-        // Fallback silently if geo service is unreachable
+        // Fallback silently
+      }
+
+      // Secondary fallback to freeipapi.com if still no country
+      if (!country) {
+        try {
+          const controller2 = new AbortController();
+          const timeout2 = setTimeout(() => controller2.abort(), 1500);
+          const geoRes2 = await fetch(`https://freeipapi.com/api/json/${encodeURIComponent(ip)}`, { signal: controller2.signal });
+          clearTimeout(timeout2);
+          if (geoRes2.ok) {
+            const geoData2 = await geoRes2.json();
+            if (geoData2 && geoData2.countryName) {
+              country = geoData2.countryName || country;
+              city = geoData2.cityName || city;
+              region = geoData2.regionName || region;
+            }
+          }
+        } catch (e) {}
       }
     }
 
@@ -1046,7 +1119,7 @@ router.post('/security/log-attempt', async (req, res) => {
         countryCode,
         city: city || 'Inconnue',
         region: region || '',
-        flag: flag || '🌐',
+        flag: flagEmoji || flag || '🌐',
       },
       attemptedCode,
       isRead: false,
