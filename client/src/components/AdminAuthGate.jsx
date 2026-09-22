@@ -2,24 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   Lock,
   ArrowLeft,
-  Key,
   AlertCircle,
   ShieldCheck,
-  QrCode,
-  Copy,
-  Check,
   Smartphone,
-  Sparkles,
-  RefreshCw,
-  HelpCircle,
-  ChevronDown,
-  ChevronUp
+  RefreshCw
 } from 'lucide-react';
 import {
   DEFAULT_ADMIN_TOTP_SECRET,
-  verifyTOTP,
-  formatSecretKey,
-  getQrCodeUrl
+  verifyTOTP
 } from '../utils/totp.js';
 
 /**
@@ -31,12 +21,9 @@ export default function AdminAuthGate({ onSuccess, onCancel }) {
   const [error, setError] = useState(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
-  const [showSetup, setShowSetup] = useState(false);
-  const [copiedKey, setCopiedKey] = useState(false);
   
   const inputRefs = useRef([]);
   const secretKey = DEFAULT_ADMIN_TOTP_SECRET;
-  const qrCodeUrl = getQrCodeUrl('TechnoTech:Admin', 'TechnoTech', secretKey, 240);
 
   useEffect(() => {
     // Auto-focus the first digit input on mount
@@ -167,13 +154,6 @@ export default function AdminAuthGate({ onSuccess, onCancel }) {
     triggerVerification(fullCode);
   };
 
-  const handleCopyKey = () => {
-    navigator.clipboard.writeText(secretKey).then(() => {
-      setCopiedKey(true);
-      setTimeout(() => setCopiedKey(false), 2500);
-    });
-  };
-
   return (
     <div className="admin-auth-container">
       {/* Background ambient lighting */}
@@ -263,63 +243,6 @@ export default function AdminAuthGate({ onSuccess, onCancel }) {
             )}
           </button>
         </form>
-
-        {/* 2FA Setup / QR Code Accordion */}
-        <div className="admin-totp-setup-section">
-          <button
-            type="button"
-            className="admin-totp-toggle-btn"
-            onClick={() => setShowSetup(!showSetup)}
-          >
-            <QrCode size={16} />
-            <span>{showSetup ? "Masquer les détails d'installation" : "Configurer Google Authenticator"}</span>
-            {showSetup ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </button>
-
-          {showSetup && (
-            <div className="admin-totp-setup-card">
-              <div className="admin-totp-qr-wrap">
-                <img
-                  src={qrCodeUrl}
-                  alt="QR Code Google Authenticator"
-                  className="admin-totp-qr-image"
-                />
-              </div>
-
-              <p className="admin-totp-setup-instructions">
-                Scannez ce code QR avec l'application <strong>Google Authenticator</strong> sur votre smartphone, ou saisissez manuellement la clé ci-dessous :
-              </p>
-
-              <div className="admin-totp-key-display">
-                <code>{formatSecretKey(secretKey)}</code>
-                <button
-                  type="button"
-                  onClick={handleCopyKey}
-                  className="admin-totp-copy-btn"
-                  title="Copier la clé secrète"
-                >
-                  {copiedKey ? <Check size={15} color="#2ed573" /> : <Copy size={15} />}
-                  <span>{copiedKey ? 'Copié !' : 'Copier'}</span>
-                </button>
-              </div>
-
-              <div className="admin-totp-steps-guide">
-                <div className="guide-step">
-                  <span className="step-num">1</span>
-                  <span>Ouvrez <strong>Google Authenticator</strong> sur votre téléphone</span>
-                </div>
-                <div className="guide-step">
-                  <span className="step-num">2</span>
-                  <span>Touchez le bouton <strong>(+)</strong> puis <strong>Scanner un code QR</strong></span>
-                </div>
-                <div className="guide-step">
-                  <span className="step-num">3</span>
-                  <span>Saisissez le code à 6 chiffres affiché pour vous connecter</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
 
         {/* Footer link to go back */}
         <div className="admin-auth-footer">
