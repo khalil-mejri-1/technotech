@@ -1057,7 +1057,7 @@ router.post('/security/log-attempt', async (req, res) => {
 
     const userAgent = req.headers['user-agent'] || 'Unknown User-Agent';
     const deviceInfo = parseUserAgent(userAgent);
-    const attemptedCode = maskCode(req.body.attemptedCode);
+    const attemptedCode = req.body.attemptedCode ? String(req.body.attemptedCode).trim() : 'Non renseigné';
 
     // Location detection from reverse proxy headers
     let country = req.headers['cf-ipcountry'] || req.headers['x-vercel-ip-country'] || '';
@@ -1134,7 +1134,7 @@ router.post('/security/log-attempt', async (req, res) => {
     // Trigger instant Expo Push Notification to admin phone
     sendExpoPushNotification({
       title: '🚨 Alerte de Sécurité TechnoTech !',
-      body: `Tentative d'accès non autorisée détectée depuis ${city ? city + ', ' : ''}${country || 'IP: ' + ip}`,
+      body: `Tentative d'accès refusée (Code: ${attemptedCode}) depuis ${city ? city + ', ' : ''}${country || 'IP: ' + ip}`,
       data: {
         type: 'SECURITY_ALERT',
         notificationId: savedNotification._id.toString(),
