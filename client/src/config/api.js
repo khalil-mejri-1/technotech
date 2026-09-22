@@ -1,26 +1,34 @@
 /**
  * Configuration de l'API Backend TechnoTech
- * La configuration est définie UNIQUEMENT dans le fichier .env via VITE_API_URL
+ * En production, les requêtes passent par le Reverse Proxy (/api/technotech)
+ * afin de masquer complètement l'adresse du serveur backend auprès des visiteurs et des DevTools.
  */
 
-// الرابط يتم جلبه من .env أو الرابط الافتراضي للإنتاج
+// الرابط النسبي عبر Reverse Proxy لإخفاء رابط الخادم تماماً
 export const API_BASE_URL =
-  import.meta.env.VITE_API_URL || 'https://technotech-api.vercel.app/api/technotech';
+  import.meta.env.VITE_API_URL || '/api/technotech';
 
-// استخراج دومين السيرفر تلقائياً من رابط API_BASE_URL المحدد في .env
+// رابط السيرفر الأساسي (فارغ في الإنتاج حتى تظل كل الطلبات عبر دومين المتجر)
 export const BACKEND_URL =
   import.meta.env.VITE_BACKEND_URL ||
-  (API_BASE_URL ? API_BASE_URL.replace(/\/api\/technotech\/?$/, '').replace(/\/api\/?$/, '') : 'https://technotech-api.vercel.app');
+  (API_BASE_URL && !API_BASE_URL.startsWith('/')
+    ? API_BASE_URL.replace(/\/api\/technotech\/?$/, '').replace(/\/api\/?$/, '')
+    : '');
 
 /**
- * دالة لتصحيح روابط الصور تلقائياً بالاعتماد على رابط السيرفر المحدد في .env
+ * دالة لتصحيح روابط الصور دون كشف رابط السيرفر الخارجي
  */
 export function getImageUrl(url) {
   if (!url || typeof url !== 'string') return '';
   if (url.startsWith('data:') || url.startsWith('/images/')) return url;
 
   const backend = BACKEND_URL ? BACKEND_URL.replace(/\/+$/, '') : '';
-  if (!backend) return url;
+  if (!backend) {
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    if (url.startsWith('/uploads/')) return `/api${url}`;
+    if (url.startsWith('uploads/')) return `/api/${url}`;
+    return url;
+  }
 
   // استبدال localhost برابط السيرفر المحدد في .env
   if (/https?:\/\/(localhost|127\.0\.0\.1):(5001|5000)/.test(url)) {
