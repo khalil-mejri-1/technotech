@@ -238,12 +238,14 @@ body {
 }
 
 .navbar.navbar-floating-neon .brand-logo-img {
-  width: 38px;
-  height: 38px;
+  width: 46px;
+  height: 46px;
 }
 
 .navbar.navbar-floating-neon .brand-name {
-  font-size: 1.35rem;
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
 }
 
 .navbar.navbar-floating-neon .nav-pill-menu {
@@ -284,7 +286,7 @@ body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.6rem;
   text-decoration: none !important;
   cursor: pointer;
   user-select: none;
@@ -297,8 +299,8 @@ body {
 }
 
 .brand-logo-img {
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
   border-radius: 0;
   object-fit: contain;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -307,9 +309,9 @@ body {
 
 .brand-name {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 1.55rem;
+  font-size: 1.95rem;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   text-transform: none;
   text-shadow: none !important;
   filter: none !important;
@@ -2442,14 +2444,14 @@ body {
   }
 
   .brand-logo-img {
-    width: 42px;
-    height: 42px;
+    width: 46px;
+    height: 46px;
   }
 
   .brand-name {
-    font-size: 1.45rem;
+    font-size: 1.65rem;
     font-weight: 800;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
   }
 
   .nav-pill-menu {
