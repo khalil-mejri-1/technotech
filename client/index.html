@@ -712,6 +712,16 @@
   </div>
 
   <script type="module" src="/src/main.jsx"></script>
+  <script>
+    // Universal failsafe: Guarantees the preloader is always dismissed even on route changes or delay
+    setTimeout(function() {
+      var p = document.getElementById('site-preloader');
+      if (p && p.style.display !== 'none') {
+        p.classList.add('fade-out');
+        setTimeout(function() { p.style.display = 'none'; }, 500);
+      }
+    }, 2400);
+  </script>
 </body>
 
 </html>

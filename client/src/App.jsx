@@ -341,6 +341,7 @@ function App() {
   if (currentPath === '/admin' || currentPath.startsWith('/admin')) {
     return (
       <div className="admin-app-root">
+        <Preloader />
         <AdminDashboard
           products={products}
           onUpdateProducts={handleUpdateProducts}
