@@ -83,13 +83,13 @@ if (preg_match('#/(?:api/)?(?:technotech/)?admin/verify-totp/?(?:\?.*)?$#i', $re
     if (php_verify_totp($code, $secretKey)) {
         echo json_encode([
             'success' => true,
-            'message' => 'Authentification 2FA réussie avec succès'
+            'message' => 'Authentification réussie'
         ]);
     } else {
         http_response_code(401);
         echo json_encode([
             'success' => false,
-            'message' => 'Code Google Authenticator invalide ou expiré'
+            'message' => 'Code d\'accès incorrect ou expiré'
         ]);
     }
     exit;
