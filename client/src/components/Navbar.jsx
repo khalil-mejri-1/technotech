@@ -132,7 +132,7 @@ export default function Navbar({
             title="TechnoTech - Accueil"
           >
             <img
-              src="/images/logo.png"
+              src="/images/technotech-logo-v2.png?v=20260922"
               alt="Logo TechnoTech"
               className="brand-logo-img"
             />
@@ -227,7 +227,7 @@ export default function Navbar({
             title="TechnoTech - Accueil"
           >
             <img
-              src="/images/logo.png"
+              src="/images/technotech-logo-v2.png?v=20260922"
               alt="Logo TechnoTech"
               className="brand-logo-img"
             />

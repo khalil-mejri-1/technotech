@@ -1563,7 +1563,7 @@ export default function AdminDashboard({
       {/* Admin Navigation Bar */}
       <header className="admin-top-bar">
         <div className="admin-brand-section">
-          <img src="/images/logo.png" alt="Logo" className="admin-logo-img" />
+          <img src="/images/technotech-logo-v2.png?v=20260922" alt="Logo" className="admin-logo-img" />
           <div>
             <h1 className="admin-page-title">Panneau d'Administration (Admin)</h1>
             <span className="admin-page-subtitle">Console de Gestion TechnoTech</span>
