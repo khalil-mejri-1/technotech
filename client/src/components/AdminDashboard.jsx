@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Plus,
+  Bell,
+  ArrowRight,
   Trash2,
   Edit3,
   Upload,
@@ -53,6 +55,8 @@ import { getImageUrl } from '../config/api.js';
 import { resolveOfferItemImage } from '../data/offersData.js';
 import OrdersManager, { playOrderChime } from './OrdersManager.jsx';
 import LinksManager from './LinksManager.jsx';
+import { securityService } from '../services/securityService.js';
+import SecurityNotificationCenter, { playSecurityAlertChime } from './SecurityNotificationCenter.jsx';
 
 const getThumbnailLabel = (name = '') => {
   if (!name) return '';
@@ -71,7 +75,14 @@ export default function AdminDashboard({
   siteSettings = {},
   onUpdateSettings
 }) {
-  const [activeTab, setActiveTab] = useState('products'); // 'products' | 'hero' | 'orders' | 'offers' | 'security' | 'links'
+  const [activeTab, setActiveTab] = useState('products');
+  // TechnoTech Security Notifications State
+  const [isSecurityCenterOpen, setIsSecurityCenterOpen] = useState(false);
+  const [securityNotifications, setSecurityNotifications] = useState([]);
+  const [unreadSecurityCount, setUnreadSecurityCount] = useState(0);
+  const [isLoadingSecurity, setIsLoadingSecurity] = useState(false);
+  const lastUnreadSecurityRef = useRef(null);
+  const isFirstSecurityLoadRef = useRef(true); // 'products' | 'hero' | 'orders' | 'offers' | 'security' | 'links'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -99,6 +110,109 @@ export default function AdminDashboard({
       clearInterval(timer);
     };
   }, [activeTab]);
+
+  // ============================================================================
+  // TECHNOTECH SECURITY NOTIFICATIONS LOGIC & SMART POLLING
+  // ============================================================================
+  const fetchSecurityNotifications = async (isSilent = false) => {
+    if (!isSilent) setIsLoadingSecurity(true);
+    try {
+      const res = await securityService.getNotifications();
+      if (res && res.success) {
+        setSecurityNotifications(res.notifications || []);
+        const unread = res.unreadCount || 0;
+
+        // Play audio alert & notify if new unread security notifications arrive
+        if (!isFirstSecurityLoadRef.current && lastUnreadSecurityRef.current !== null && unread > lastUnreadSecurityRef.current) {
+          playSecurityAlertChime();
+          notify('🚨 ALERTE SÉCURITÉ : Tentative d\'accès non autorisée détectée !');
+        }
+
+        lastUnreadSecurityRef.current = unread;
+        setUnreadSecurityCount(unread);
+      }
+    } catch (e) {
+      console.warn('Erreur récupération alertes sécurité :', e);
+    } finally {
+      if (!isSilent) setIsLoadingSecurity(false);
+      isFirstSecurityLoadRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    fetchSecurityNotifications(false);
+
+    // Smart polling every 15 seconds
+    const intervalId = setInterval(() => {
+      fetchSecurityNotifications(true);
+    }, 15000);
+
+    // Also refresh when tab gains focus
+    const handleFocus = () => {
+      fetchSecurityNotifications(true);
+    };
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
+  const handleMarkSecurityAsRead = async (id) => {
+    try {
+      await securityService.markAsRead(id);
+      setSecurityNotifications((prev) =>
+        prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
+      );
+      setUnreadSecurityCount((prev) => Math.max(0, prev - 1));
+      if (lastUnreadSecurityRef.current !== null) {
+        lastUnreadSecurityRef.current = Math.max(0, lastUnreadSecurityRef.current - 1);
+      }
+    } catch (e) {
+      notify('Erreur lors de la mise à jour de l\'alerte');
+    }
+  };
+
+  const handleMarkAllSecurityAsRead = async () => {
+    try {
+      await securityService.markAllAsRead();
+      setSecurityNotifications((prev) =>
+        prev.map((n) => ({ ...n, isRead: true }))
+      );
+      setUnreadSecurityCount(0);
+      lastUnreadSecurityRef.current = 0;
+      notify('Toutes les alertes ont été marquées comme lues');
+    } catch (e) {
+      notify('Erreur lors de la mise à jour des alertes');
+    }
+  };
+
+  const handleDeleteSecurity = async (id) => {
+    try {
+      await securityService.deleteNotification(id);
+      setSecurityNotifications((prev) => prev.filter((n) => n._id !== id));
+      // Re-fetch count
+      const count = securityNotifications.filter((n) => n._id !== id && !n.isRead).length;
+      setUnreadSecurityCount(count);
+      lastUnreadSecurityRef.current = count;
+      notify('Alerte de sécurité supprimée');
+    } catch (e) {
+      notify('Erreur lors de la suppression de l\'alerte');
+    }
+  };
+
+  const handleClearAllSecurity = async () => {
+    try {
+      await securityService.clearAll();
+      setSecurityNotifications([]);
+      setUnreadSecurityCount(0);
+      lastUnreadSecurityRef.current = 0;
+      notify('Historique de sécurité effacé');
+    } catch (e) {
+      notify('Erreur lors de l\'effacement de l\'historique');
+    }
+  };
 
   // Security & Content Protection Settings State
   const [securityForm, setSecurityForm] = useState({
@@ -1572,6 +1686,22 @@ export default function AdminDashboard({
         </div>
 
         <div className="admin-actions-group">
+          {/* Security Notification Bell Icon */}
+          <button
+            type="button"
+            className={`admin-security-bell-btn ${unreadSecurityCount > 0 ? 'has-alerts' : ''}`}
+            onClick={() => setIsSecurityCenterOpen(true)}
+            title={unreadSecurityCount > 0 ? `${unreadSecurityCount} alerte(s) de sécurité non lue(s)` : 'Centre de sécurité TechnoTech'}
+            aria-label="Centre de sécurité"
+          >
+            <Bell size={18} className="bell-icon" />
+            {unreadSecurityCount > 0 && (
+              <span className="security-bell-badge">
+                <span className="security-bell-ping" />
+                <span>{unreadSecurityCount > 99 ? '99+' : unreadSecurityCount}</span>
+              </span>
+            )}
+          </button>
           <button
             type="button"
             className="admin-btn secondary"
@@ -1639,6 +1769,33 @@ export default function AdminDashboard({
           )}
         </div>
       </header>
+
+      {/* Security Warning Banner when there are unread alerts */}
+      {unreadSecurityCount > 0 && (
+        <div className="admin-security-warning-banner">
+          <div className="security-warning-content">
+            <div className="security-warning-pulse-icon">
+              <ShieldAlert size={18} />
+            </div>
+            <div className="security-warning-texts">
+              <span className="security-warning-main">
+                <strong>Alerte de Sécurité TechnoTech :</strong> {unreadSecurityCount} tentative(s) d'accès non autorisée(s) détectée(s) à la console d'administration.
+              </span>
+              <span className="security-warning-ar">
+                (تنبيه أمني: تم رصد {unreadSecurityCount} محاولة دخول غير مصرح بها إلى لوحة التحكم)
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="security-warning-action-btn"
+            onClick={() => setIsSecurityCenterOpen(true)}
+          >
+            <span>Examiner les détails (معاينة)</span>
+            <ArrowRight size={14} />
+          </button>
+        </div>
+      )}
 
       {/* Admin Navigation Tabs */}
       <div className="admin-navigation-tabs-wrapper">
@@ -4280,6 +4437,20 @@ export default function AdminDashboard({
           </div>
         </div>
       )}
+
+      {/* TechnoTech Security Notifications Center Drawer */}
+      <SecurityNotificationCenter
+        isOpen={isSecurityCenterOpen}
+        onClose={() => setIsSecurityCenterOpen(false)}
+        notifications={securityNotifications}
+        unreadCount={unreadSecurityCount}
+        onMarkAsRead={handleMarkSecurityAsRead}
+        onMarkAllAsRead={handleMarkAllSecurityAsRead}
+        onDeleteNotification={handleDeleteSecurity}
+        onClearAll={handleClearAllSecurity}
+        onRefresh={() => fetchSecurityNotifications(false)}
+        isLoading={isLoadingSecurity}
+      />
     </div>
   );
 }

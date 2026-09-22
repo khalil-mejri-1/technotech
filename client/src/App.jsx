@@ -370,6 +370,11 @@ function App() {
           <AdminAuthGate
             onSuccess={handleAdminLogin}
             onCancel={() => navigateTo('/')}
+            onLockout={(remainingSeconds) => {
+              const minutes = Math.ceil(remainingSeconds / 60);
+              showToast(`🚨 Accès refusé : Votre adresse IP est bloquée pendant ${minutes} min suite à 2 tentatives échouées.`);
+              navigateTo('/');
+            }}
           />
           {/* Interactive Toast Notification */}
           <div className={`toast-notice ${toastMessage ? 'show' : ''}`}>

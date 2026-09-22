@@ -21,12 +21,165 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // Get the requested URI (e.g. /api/technotech/settings?foo=bar)
 $requestUri = $_SERVER['REQUEST_URI'] ?? '/api';
 
-// Handle Admin 2FA Google Authenticator Verification Endpoint
+// --- IP Lockout & Ban Security Helpers ---
+function php_get_client_ip() {
+    $headers = [
+        'HTTP_CF_CONNECTING_IP',
+        'HTTP_X_FORWARDED_FOR',
+        'HTTP_X_REAL_IP',
+        'HTTP_CLIENT_IP',
+        'REMOTE_ADDR'
+    ];
+    foreach ($headers as $header) {
+        if (!empty($_SERVER[$header])) {
+            $ips = explode(',', $_SERVER[$header]);
+            $ip = trim($ips[0]);
+            if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                return $ip;
+            }
+        }
+    }
+    return $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+}
+
+function php_get_bans_filepath() {
+    return sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'technotech_admin_bans.json';
+}
+
+function php_load_ip_bans() {
+    $file = php_get_bans_filepath();
+    if (!file_exists($file)) {
+        return [];
+    }
+    $data = @json_decode(@file_get_contents($file), true);
+    if (!is_array($data)) {
+        return [];
+    }
+    // Clean up expired bans older than 24 hours to keep file tiny
+    $now = time();
+    $cleaned = [];
+    foreach ($data as $ip => $info) {
+        if (isset($info['bannedUntil']) && $info['bannedUntil'] > ($now - 86400)) {
+            $cleaned[$ip] = $info;
+        }
+    }
+    return $cleaned;
+}
+
+function php_save_ip_bans($bans) {
+    $file = php_get_bans_filepath();
+    @file_put_contents($file, json_encode($bans), LOCK_EX);
+}
+
+function php_check_ip_lockout($ip) {
+    $bans = php_load_ip_bans();
+    $now = time();
+    if (isset($bans[$ip]) && isset($bans[$ip]['bannedUntil']) && $bans[$ip]['bannedUntil'] > $now) {
+        return [
+            'banned' => true,
+            'remainingSeconds' => $bans[$ip]['bannedUntil'] - $now,
+            'failedAttempts' => $bans[$ip]['failedAttempts'] ?? 2
+        ];
+    }
+    return [
+        'banned' => false,
+        'remainingSeconds' => 0,
+        'failedAttempts' => isset($bans[$ip]['failedAttempts']) ? $bans[$ip]['failedAttempts'] : 0
+    ];
+}
+
+function php_record_failed_attempt($ip) {
+    $bans = php_load_ip_bans();
+    $now = time();
+    $currentAttempts = isset($bans[$ip]['failedAttempts']) ? (int)$bans[$ip]['failedAttempts'] : 0;
+    $newAttempts = $currentAttempts + 1;
+
+    if ($newAttempts >= 2) {
+        // Lock out for 5 minutes (300 seconds)
+        $bans[$ip] = [
+            'failedAttempts' => $newAttempts,
+            'bannedUntil' => $now + 300,
+            'lastAttempt' => $now
+        ];
+        php_save_ip_bans($bans);
+        return [
+            'banned' => true,
+            'remainingSeconds' => 300,
+            'failedAttempts' => $newAttempts
+        ];
+    }
+
+    $bans[$ip] = [
+        'failedAttempts' => $newAttempts,
+        'bannedUntil' => 0,
+        'lastAttempt' => $now
+    ];
+    php_save_ip_bans($bans);
+    return [
+        'banned' => false,
+        'remainingSeconds' => 0,
+        'failedAttempts' => $newAttempts
+    ];
+}
+
+function php_reset_failed_attempts($ip) {
+    $bans = php_load_ip_bans();
+    if (isset($bans[$ip])) {
+        unset($bans[$ip]);
+        php_save_ip_bans($bans);
+    }
+}
+
+// Handle Check Ban Status Endpoint
+if (preg_match('#/(?:api/)?(?:technotech/)?admin/check-ban/?(?:\?.*)?$#i', $requestUri)) {
+    header("Content-Type: application/json; charset=UTF-8");
+    header("Access-Control-Allow-Origin: *");
+    header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+    $clientIp = php_get_client_ip();
+    $status = php_check_ip_lockout($clientIp);
+
+    if ($status['banned']) {
+        http_response_code(429);
+        echo json_encode([
+            'banned' => true,
+            'remainingSeconds' => $status['remainingSeconds'],
+            'message' => 'Accès bloqué pendant 5 minutes suite à 2 tentatives échouées.',
+            'clientIp' => $clientIp
+        ]);
+    } else {
+        echo json_encode([
+            'banned' => false,
+            'remainingSeconds' => 0,
+            'failedAttempts' => $status['failedAttempts'],
+            'clientIp' => $clientIp
+        ]);
+    }
+    exit;
+}
+
+// Handle Admin Verification Endpoint
 if (preg_match('#/(?:api/)?(?:technotech/)?admin/verify-totp/?(?:\?.*)?$#i', $requestUri) && $_SERVER['REQUEST_METHOD'] === 'POST') {
     header("Content-Type: application/json; charset=UTF-8");
     header("Access-Control-Allow-Origin: *");
     header("Access-Control-Allow-Methods: POST, OPTIONS");
     header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+    $clientIp = php_get_client_ip();
+    $banStatus = php_check_ip_lockout($clientIp);
+
+    // If IP is currently locked out for 5 minutes, reject immediately
+    if ($banStatus['banned']) {
+        http_response_code(429);
+        echo json_encode([
+            'success' => false,
+            'banned' => true,
+            'remainingSeconds' => $banStatus['remainingSeconds'],
+            'message' => 'Accès temporairement verrouillé pour 5 minutes. Veuillez patienter.'
+        ]);
+        exit;
+    }
 
     $input = json_decode(file_get_contents('php://input'), true);
     $code = trim((string)($input['code'] ?? ''));
@@ -81,15 +234,24 @@ if (preg_match('#/(?:api/)?(?:technotech/)?admin/verify-totp/?(?:\?.*)?$#i', $re
     $secretKey = getenv('ADMIN_TOTP_SECRET') ?: 'TECHNOTECHSECUREKEYFORADMIN23456';
 
     if (php_verify_totp($code, $secretKey)) {
+        // Success: Reset failed attempts for this IP
+        php_reset_failed_attempts($clientIp);
         echo json_encode([
             'success' => true,
             'message' => 'Authentification réussie'
         ]);
     } else {
-        http_response_code(401);
+        // Failure: Record failed attempt and check if 2 strikes reached
+        $attemptResult = php_record_failed_attempt($clientIp);
+        http_response_code($attemptResult['banned'] ? 429 : 401);
         echo json_encode([
             'success' => false,
-            'message' => 'Code d\'accès incorrect ou expiré'
+            'banned' => $attemptResult['banned'],
+            'remainingSeconds' => $attemptResult['remainingSeconds'],
+            'failedAttempts' => $attemptResult['failedAttempts'],
+            'message' => $attemptResult['banned']
+                ? '2 tentatives incorrectes consécutives. Votre accès est verrouillé pour 5 minutes.'
+                : 'Code d\'accès incorrect ou expiré. Attention : 1 seule tentative restante avant blocage de 5 minutes.'
         ]);
     }
     exit;
