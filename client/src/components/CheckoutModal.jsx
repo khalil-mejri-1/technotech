@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { getImageUrl } from '../config/api.js';
 import { orderService } from '../services/orderService.js';
+import { analytics } from '../services/analytics.js';
 
 const TUNISIAN_GOVERNORATES = [
   'Tunis',
@@ -168,6 +169,12 @@ export default function CheckoutModal({
 
       const savedOrder = await orderService.create(orderPayload);
       setPlacedOrder(savedOrder);
+
+      // Track eCommerce Purchase strictly on backend success (never on offline/local fallback)
+      if (savedOrder && !savedOrder.isLocal) {
+        analytics.trackPurchase(savedOrder);
+      }
+
       if (onOrderSuccess) {
         onOrderSuccess(savedOrder);
       }

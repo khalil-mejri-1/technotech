@@ -18,6 +18,7 @@ import {
   Check,
   Headphones
 } from 'lucide-react';
+import { analytics } from '../services/analytics.js';
 
 export default function ContactPage({ onNavigate, showToast, whatsappNumber = '96086581' }) {
   const cleanDigits = String(whatsappNumber || '96086581').replace(/\D/g, '');
@@ -81,6 +82,7 @@ export default function ContactPage({ onNavigate, showToast, whatsappNumber = '9
 
     // Success
     setSubmitted(true);
+    analytics.trackGenerateLead({ form_name: 'contact_page' });
     if (showToast) {
       showToast('Votre message a été envoyé avec succès ! Nous vous répondrons très rapidement. ✨');
     }

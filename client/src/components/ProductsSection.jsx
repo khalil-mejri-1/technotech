@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShoppingBag, ChevronLeft, ChevronRight, Check, Zap, ShieldCheck, Clock } from 'lucide-react';
 import { getImageUrl } from '../config/api.js';
 import CardImageWithSkeleton from './CardImageWithSkeleton.jsx';
+import { analytics } from '../services/analytics.js';
 
 export default function ProductsSection({ products, onAddToCart }) {
   // Store selected duration plan for each product ID
@@ -14,6 +15,10 @@ export default function ProductsSection({ products, onAddToCart }) {
       ...prev,
       [productId]: plan,
     }));
+    const product = products.find((p) => (p._id || p.id) === productId);
+    if (product) {
+      analytics.trackViewItem(product, plan);
+    }
   };
 
   const handlePrevImage = (productId, imagesLength, defaultIdx = 0, e) => {
