@@ -120,14 +120,16 @@ export default function Navbar({
       <div className={`navbar-placeholder ${isScrolled ? 'is-scrolled' : ''}`}>
         <header className={`navbar ${isScrolled ? 'navbar-floating-neon' : ''}`}>
           {/* Brand / Logo */}
-          <div
+          <a
+            href="/"
             className="brand"
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
               setActiveSection('home');
               if (onNavigate) onNavigate('/');
               else window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            style={{ cursor: 'pointer' }}
+            title="TechnoTech - Accueil"
           >
             <img
               src="/images/logo.png"
@@ -135,29 +137,33 @@ export default function Navbar({
               className="brand-logo-img"
             />
             <span className="brand-name">TECHNOTECH</span>
-          </div>
+          </a>
 
           {/* Floating Center Capsule Navigation (Desktop > 860px) */}
           <nav className="nav-pill-menu" aria-label="Navigation Principale">
             {navItems.map((item) => (
-              <button
+              <a
                 key={item.id}
-                type="button"
+                href={item.id === 'catalog' ? '/#store-products-section' : item.path}
                 className={`nav-link ${isItemActive(item) ? 'active' : ''}`}
-                onClick={() => handleNavClick(item)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNavClick(item);
+                }}
               >
                 {item.label}
-              </button>
+              </a>
             ))}
           </nav>
 
           {/* Quick Action Icons */}
           <div className="nav-actions">
             {/* Distinctive Special Offers Button */}
-            <button
-              type="button"
+            <a
+              href="/offers"
               className={`nav-offers-special-btn ${currentPath === '/offers' ? 'active' : ''}`}
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
                 if (onNavigate) onNavigate('/offers');
               }}
               title="Découvrez nos Packs & Offres Spéciales (Jusqu'à -50%)"
@@ -166,7 +172,7 @@ export default function Navbar({
                 <Flame size={15} className="offers-flame-icon" />
               </span>
               <span className="offers-btn-text">OFFRES </span>
-            </button>
+            </a>
 
             {/* Shopping Bag */}
             <button
@@ -208,12 +214,15 @@ export default function Navbar({
       >
         {/* Drawer Header */}
         <div className="mobile-nav-header">
-          <div
+          <a
+            href="/"
             className="brand"
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
               setMobileMenuOpen(false);
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
+            title="TechnoTech - Accueil"
           >
             <img
               src="/images/logo.png"
@@ -221,7 +230,7 @@ export default function Navbar({
               className="brand-logo-img"
             />
             <span className="brand-name">TECHNOTECH</span>
-          </div>
+          </a>
           <button
             type="button"
             className="close-mobile-drawer-btn"
@@ -235,13 +244,15 @@ export default function Navbar({
 
         {/* Drawer Body: Navigation Buttons */}
         <div className="mobile-nav-body">
-          <button
-            type="button"
+          <a
+            href="/offers"
             className={`mobile-offers-special-btn ${currentPath === '/offers' ? 'active' : ''}`}
-            onClick={() => {
+            onClick={(e) => {
+              e.preventDefault();
               if (onNavigate) onNavigate('/offers');
               setMobileMenuOpen(false);
             }}
+            title="Offres & Packs Spéciaux"
           >
             <div className="mobile-offers-content">
               <div className="mobile-offers-icon-box">
@@ -256,25 +267,26 @@ export default function Navbar({
               </div>
             </div>
             <ChevronRight size={18} className="mobile-offers-chevron" />
-          </button>
+          </a>
 
           <span className="mobile-nav-badge-label">Navigation</span>
           <nav className="mobile-nav-links" aria-label="Liens mobiles">
             {navItems.map((item) => {
               const isActive = isItemActive(item);
               return (
-                <button
+                <a
                   key={item.id}
-                  type="button"
+                  href={item.id === 'catalog' ? '/#store-products-section' : item.path}
                   className={`mobile-nav-link-btn ${isActive ? 'active' : ''}`}
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.preventDefault();
                     handleNavClick(item);
                     setMobileMenuOpen(false);
                   }}
                 >
                   <span className="mobile-nav-link-text">{item.label}</span>
                   <ChevronRight size={16} className="mobile-nav-chevron" />
-                </button>
+                </a>
               );
             })}
           </nav>

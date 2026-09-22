@@ -62,29 +62,53 @@ export default function Footer({ onNavigate, whatsappNumber = '96086581' }) {
       </div>
 
       {/* Footer Navigation Links */}
-      <div className="footer-nav-links">
-        <button
-          type="button"
+      <nav className="footer-nav-links" aria-label="Navigation Pied de Page">
+        <a
+          href="/"
           className="footer-nav-btn"
-          onClick={() => onNavigate ? onNavigate('/') : window.scrollTo({ top: 0, behavior: 'smooth' })}
+          onClick={(e) => {
+            e.preventDefault();
+            if (onNavigate) onNavigate('/');
+            else window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          title="Accueil TechnoTech"
         >
           Boutique
-        </button>
-        <button
-          type="button"
+        </a>
+        <a
+          href="/offers"
           className="footer-nav-btn"
-          onClick={() => onNavigate && onNavigate('/about')}
+          onClick={(e) => {
+            e.preventDefault();
+            if (onNavigate) onNavigate('/offers');
+          }}
+          title="Offres & Packs Spéciaux"
+        >
+          Offres Spéciales
+        </a>
+        <a
+          href="/about"
+          className="footer-nav-btn"
+          onClick={(e) => {
+            e.preventDefault();
+            if (onNavigate) onNavigate('/about');
+          }}
+          title="À Propos de TechnoTech"
         >
           À Propos
-        </button>
-        <button
-          type="button"
+        </a>
+        <a
+          href="/contact"
           className="footer-nav-btn"
-          onClick={() => onNavigate && onNavigate('/contact')}
+          onClick={(e) => {
+            e.preventDefault();
+            if (onNavigate) onNavigate('/contact');
+          }}
+          title="Contactez TechnoTech"
         >
           Contact
-        </button>
-      </div>
+        </a>
+      </nav>
 
       {/* Centered Slogan / Tagline */}
       <div className="footer-tagline">

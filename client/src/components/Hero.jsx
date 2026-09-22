@@ -341,16 +341,20 @@ export default function Hero({
             <ArrowRight size={17} strokeWidth={2.8} className="cta-arrow" />
           </button>
 
-          <button
-            type="button"
+          <a
+            href="/offers"
             className="hero-secondary-btn offers-btn"
-            onClick={handleScrollToOffers}
+            onClick={(e) => {
+              e.preventDefault();
+              handleScrollToOffers();
+            }}
             id="hero-view-offers-btn"
+            title="Découvrir toutes les offres spéciales"
           >
             <Flame size={16} className="offers-btn-flame" />
             <span>VOIR LES OFFRES</span>
             <ArrowRight size={16} strokeWidth={2.6} className="offers-btn-arrow" />
-          </button>
+          </a>
         </div>
       </section>
 
