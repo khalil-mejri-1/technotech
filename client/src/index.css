@@ -291,29 +291,30 @@ body {
 .brand-name {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 1.55rem;
-  font-weight: 850;
+  font-weight: 800;
   letter-spacing: -0.02em;
+  text-transform: none;
+  text-shadow: none !important;
+  filter: none !important;
   display: inline-flex;
   align-items: center;
-  text-transform: none;
-  line-height: 1;
 }
 
 .brand-techno {
-  color: #030e43;
-  -webkit-text-stroke: 0.6px rgba(255, 255, 255, 0.7);
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
-  font-weight: 850;
-  letter-spacing: -0.02em;
+  color: #ffffff !important;
+  text-shadow: none !important;
+  filter: none !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
 .brand-tech {
-  background: linear-gradient(135deg, #00d2ff 0%, #0072ff 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-weight: 850;
-  letter-spacing: -0.02em;
-  filter: drop-shadow(0 0 12px rgba(0, 210, 255, 0.5));
+  background: linear-gradient(90deg, #00d2ff 0%, #0084ff 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: #00d2ff !important;
+  text-shadow: none !important;
+  filter: none !important;
 }
 
 /* Center Glass Capsule Navigation */
@@ -9573,7 +9574,9 @@ body {
 }
 
 .offers-view-active .brand-name {
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4) !important;
+  color: #ffffff !important;
+  text-shadow: none !important;
+  filter: none !important;
 }
 
 .offers-view-active .nav-pill-menu {
@@ -13469,13 +13472,17 @@ body {
 
 .preloader-brand-title {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 26px;
-  font-weight: 850;
+  font-size: 32px;
+  font-weight: 800;
   letter-spacing: -0.02em;
+  line-height: 1.1;
   margin-bottom: 8px;
   text-transform: none;
+  text-shadow: none !important;
+  filter: none !important;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
 }
 
 .preloader-subtitle {
