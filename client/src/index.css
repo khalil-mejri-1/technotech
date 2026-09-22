@@ -282,8 +282,8 @@ body {
 .brand-logo-img {
   width: 44px;
   height: 44px;
-  border-radius: 50%;
-  object-fit: cover;
+  border-radius: 0;
+  object-fit: contain;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   display: block;
 }
@@ -4099,10 +4099,11 @@ body {
 .admin-logo-img {
   width: 46px;
   height: 46px;
-  border-radius: 50%;
-  border: 1.5px solid #00d4ff;
+  border-radius: 10px;
+  border: 1.5px solid rgba(0, 212, 255, 0.5);
   box-shadow: 0 0 16px rgba(0, 212, 255, 0.35);
-  object-fit: cover;
+  object-fit: contain;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .admin-page-title {
@@ -13428,7 +13429,7 @@ body {
   width: 420px;
   height: 420px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 120, 40, 0.18) 0%, rgba(255, 120, 40, 0.04) 50%, transparent 70%);
+  background: radial-gradient(circle, rgba(0, 210, 255, 0.22) 0%, rgba(0, 132, 255, 0.08) 50%, transparent 70%);
   filter: blur(40px);
   pointer-events: none;
   animation: preloaderPulse 2.4s ease-in-out infinite;
@@ -13458,15 +13459,15 @@ body {
   position: absolute;
   inset: -6px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 120, 40, 0.35) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(0, 210, 255, 0.35) 0%, transparent 70%);
   animation: preloaderRingRotate 4s linear infinite;
 }
 
 .preloader-logo-img {
-  width: 64px;
-  height: 64px;
+  width: 68px;
+  height: 68px;
   object-fit: contain;
-  filter: drop-shadow(0 0 20px rgba(255, 120, 40, 0.55));
+  filter: drop-shadow(0 0 20px rgba(0, 210, 255, 0.65));
   animation: preloaderFloat 2.6s ease-in-out infinite;
 }
 
@@ -13508,10 +13509,10 @@ body {
 
 .preloader-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #ff5e00 0%, #ffa502 50%, #ff5e00 100%);
+  background: linear-gradient(90deg, #00d2ff 0%, #0084ff 50%, #00d2ff 100%);
   background-size: 200% 100%;
   border-radius: 99px;
-  box-shadow: 0 0 12px rgba(255, 120, 40, 0.85);
+  box-shadow: 0 0 12px rgba(0, 210, 255, 0.85);
   transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   animation: preloaderGradientFlow 2s linear infinite;
 }
