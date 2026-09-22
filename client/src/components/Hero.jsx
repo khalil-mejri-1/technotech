@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, ChevronRight as ArrowRight, ChevronDown, Check, Zap, ShieldCheck, Sparkles, Flame } from 'lucide-react';
 import { INITIAL_HERO_SLIDES } from '../data/productsData.js';
 import { getImageUrl } from '../config/api.js';
+import { analytics } from '../services/analytics.js';
 
 /**
  * Thumbnail with luxury glowing skeleton loader
@@ -80,6 +81,7 @@ export default function Hero({
   const stageRef = useRef(null);
   const activeThumbnailRef = useRef(null);
   const thumbnailsTrackRef = useRef(null);
+  const hasTrackedInitialRef = useRef(false);
 
   useEffect(() => {
     if (thumbnailsTrackRef.current && activeThumbnailRef.current) {
@@ -116,6 +118,14 @@ export default function Hero({
   // Hero Center Showcase Skeleton Management - ONLY shows ONCE on initial site open!
   const [initialHeroLoaded, setInitialHeroLoaded] = useState(false);
   const [currentHeroSrc, setCurrentHeroSrc] = useState(displayImage);
+
+  // Track initial product view in hero on mount
+  useEffect(() => {
+    if (!hasTrackedInitialRef.current && (currentProduct || currentSlide)) {
+      hasTrackedInitialRef.current = true;
+      analytics.trackViewItem(currentProduct || currentSlide, activePlan);
+    }
+  }, [currentProduct, currentSlide, activePlan]);
 
   // Preload all slides immediately into browser memory so switching is instantaneous
   useEffect(() => {
@@ -211,6 +221,14 @@ export default function Hero({
     if (isTransitioning || targetIndex === safeIndex) return;
     if (isManual) {
       setAutoPlayEnabled(false);
+      const targetSlide = activeSlides[targetIndex];
+      const targetProd = products.find(
+        (p) =>
+          (p._id && (p._id === targetSlide?.productId || p._id === targetSlide?.id)) ||
+          (p.id && (p.id === targetSlide?.productId || p.id === targetSlide?.id)) ||
+          (p.name && targetSlide?.name && p.name.trim().toLowerCase() === targetSlide.name.trim().toLowerCase())
+      );
+      analytics.trackViewItem(targetProd || targetSlide);
     }
     setOutgoingIndex(safeIndex);
     setIsTransitioning(true);
@@ -464,7 +482,10 @@ export default function Hero({
                       role="radio"
                       aria-checked={isSelected}
                       className={`plan-chip-btn ${isSelected ? 'active' : ''}`}
-                      onClick={() => setSelectedPlanId(plan.id || plan.duration)}
+                      onClick={() => {
+                        setSelectedPlanId(plan.id || plan.duration);
+                        analytics.trackViewItem(currentProduct || currentSlide, plan);
+                      }}
                     >
                       <div className={`plan-radio-circle ${isSelected ? 'selected' : ''}`}>
                         {isSelected && <Check size={10} strokeWidth={3.5} />}

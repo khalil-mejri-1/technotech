@@ -16,6 +16,7 @@ import { getStoredOffers, saveStoredOffers } from './data/offersData.js';
 import { productService } from './services/productService.js';
 import { offerService } from './services/offerService.js';
 import { settingsService, DEFAULT_SITE_SETTINGS } from './services/settingsService.js';
+import { analytics } from './services/analytics.js';
 
 function App() {
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
@@ -51,15 +52,9 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Track page views & session engagement in Google Analytics (GA4) on SPA route changes
+  // Track page views in Google Analytics (GA4) on SPA route changes
   useEffect(() => {
-    if (typeof window.gtag === 'function') {
-      window.gtag('config', 'G-EQQZHW6ZWQ', {
-        page_path: currentPath,
-        page_location: window.location.href,
-        page_title: document.title,
-      });
-    }
+    analytics.trackPageView(currentPath, document.title);
   }, [currentPath]);
 
   // Synchronize products, hero slides and offers directly with MongoDB Atlas database
@@ -293,6 +288,7 @@ function App() {
       ]);
     }
 
+    analytics.trackAddToCart(product, 1, { duration: optionLabel, price: product.price });
     setIsCartOpen(true);
     showToast(`Article ajouté à votre panier !`);
   };
@@ -321,6 +317,7 @@ function App() {
   const handleCheckout = () => {
     setIsCartOpen(false);
     setIsCheckoutOpen(true);
+    analytics.trackBeginCheckout(cartItems);
   };
 
   const navigateTo = (path) => {
