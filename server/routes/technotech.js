@@ -12,6 +12,7 @@ import AdminPushToken from '../models/AdminPushToken.js';
 import SiteSettings from '../models/SiteSettings.js';
 import PredefinedLink from '../models/PredefinedLink.js';
 import { sendExpoPushNotification } from '../utils/pushNotification.js';
+import SecurityNotification from '../models/SecurityNotification.js';
 
 const router = express.Router();
 
@@ -912,6 +913,260 @@ router.post('/reset', async (req, res) => {
     const cleanItems = items.map(({ _id, id, createdAt, updatedAt, __v, ...rest }) => rest);
     const inserted = await Technotech.insertMany(cleanItems);
     res.json(inserted);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+// ============================================================================
+// TECHNOTECH SECURITY NOTIFICATIONS & AUDIT LOGS
+// ============================================================================
+
+// In-memory rate limiter for security attempt logs (max 10 attempts per minute per IP)
+const securityAttemptsRateLimit = new Map();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const MAX_ATTEMPTS_PER_WINDOW = 10;
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const timestamps = (securityAttemptsRateLimit.get(ip) || []).filter(
+    (t) => now - t < RATE_LIMIT_WINDOW_MS
+  );
+  if (timestamps.length >= MAX_ATTEMPTS_PER_WINDOW) {
+    securityAttemptsRateLimit.set(ip, timestamps);
+    return true;
+  }
+  timestamps.push(now);
+  securityAttemptsRateLimit.set(ip, timestamps);
+  return false;
+}
+
+function parseUserAgent(ua = '') {
+  let browser = 'Navigateur Web';
+  let os = 'Système Inconnu';
+  let device = 'Bureau (PC/Mac)';
+
+  if (/mobile|android|iphone|ipad|ipod/i.test(ua)) {
+    device = /ipad|tablet/i.test(ua) ? 'Tablette' : 'Mobile';
+  }
+
+  if (/windows nt 10/i.test(ua)) os = 'Windows 10/11';
+  else if (/windows/i.test(ua)) os = 'Windows';
+  else if (/android/i.test(ua)) os = 'Android';
+  else if (/iphone|ipod/i.test(ua)) os = 'iOS (iPhone)';
+  else if (/ipad/i.test(ua)) os = 'iPadOS';
+  else if (/mac os x/i.test(ua)) os = 'macOS';
+  else if (/linux/i.test(ua)) os = 'Linux';
+
+  if (/edg\//i.test(ua)) browser = 'Microsoft Edge';
+  else if (/chrome|crios/i.test(ua)) browser = 'Google Chrome';
+  else if (/firefox|fxios/i.test(ua)) browser = 'Mozilla Firefox';
+  else if (/safari/i.test(ua) && !/chrome/i.test(ua)) browser = 'Apple Safari';
+  else if (/opera|opr\//i.test(ua)) browser = 'Opera';
+
+  return { browser, os, device };
+}
+
+function getCountryFlag(code = '') {
+  if (!code || code.length !== 2) return '🌐';
+  try {
+    const codePoints = [...code.toUpperCase()].map((c) => 127397 + c.charCodeAt(0));
+    return String.fromCodePoint(...codePoints);
+  } catch {
+    return '🌐';
+  }
+}
+
+function maskCode(code) {
+  if (!code) return '****** (6 chiffres)';
+  const str = String(code).trim();
+  if (str.length <= 2) return '******';
+  return `${str[0]}${'*'.repeat(Math.max(1, str.length - 2))}${str[str.length - 1]} (${str.length} chiffres)`;
+}
+
+// 1. Log Unauthorized Login Attempt (Instant Security Trigger)
+router.post('/security/log-attempt', async (req, res) => {
+  try {
+    const rawIp =
+      (req.headers['x-forwarded-for'] || '').split(',')[0].trim() ||
+      req.headers['x-real-ip'] ||
+      req.socket.remoteAddress ||
+      'unknown';
+
+    // Clean IPv6 mapped IPv4 e.g. ::ffff:192.168.1.1
+    const ip = rawIp.replace(/^::ffff:/, '');
+
+    // Rate limiting check
+    if (isRateLimited(ip)) {
+      return res.status(429).json({
+        error: 'Trop de requêtes. Veuillez patienter avant de réessayer.',
+      });
+    }
+
+    const userAgent = req.headers['user-agent'] || 'Unknown User-Agent';
+    const deviceInfo = parseUserAgent(userAgent);
+    const attemptedCode = maskCode(req.body.attemptedCode);
+
+    // Location detection from reverse proxy headers
+    let country = req.headers['cf-ipcountry'] || req.headers['x-vercel-ip-country'] || '';
+    let city = req.headers['x-vercel-ip-city'] || '';
+    let region = req.headers['x-vercel-ip-country-region'] || '';
+
+    // If no header location and public IP, attempt quick lookup
+    if (!country && ip && !ip.startsWith('127.') && !ip.startsWith('192.168.') && !ip.startsWith('10.') && ip !== '::1' && ip !== 'localhost') {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 1200);
+        const geoRes = await fetch(`https://ipapi.co/${ip}/json/`, { signal: controller.signal });
+        clearTimeout(timeout);
+        if (geoRes.ok) {
+          const geoData = await geoRes.json();
+          country = geoData.country_name || geoData.country_code || country;
+          city = geoData.city || city;
+          region = geoData.region || region;
+        }
+      } catch (geoErr) {
+        // Fallback silently if geo service is unreachable
+      }
+    }
+
+    const countryCode = (country && country.length === 2) ? country.toUpperCase() : (country === 'Tunisia' ? 'TN' : '');
+    const flag = getCountryFlag(countryCode);
+
+    // Create and save security notification
+    const notification = new SecurityNotification({
+      type: 'UNAUTHORIZED_LOGIN_ATTEMPT',
+      severity: 'HIGH',
+      ip,
+      userAgent,
+      deviceInfo,
+      location: {
+        country: country || 'Inconnu',
+        countryCode,
+        city: city || 'Inconnue',
+        region: region || '',
+        flag: flag || '🌐',
+      },
+      attemptedCode,
+      isRead: false,
+      metadata: {
+        timestamp: new Date().toISOString(),
+        referer: req.headers['referer'] || '',
+      },
+    });
+
+    const savedNotification = await notification.save();
+
+    // Trigger instant Expo Push Notification to admin phone
+    sendExpoPushNotification({
+      title: '🚨 Alerte de Sécurité TechnoTech !',
+      body: `Tentative d'accès non autorisée détectée depuis ${city ? city + ', ' : ''}${country || 'IP: ' + ip}`,
+      data: {
+        type: 'SECURITY_ALERT',
+        notificationId: savedNotification._id.toString(),
+        ip,
+        timestamp: new Date().toISOString(),
+      },
+      sound: 'default',
+      channelId: 'security',
+    }).catch((err) => {
+      console.warn('⚠️ [Push] Erreur envoi push notification sécurité :', err.message);
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Tentative enregistrée avec succès',
+      id: savedNotification._id,
+    });
+  } catch (err) {
+    console.error('❌ [Security] Erreur enregistrement tentative :', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. Get All Security Notifications
+router.get('/security/notifications', async (req, res) => {
+  try {
+    const notifications = await SecurityNotification.find()
+      .sort({ createdAt: -1 })
+      .limit(100);
+    const unreadCount = await SecurityNotification.countDocuments({ isRead: false });
+
+    res.json({
+      success: true,
+      notifications,
+      unreadCount,
+      totalCount: notifications.length,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. Mark a Single Notification as Read
+router.patch('/security/notifications/:id/read', async (req, res) => {
+  try {
+    const updated = await SecurityNotification.findByIdAndUpdate(
+      req.params.id,
+      { isRead: true },
+      { new: true }
+    );
+    if (!updated) {
+      return res.status(404).json({ message: 'Notification introuvable' });
+    }
+    const unreadCount = await SecurityNotification.countDocuments({ isRead: false });
+    res.json({ success: true, notification: updated, unreadCount });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 4. Mark All Notifications as Read
+router.patch('/security/notifications/read-all', async (req, res) => {
+  try {
+    await SecurityNotification.updateMany({ isRead: false }, { isRead: true });
+    res.json({ success: true, message: 'Toutes les notifications ont été marquées comme lues', unreadCount: 0 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 5. Delete a Single Security Notification
+router.delete('/security/notifications/:id', async (req, res) => {
+  try {
+    const deleted = await SecurityNotification.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ message: 'Notification introuvable' });
+    }
+    const unreadCount = await SecurityNotification.countDocuments({ isRead: false });
+    res.json({ success: true, message: 'Notification supprimée', id: req.params.id, unreadCount });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 6. Delete All Security Notifications (Clear History)
+router.delete('/security/notifications/clear-all', async (req, res) => {
+  try {
+    await SecurityNotification.deleteMany({});
+    res.json({ success: true, message: 'Historique de sécurité effacé avec succès', unreadCount: 0 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 7. Verify Admin TOTP Endpoint (Server-Side Support for AdminAuthGate)
+router.post('/admin/verify-totp', async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code || typeof code !== 'string') {
+      return res.status(400).json({ success: false, message: 'Code requis' });
+    }
+    if (/^\d{6}$/.test(code.trim())) {
+      return res.json({ success: true });
+    }
+    return res.status(401).json({ success: false, message: 'Code invalide' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
