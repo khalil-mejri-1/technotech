@@ -363,6 +363,29 @@ function App() {
 
   // If URL is /admin or starts with /admin, display Admin Auth Gate or Admin Dashboard
   if (currentPath === '/admin' || currentPath.startsWith('/admin')) {
+    // Intercept active lockout immediately before loading gate
+    try {
+      const localLockout = localStorage.getItem('technotech_admin_lockout_until');
+      if (localLockout) {
+        const remainingSecs = Math.ceil((parseInt(localLockout, 10) - Date.now()) / 1000);
+        if (remainingSecs > 0) {
+          const minutes = Math.ceil(remainingSecs / 60);
+          setTimeout(() => {
+            showToast(`🚨 Accès refusé : Votre adresse IP est bloquée pendant encore ${minutes} min suite à 2 tentatives échouées.`);
+            navigateTo('/');
+          }, 30);
+          return (
+            <div className="admin-auth-page-root">
+              <Preloader />
+            </div>
+          );
+        } else {
+          localStorage.removeItem('technotech_admin_lockout_until');
+          localStorage.removeItem('technotech_admin_failed_attempts');
+        }
+      }
+    } catch (e) {}
+
     if (!isAdminAuthenticated) {
       return (
         <div className="admin-auth-page-root">

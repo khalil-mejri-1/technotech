@@ -1156,17 +1156,137 @@ router.delete('/security/notifications/clear-all', async (req, res) => {
   }
 });
 
-// 7. Verify Admin TOTP Endpoint (Server-Side Support for AdminAuthGate)
+// --- IP Lockout Management & TOTP in Node.js Backend ---
+import crypto from 'crypto';
+
+const nodeIpBans = new Map(); // ip -> { failedAttempts, bannedUntil }
+
+function getNodeClientIp(req) {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.headers['cf-connecting-ip'] || req.socket?.remoteAddress || '127.0.0.1';
+}
+
+function base32ToBufferNode(base32) {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let cleaned = (base32 || '').toUpperCase().replace(/=+$/, '').replace(/\s+/g, '');
+  let bits = '';
+  for (let i = 0; i < cleaned.length; i++) {
+    const val = alphabet.indexOf(cleaned[i]);
+    if (val === -1) return Buffer.alloc(0);
+    bits += val.toString(2).padStart(5, '0');
+  }
+  const bytes = [];
+  for (let i = 0; i + 8 <= bits.length; i += 8) {
+    bytes.push(parseInt(bits.substring(i, i + 8), 2));
+  }
+  return Buffer.from(bytes);
+}
+
+function verifyTOTPNode(token, secretBase32, window = 1, time = Date.now()) {
+  const cleanToken = (token || '').toString().trim();
+  if (!/^\d{6}$/.test(cleanToken)) return false;
+  const secret = base32ToBufferNode(secretBase32);
+  const timeStep = 30;
+
+  for (let errorWindow = -window; errorWindow <= window; errorWindow++) {
+    const checkTime = time + (errorWindow * timeStep * 1000);
+    const counter = Math.floor(checkTime / 1000 / timeStep);
+    const counterBuffer = Buffer.alloc(8);
+    counterBuffer.writeBigInt64BE(BigInt(counter));
+
+    const hmac = crypto.createHmac('sha1', secret).update(counterBuffer).digest();
+    const offset = hmac[hmac.length - 1] & 0x0f;
+    const code = (
+      ((hmac[offset] & 0x7f) << 24) |
+      ((hmac[offset + 1] & 0xff) << 16) |
+      ((hmac[offset + 2] & 0xff) << 8) |
+      (hmac[offset + 3] & 0xff)
+    ) % 1000000;
+
+    if (code.toString().padStart(6, '0') === cleanToken) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// 7. Check Ban Status Endpoint
+router.get('/admin/check-ban', (req, res) => {
+  const ip = getNodeClientIp(req);
+  const now = Date.now();
+  const banInfo = nodeIpBans.get(ip);
+
+  if (banInfo && banInfo.bannedUntil > now) {
+    const remaining = Math.ceil((banInfo.bannedUntil - now) / 1000);
+    return res.status(429).json({
+      banned: true,
+      remainingSeconds: remaining,
+      failedAttempts: banInfo.failedAttempts || 2,
+      message: 'Accès bloqué pendant 5 minutes suite à 2 tentatives échouées.'
+    });
+  }
+
+  return res.json({
+    banned: false,
+    remainingSeconds: 0,
+    failedAttempts: banInfo ? banInfo.failedAttempts : 0
+  });
+});
+
+// 8. Verify Admin TOTP Endpoint (Server-Side Support for AdminAuthGate with IP Lockout)
 router.post('/admin/verify-totp', async (req, res) => {
   try {
+    const ip = getNodeClientIp(req);
+    const now = Date.now();
+    let banInfo = nodeIpBans.get(ip) || { failedAttempts: 0, bannedUntil: 0 };
+
+    if (banInfo.bannedUntil > now) {
+      const remaining = Math.ceil((banInfo.bannedUntil - now) / 1000);
+      return res.status(429).json({
+        success: false,
+        banned: true,
+        remainingSeconds: remaining,
+        message: 'Accès temporairement verrouillé pour 5 minutes.'
+      });
+    }
+
     const { code } = req.body;
     if (!code || typeof code !== 'string') {
       return res.status(400).json({ success: false, message: 'Code requis' });
     }
-    if (/^\d{6}$/.test(code.trim())) {
-      return res.json({ success: true });
+
+    const isValid = verifyTOTPNode(code.trim(), process.env.ADMIN_TOTP_SECRET || 'TECHNOTECHSECUREKEYFORADMIN23456');
+
+    if (isValid) {
+      nodeIpBans.delete(ip);
+      return res.json({ success: true, message: 'Authentification réussie' });
     }
-    return res.status(401).json({ success: false, message: 'Code invalide' });
+
+    // Failed attempt
+    banInfo.failedAttempts = (banInfo.failedAttempts || 0) + 1;
+    if (banInfo.failedAttempts >= 2) {
+      banInfo.bannedUntil = now + (300 * 1000);
+      nodeIpBans.set(ip, banInfo);
+      return res.status(429).json({
+        success: false,
+        banned: true,
+        remainingSeconds: 300,
+        failedAttempts: banInfo.failedAttempts,
+        message: '2 tentatives incorrectes consécutives. Votre accès est verrouillé pour 5 minutes.'
+      });
+    }
+
+    nodeIpBans.set(ip, banInfo);
+    return res.status(401).json({
+      success: false,
+      banned: false,
+      remainingSeconds: 0,
+      failedAttempts: banInfo.failedAttempts,
+      message: 'Code d\'accès incorrect ou expiré. Attention : 1 seule tentative restante avant blocage de 5 minutes.'
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
