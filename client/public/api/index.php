@@ -21,6 +21,80 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 // Get the requested URI (e.g. /api/technotech/settings?foo=bar)
 $requestUri = $_SERVER['REQUEST_URI'] ?? '/api';
 
+// Handle Admin 2FA Google Authenticator Verification Endpoint
+if (preg_match('#/(?:api/)?(?:technotech/)?admin/verify-totp/?(?:\?.*)?$#i', $requestUri) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    header("Content-Type: application/json; charset=UTF-8");
+    header("Access-Control-Allow-Origin: *");
+    header("Access-Control-Allow-Methods: POST, OPTIONS");
+    header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+    $input = json_decode(file_get_contents('php://input'), true);
+    $code = trim((string)($input['code'] ?? ''));
+
+    // Base32 Decoder for RFC 4648
+    function php_base32_decode($b32) {
+        $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+        $b32 = strtoupper(rtrim(trim($b32), '='));
+        $binary = '';
+        for ($i = 0; $i < strlen($b32); $i++) {
+            $pos = strpos($alphabet, $b32[$i]);
+            if ($pos === false) continue;
+            $binary .= str_pad(decbin($pos), 5, '0', STR_PAD_LEFT);
+        }
+        $bytes = '';
+        for ($i = 0; $i + 8 <= strlen($binary); $i += 8) {
+            $bytes .= chr(bindec(substr($binary, $i, 8)));
+        }
+        return $bytes;
+    }
+
+    // TOTP Generator
+    function php_generate_totp($secret, $timeStep = 30, $timestamp = null) {
+        if ($timestamp === null) $timestamp = time();
+        $counter = floor($timestamp / $timeStep);
+        $secretBytes = php_base32_decode($secret);
+        $packedCounter = pack('NN', 0, $counter); // 64-bit big-endian
+        $hash = hash_hmac('sha1', $packedCounter, $secretBytes, true);
+        $offset = ord($hash[strlen($hash) - 1]) & 0x0F;
+        $code = (
+            ((ord($hash[$offset]) & 0x7F) << 24) |
+            ((ord($hash[$offset + 1]) & 0xFF) << 16) |
+            ((ord($hash[$offset + 2]) & 0xFF) << 8) |
+            (ord($hash[$offset + 3]) & 0xFF)
+        ) % 1000000;
+        return str_pad((string)$code, 6, '0', STR_PAD_LEFT);
+    }
+
+    // Verify TOTP with +/- 1 time step tolerance (30 seconds)
+    function php_verify_totp($token, $secret, $window = 1) {
+        $token = trim((string)$token);
+        if (!preg_match('/^\d{6}$/', $token)) return false;
+        $now = time();
+        for ($i = -$window; $i <= $window; $i++) {
+            if (php_generate_totp($secret, 30, $now + ($i * 30)) === $token) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    $secretKey = getenv('ADMIN_TOTP_SECRET') ?: 'TECHNOTECHSECUREKEYFORADMIN23456';
+
+    if (php_verify_totp($code, $secretKey)) {
+        echo json_encode([
+            'success' => true,
+            'message' => 'Authentification 2FA réussie avec succès'
+        ]);
+    } else {
+        http_response_code(401);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Code Google Authenticator invalide ou expiré'
+        ]);
+    }
+    exit;
+}
+
 // Construct the full backend target URL
 $targetUrl = rtrim($backendBaseUrl, '/') . '/' . ltrim($requestUri, '/');
 
