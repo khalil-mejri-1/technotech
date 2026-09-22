@@ -23,9 +23,30 @@ export default function AdminAuthGate({ onSuccess, onCancel, onLockout }) {
   const [error, setError] = useState(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isShaking, setIsShaking] = useState(false);
-  const [isLockedOut, setIsLockedOut] = useState(false);
-  const [remainingSeconds, setRemainingSeconds] = useState(0);
-  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [isLockedOut, setIsLockedOut] = useState(() => {
+    try {
+      const until = localStorage.getItem('technotech_admin_lockout_until');
+      if (until && parseInt(until, 10) > Date.now()) return true;
+    } catch (e) {}
+    return false;
+  });
+  const [remainingSeconds, setRemainingSeconds] = useState(() => {
+    try {
+      const until = localStorage.getItem('technotech_admin_lockout_until');
+      if (until) {
+        const diff = Math.ceil((parseInt(until, 10) - Date.now()) / 1000);
+        if (diff > 0) return diff;
+      }
+    } catch (e) {}
+    return 0;
+  });
+  const [failedAttempts, setFailedAttempts] = useState(() => {
+    try {
+      return parseInt(localStorage.getItem('technotech_admin_failed_attempts') || '0', 10);
+    } catch (e) {
+      return 0;
+    }
+  });
 
   const inputRefs = useRef([]);
   const secretKey = DEFAULT_ADMIN_TOTP_SECRET;
@@ -37,19 +58,27 @@ export default function AdminAuthGate({ onSuccess, onCancel, onLockout }) {
       try {
         const response = await fetch('/api/technotech/admin/check-ban');
         if (response.ok || response.status === 429) {
-          const data = await response.json();
-          if (isMounted && data.banned) {
-            setIsLockedOut(true);
-            setRemainingSeconds(data.remainingSeconds || 300);
-            setError(`Accès verrouillé pour votre adresse IP suite à 2 tentatives échouées.`);
-            // Automatically kick out after 1.5 seconds
-            setTimeout(() => {
-              if (onLockout) {
-                onLockout(data.remainingSeconds || 300);
-              } else if (onCancel) {
-                onCancel();
-              }
-            }, 1500);
+          const contentType = response.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            const data = await response.json();
+            if (isMounted && data.banned) {
+              const secs = data.remainingSeconds || 300;
+              setIsLockedOut(true);
+              setRemainingSeconds(secs);
+              try {
+                localStorage.setItem('technotech_admin_failed_attempts', '2');
+                localStorage.setItem('technotech_admin_lockout_until', String(Date.now() + (secs * 1000)));
+              } catch (e) {}
+              setError(`Accès verrouillé pour votre adresse IP suite à 2 tentatives échouées.`);
+              // Automatically kick out after 1.5 seconds
+              setTimeout(() => {
+                if (onLockout) {
+                  onLockout(secs);
+                } else if (onCancel) {
+                  onCancel();
+                }
+              }, 1500);
+            }
           }
         }
       } catch (e) {
@@ -192,6 +221,10 @@ export default function AdminAuthGate({ onSuccess, onCancel, onLockout }) {
 
       if (verified) {
         setFailedAttempts(0);
+        try {
+          localStorage.removeItem('technotech_admin_lockout_until');
+          localStorage.removeItem('technotech_admin_failed_attempts');
+        } catch (e) {}
         if (onSuccess) {
           onSuccess();
         }
@@ -207,6 +240,10 @@ export default function AdminAuthGate({ onSuccess, onCancel, onLockout }) {
           setIsLockedOut(true);
           setRemainingSeconds(lockSeconds);
           setFailedAttempts(2);
+          try {
+            localStorage.setItem('technotech_admin_failed_attempts', '2');
+            localStorage.setItem('technotech_admin_lockout_until', String(Date.now() + (lockSeconds * 1000)));
+          } catch (e) {}
           setError(`2 tentatives incorrectes consécutives. Votre adresse IP est bloquée pendant 5 minutes.`);
           setIsShaking(true);
           setDigits(['', '', '', '', '', '']);
@@ -221,7 +258,11 @@ export default function AdminAuthGate({ onSuccess, onCancel, onLockout }) {
           }, 1500);
         } else {
           // Strike 1: Warning
-          setFailedAttempts(1);
+          const nextAttempts = failedAttempts + 1;
+          setFailedAttempts(nextAttempts);
+          try {
+            localStorage.setItem('technotech_admin_failed_attempts', String(nextAttempts));
+          } catch (e) {}
           setError(`Code d'accès incorrect. Attention : 1 seule tentative restante avant blocage de 5 minutes !`);
           setIsShaking(true);
           setDigits(['', '', '', '', '', '']);
