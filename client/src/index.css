@@ -13991,60 +13991,212 @@ body {
   letter-spacing: 0.5px;
 }
 
-.admin-auth-input-wrapper {
-  position: relative;
+.admin-totp-inputs-row {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: center;
   width: 100%;
+  margin: 0.35rem 0 0.2rem;
 }
 
-.admin-auth-input {
-  width: 100%;
+.admin-totp-digit-box {
+  width: 48px;
+  height: 56px;
   box-sizing: border-box;
-  padding: 0.95rem 3rem 0.95rem 1.1rem;
-  border-radius: 14px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #ffffff;
   background: rgba(255, 255, 255, 0.05);
   border: 1.5px solid rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: 0.3em;
-  transition: all 0.25s ease;
+  border-radius: 12px;
   outline: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  caret-color: #00d2ff;
 }
 
-.admin-auth-input:focus {
+@media (max-width: 480px) {
+  .admin-totp-digit-box {
+    width: 42px;
+    height: 50px;
+    font-size: 1.3rem;
+  }
+  .admin-totp-inputs-row {
+    gap: 0.4rem;
+  }
+}
+
+.admin-totp-digit-box:focus {
   border-color: #00d2ff;
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow:
-    0 0 0 4px rgba(0, 210, 255, 0.15),
-    0 0 20px rgba(0, 210, 255, 0.2);
+  background: rgba(0, 210, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.2), 0 0 15px rgba(0, 210, 255, 0.25);
+  transform: translateY(-2px);
 }
 
-.admin-auth-input.input-error {
+.admin-totp-digit-box.box-filled {
+  border-color: rgba(0, 210, 255, 0.45);
+  background: rgba(0, 210, 255, 0.04);
+}
+
+.admin-totp-digit-box.box-error {
   border-color: #ff4757;
   background: rgba(255, 71, 87, 0.08);
-  box-shadow: 0 0 0 4px rgba(255, 71, 87, 0.15);
+  box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.18);
 }
 
-.admin-auth-eye-btn {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.5);
+.admin-totp-setup-section {
+  width: 100%;
+  margin-top: 0.85rem;
+}
+
+.admin-totp-toggle-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  padding: 0.65rem 1rem;
+  width: 100%;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   cursor: pointer;
-  padding: 0.35rem;
+  transition: all 0.25s ease;
+}
+
+.admin-totp-toggle-btn:hover {
+  background: rgba(0, 210, 255, 0.08);
+  border-color: rgba(0, 210, 255, 0.4);
+  color: #00d2ff;
+}
+
+.admin-totp-setup-card {
+  margin-top: 0.85rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: authCardFadeIn 0.35s ease both;
+}
+
+.admin-totp-qr-wrap {
+  background: #ffffff;
+  padding: 10px;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  margin-bottom: 0.85rem;
+  display: inline-flex;
+}
+
+.admin-totp-qr-image {
+  width: 180px;
+  height: 180px;
+  display: block;
+  border-radius: 6px;
+}
+
+.admin-totp-setup-instructions {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.5;
+  margin: 0 0 0.85rem 0;
+}
+
+.admin-totp-setup-instructions strong {
+  color: #00d2ff;
+}
+
+.admin-totp-key-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 0.85rem;
+  border-radius: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 0.85rem;
+}
+
+.admin-totp-key-display code {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #00d2ff;
+  letter-spacing: 0.08em;
+  word-break: break-all;
+}
+
+.admin-totp-copy-btn {
+  background: rgba(0, 210, 255, 0.12);
+  border: 1px solid rgba(0, 210, 255, 0.25);
+  color: #00d2ff;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.admin-totp-copy-btn:hover {
+  background: rgba(0, 210, 255, 0.25);
+  border-color: #00d2ff;
+  color: #ffffff;
+}
+
+.admin-totp-steps-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 0.75rem;
+}
+
+.guide-step {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.guide-step strong {
+  color: #ffffff;
+}
+
+.step-num {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(0, 210, 255, 0.18);
+  border: 1px solid rgba(0, 210, 255, 0.35);
+  color: #00d2ff;
+  font-size: 0.65rem;
+  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
-.admin-auth-eye-btn:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
+.spin-icon {
+  animation: spin 1s linear infinite;
 }
 
 .admin-auth-error-msg {
