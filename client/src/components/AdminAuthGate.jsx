@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   AlertCircle,
   ShieldCheck,
-  Smartphone,
   RefreshCw
 } from 'lucide-react';
 import {
@@ -13,8 +12,8 @@ import {
 } from '../utils/totp.js';
 
 /**
- * AdminAuthGate - 2FA Google Authenticator Verification Screen
- * Protects /admin with standard RFC 6238 Time-based One-Time Password (TOTP).
+ * AdminAuthGate - Secure Passcode Verification Screen
+ * Protects /admin with dynamic time-based confidential code.
  */
 export default function AdminAuthGate({ onSuccess, onCancel }) {
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
@@ -128,7 +127,7 @@ export default function AdminAuthGate({ onSuccess, onCancel }) {
           onSuccess();
         }
       } else {
-        setError('Code Google Authenticator invalide ou expiré. Veuillez vérifier l\'heure de votre téléphone.');
+        setError('Code d\'accès incorrect ou expiré. Veuillez réessayer.');
         setIsShaking(true);
         setDigits(['', '', '', '', '', '']);
         setTimeout(() => {
@@ -137,7 +136,7 @@ export default function AdminAuthGate({ onSuccess, onCancel }) {
         }, 600);
       }
     } catch (err) {
-      console.error('TOTP verification error:', err);
+      console.error('Verification error:', err);
       setError('Erreur lors de la vérification. Veuillez réessayer.');
     } finally {
       setIsVerifying(false);
@@ -148,7 +147,7 @@ export default function AdminAuthGate({ onSuccess, onCancel }) {
     e.preventDefault();
     const fullCode = digits.join('');
     if (fullCode.length !== 6) {
-      setError('Veuillez saisir les 6 chiffres du code Google Authenticator.');
+      setError('Veuillez saisir les 6 chiffres de votre code d\'accès.');
       return;
     }
     triggerVerification(fullCode);
@@ -178,12 +177,12 @@ export default function AdminAuthGate({ onSuccess, onCancel }) {
         {/* Header Titles */}
         <div className="admin-auth-header-text">
           <div className="admin-auth-shield-badge">
-            <ShieldCheck size={15} className="shield-icon" />
-            <span>Google Authenticator 2FA</span>
+            <Lock size={14} className="shield-icon" />
+            <span>Portail d'Administration</span>
           </div>
-          <h1 className="admin-auth-title">Vérification 2FA</h1>
+          <h1 className="admin-auth-title">Accès Sécurisé</h1>
           <p className="admin-auth-subtitle">
-            Entrez le code à 6 chiffres généré par votre application Google Authenticator.
+            Veuillez saisir votre code d'accès confidentiel pour accéder à la console de gestion.
           </p>
         </div>
 
@@ -191,8 +190,8 @@ export default function AdminAuthGate({ onSuccess, onCancel }) {
         <form onSubmit={handleSubmit} className="admin-auth-form">
           <div className="admin-auth-input-group">
             <label className="admin-auth-label">
-              <Smartphone size={14} />
-              <span>Code de sécurité temporaire (TOTP)</span>
+              <Lock size={14} />
+              <span>Code d'accès confidentiel (6 chiffres)</span>
             </label>
 
             {/* 6 Individual PIN Boxes */}
@@ -238,7 +237,7 @@ export default function AdminAuthGate({ onSuccess, onCancel }) {
             ) : (
               <>
                 <ShieldCheck size={18} />
-                <span>Valider le code 2FA</span>
+                <span>Déverrouiller l'accès</span>
               </>
             )}
           </button>
