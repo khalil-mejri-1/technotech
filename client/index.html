@@ -274,6 +274,7 @@
       overflow-x: hidden;
     }
 
+    /* Instant Luxury Preloader - Grand & Cinematic */
     #site-preloader {
       position: fixed;
       inset: 0;
@@ -285,7 +286,7 @@
       flex-direction: column;
       opacity: 1;
       visibility: visible;
-      transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.45s ease;
+      transition: opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.5s ease;
       pointer-events: all;
     }
 
@@ -297,13 +298,13 @@
 
     .initial-preloader-glow {
       position: absolute;
-      width: 420px;
-      height: 420px;
+      width: 550px;
+      height: 550px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(0, 210, 255, 0.22) 0%, rgba(0, 132, 255, 0.08) 50%, transparent 70%);
-      filter: blur(40px);
+      background: radial-gradient(circle, rgba(0, 210, 255, 0.18) 0%, rgba(0, 132, 255, 0.06) 50%, transparent 70%);
+      filter: blur(60px);
       pointer-events: none;
-      animation: preloaderPulse 2.4s ease-in-out infinite;
+      animation: preloaderPulse 3s ease-in-out infinite;
     }
 
     .initial-preloader-content {
@@ -313,48 +314,74 @@
       flex-direction: column;
       align-items: center;
       text-align: center;
-      padding: 20px;
+      padding: 30px 20px;
     }
 
     .initial-preloader-logo-wrap {
       position: relative;
-      width: 84px;
-      height: 84px;
+      width: 180px;
+      height: 180px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 22px;
+      margin-bottom: 28px;
     }
 
-    .initial-preloader-glow-ring {
+    .initial-preloader-circle-glow {
       position: absolute;
-      inset: -6px;
+      inset: -12px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(0, 210, 255, 0.35) 0%, transparent 70%);
-      animation: preloaderRingRotate 4s linear infinite;
+      background: radial-gradient(circle, rgba(0, 210, 255, 0.28) 0%, rgba(0, 132, 255, 0.08) 55%, transparent 75%);
+      filter: blur(20px);
+      opacity: 0;
+      animation: circleGlowFadeIn 0.8s ease-out 0.4s forwards, circleGlowPulse 2.8s ease-in-out 1.2s infinite;
+    }
+
+    .preloader-circle-svg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-90deg);
+      width: 180px;
+      height: 180px;
+      z-index: 2;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    .preloader-drawn-circle {
+      stroke-dasharray: 490;
+      stroke-dashoffset: 490;
+      animation: drawGlowingCircle 0.85s cubic-bezier(0.4, 0, 0.2, 1) 0.36s forwards;
+      filter: drop-shadow(0 0 8px #00d2ff) drop-shadow(0 0 18px rgba(0, 210, 255, 0.85));
     }
 
     .initial-preloader-logo {
-      width: 68px;
-      height: 68px;
+      width: 96px;
+      height: 96px;
       object-fit: contain;
-      filter: drop-shadow(0 0 20px rgba(0, 210, 255, 0.65));
-      animation: preloaderFloat 2.6s ease-in-out infinite;
       display: block;
+      z-index: 3;
+      position: relative;
+      opacity: 0;
+      transform: scale(0);
+      animation: logoPopIn 0.38s cubic-bezier(0.18, 0.9, 0.32, 1.25) forwards;
+      filter: drop-shadow(0 0 24px rgba(0, 210, 255, 0.7));
     }
 
     .initial-preloader-title {
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 32px;
+      font-size: 44px;
       font-weight: 800;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.025em;
       line-height: 1.1;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       text-shadow: none !important;
       filter: none !important;
+      animation: preloaderTextUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.5s backwards;
     }
 
     .brand-techno {
@@ -374,22 +401,24 @@
 
     .initial-preloader-sub {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 10px;
+      font-size: 11.5px;
       font-weight: 600;
-      letter-spacing: 0.22em;
-      color: rgba(255, 255, 255, 0.45);
+      letter-spacing: 0.26em;
+      color: rgba(255, 255, 255, 0.5);
       text-transform: uppercase;
-      margin-bottom: 26px;
+      margin-bottom: 30px;
+      animation: preloaderTextUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.65s backwards;
     }
 
     .initial-preloader-bar-track {
-      width: 170px;
-      height: 2.5px;
+      width: 220px;
+      height: 3px;
       background: rgba(255, 255, 255, 0.08);
       border-radius: 99px;
       overflow: hidden;
       position: relative;
-      margin-bottom: 14px;
+      margin-bottom: 15px;
+      animation: preloaderTextUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.75s backwards;
     }
 
     .initial-preloader-bar-fill {
@@ -398,19 +427,72 @@
       background: linear-gradient(90deg, #00d2ff 0%, #0084ff 50%, #00d2ff 100%);
       background-size: 200% 100%;
       border-radius: 99px;
-      box-shadow: 0 0 12px rgba(0, 210, 255, 0.85);
+      box-shadow: 0 0 14px rgba(0, 210, 255, 0.9);
       transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
       animation: preloaderGradientFlow 2s linear infinite;
     }
 
     .initial-preloader-status {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 500;
-      color: rgba(255, 255, 255, 0.38);
-      letter-spacing: 0.08em;
-      min-height: 16px;
+      color: rgba(255, 255, 255, 0.42);
+      letter-spacing: 0.09em;
+      min-height: 18px;
       transition: color 0.3s ease;
+      animation: preloaderTextUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.85s backwards;
+    }
+
+    @keyframes logoPopIn {
+      0% {
+        opacity: 0;
+        transform: scale(0);
+        filter: drop-shadow(0 0 0px transparent);
+      }
+      65% {
+        opacity: 1;
+        transform: scale(1.15);
+        filter: drop-shadow(0 0 35px rgba(0, 240, 255, 0.95));
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+        filter: drop-shadow(0 0 24px rgba(0, 210, 255, 0.7));
+      }
+    }
+
+    @keyframes drawGlowingCircle {
+      0% {
+        stroke-dashoffset: 490;
+        opacity: 0.2;
+      }
+      10% {
+        opacity: 1;
+      }
+      100% {
+        stroke-dashoffset: 0;
+        opacity: 1;
+      }
+    }
+
+    @keyframes circleGlowFadeIn {
+      to { opacity: 1; }
+    }
+
+    @keyframes circleGlowPulse {
+      0%, 100% { transform: scale(0.96); opacity: 0.7; }
+      50% { transform: scale(1.06); opacity: 1; }
+    }
+
+    @keyframes preloaderTextUp {
+      0% {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     @keyframes preloaderPulse {
@@ -418,20 +500,37 @@
       50% { transform: scale(1.12); opacity: 1; }
     }
 
-    @keyframes preloaderFloat {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-7px); }
-    }
-
-    @keyframes preloaderRingRotate {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
     @keyframes preloaderGradientFlow {
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
+    }
+
+    @media (max-width: 480px) {
+      .initial-preloader-logo-wrap {
+        width: 150px;
+        height: 150px;
+        margin-bottom: 22px;
+      }
+      .preloader-circle-svg {
+        width: 150px;
+        height: 150px;
+      }
+      .initial-preloader-logo {
+        width: 80px;
+        height: 80px;
+      }
+      .initial-preloader-title {
+        font-size: 34px;
+      }
+      .initial-preloader-sub {
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        margin-bottom: 24px;
+      }
+      .initial-preloader-bar-track {
+        width: 180px;
+      }
     }
 
     /* Semantic SEO content is present in DOM for search engines & crawlers, but does not cause FOUC */
@@ -455,15 +554,56 @@
     <div class="initial-preloader-glow"></div>
     <div class="initial-preloader-content">
       <div class="initial-preloader-logo-wrap">
-        <div class="initial-preloader-glow-ring"></div>
+        <div class="initial-preloader-circle-glow"></div>
+
+        <svg class="preloader-circle-svg" width="180" height="180" viewBox="0 0 180 180">
+          <defs>
+            <linearGradient id="neonCyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#00d2ff" />
+              <stop offset="40%" stop-color="#00f5ff" />
+              <stop offset="80%" stop-color="#0084ff" />
+              <stop offset="100%" stop-color="#00d2ff" />
+            </linearGradient>
+            <filter id="neonGlowFilter" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="3.5" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <circle
+            class="preloader-track-circle"
+            cx="90"
+            cy="90"
+            r="78"
+            fill="none"
+            stroke="rgba(0, 210, 255, 0.12)"
+            stroke-width="2.5"
+          />
+          <circle
+            class="preloader-drawn-circle"
+            cx="90"
+            cy="90"
+            r="78"
+            fill="none"
+            stroke="url(#neonCyanGrad)"
+            stroke-width="3.5"
+            stroke-linecap="round"
+            filter="url(#neonGlowFilter)"
+          />
+        </svg>
+
         <img
           src="/images/logo.png"
           alt="TechnoTech Logo"
-          width="68"
-          height="68"
+          width="96"
+          height="96"
           class="initial-preloader-logo"
         />
       </div>
+
       <div class="initial-preloader-title">
         <span class="brand-techno">Techno</span><span class="brand-tech">Tech</span>
       </div>
