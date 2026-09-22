@@ -1177,9 +1177,22 @@ router.get('/security/notifications', async (req, res) => {
   }
 });
 
-// 3. Mark a Single Notification as Read
+// 3. Mark All Notifications as Read (MUST be placed before :id)
+router.patch('/security/notifications/read-all', async (req, res) => {
+  try {
+    await SecurityNotification.updateMany({ isRead: false }, { isRead: true });
+    res.json({ success: true, message: 'Toutes les notifications ont été marquées comme lues', unreadCount: 0 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 4. Mark a Single Notification as Read
 router.patch('/security/notifications/:id/read', async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'ID invalide' });
+    }
     const updated = await SecurityNotification.findByIdAndUpdate(
       req.params.id,
       { isRead: true },
@@ -1195,35 +1208,32 @@ router.patch('/security/notifications/:id/read', async (req, res) => {
   }
 });
 
-// 4. Mark All Notifications as Read
-router.patch('/security/notifications/read-all', async (req, res) => {
+// 5. Delete All Security Notifications (Clear History) (MUST be placed before :id)
+router.delete('/security/notifications/clear-all', async (req, res) => {
   try {
-    await SecurityNotification.updateMany({ isRead: false }, { isRead: true });
-    res.json({ success: true, message: 'Toutes les notifications ont été marquées comme lues', unreadCount: 0 });
+    await SecurityNotification.deleteMany({});
+    res.json({ success: true, message: 'Historique de sécurité effacé avec succès', unreadCount: 0 });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// 5. Delete a Single Security Notification
+// 6. Delete a Single Security Notification
 router.delete('/security/notifications/:id', async (req, res) => {
   try {
+    if (req.params.id === 'clear-all') {
+      await SecurityNotification.deleteMany({});
+      return res.json({ success: true, message: 'Historique de sécurité effacé avec succès', unreadCount: 0 });
+    }
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: 'ID invalide' });
+    }
     const deleted = await SecurityNotification.findByIdAndDelete(req.params.id);
     if (!deleted) {
       return res.status(404).json({ message: 'Notification introuvable' });
     }
     const unreadCount = await SecurityNotification.countDocuments({ isRead: false });
     res.json({ success: true, message: 'Notification supprimée', id: req.params.id, unreadCount });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// 6. Delete All Security Notifications (Clear History)
-router.delete('/security/notifications/clear-all', async (req, res) => {
-  try {
-    await SecurityNotification.deleteMany({});
-    res.json({ success: true, message: 'Historique de sécurité effacé avec succès', unreadCount: 0 });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
