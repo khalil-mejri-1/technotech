@@ -136,7 +136,9 @@ export default function Navbar({
               alt="Logo TechnoTech"
               className="brand-logo-img"
             />
-            <span className="brand-name">TECHNOTECH</span>
+            <span className="brand-name">
+              <span className="brand-techno">Techno</span><span className="brand-tech">Tech</span>
+            </span>
           </a>
 
           {/* Floating Center Capsule Navigation (Desktop > 860px) */}
@@ -229,7 +231,9 @@ export default function Navbar({
               alt="Logo TechnoTech"
               className="brand-logo-img"
             />
-            <span className="brand-name">TECHNOTECH</span>
+            <span className="brand-name">
+              <span className="brand-techno">Techno</span><span className="brand-tech">Tech</span>
+            </span>
           </a>
           <button
             type="button"

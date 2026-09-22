@@ -45,7 +45,9 @@ export default function Preloader({ onFinish }) {
         </div>
 
         {/* Minimalist Luxury Typography */}
-        <div className="preloader-brand-title">TECHNOTECH</div>
+        <div className="preloader-brand-title">
+          <span className="brand-techno">Techno</span><span className="brand-tech">Tech</span>
+        </div>
         <div className="preloader-subtitle">PRODUITS DIGITAUX &amp; ABONNEMENTS OFFICIELS</div>
 
         {/* Ultra-sleek Neon Loading Line */}
