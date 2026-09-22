@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/api/technotech/:path*",
+      "destination": "https://papayawhip-tapir-274068.hostingersite.com/api/technotech/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://papayawhip-tapir-274068.hostingersite.com/api/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

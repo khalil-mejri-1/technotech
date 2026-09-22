@@ -2,12 +2,15 @@
   RewriteEngine On
   RewriteBase /
 
-  # Don't rewrite real existing files or directories
+  # 1. Reverse Proxy for API: Route all /api/ requests to the PHP proxy to hide backend URL completely
+  RewriteRule ^api/(.*)$ api/index.php [QSA,L]
+
+  # 2. Don't rewrite real existing files or directories
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # For any other route (e.g. /about, /offers, /contact, /admin), rewrite to index.html
+  # 3. For any other route (e.g. /about, /offers, /contact, /admin), rewrite to index.html
   RewriteRule ^ index.html [L]
 </IfModule>
 
