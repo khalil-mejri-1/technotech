@@ -53,6 +53,17 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+a {
+  text-decoration: none !important;
+  color: inherit;
+}
+
+a:hover,
+a:focus,
+a:active {
+  text-decoration: none !important;
+}
+
 html {
   width: 100%;
   max-width: 100vw;
@@ -274,9 +285,15 @@ body {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  text-decoration: none;
+  text-decoration: none !important;
   cursor: pointer;
   user-select: none;
+}
+
+.brand:hover,
+.brand:focus,
+.brand:active {
+  text-decoration: none !important;
 }
 
 .brand-logo-img {
@@ -313,14 +330,13 @@ body {
   background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   color: #00d2ff !important;
-  text-shadow: none !important;
-  filter: none !important;
 }
 
-/* Center Glass Capsule Navigation */
+/* Center Capsule Pill Menu */
 .nav-pill-menu {
   display: flex;
   align-items: center;
+  gap: 4px;
   background: var(--glass-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -344,17 +360,21 @@ body {
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
+  text-decoration: none !important;
 }
 
-.nav-link:hover {
+.nav-link:hover,
+.nav-link:focus {
   color: #ffffff;
   background: rgba(255, 255, 255, 0.1);
+  text-decoration: none !important;
 }
 
 .nav-link.active {
   background: var(--button-active-bg);
   color: var(--button-active-text);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  text-decoration: none !important;
 }
 
 /* Nav Actions (Right side icons) */
@@ -2314,13 +2334,16 @@ body {
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   text-align: left;
+  text-decoration: none !important;
 }
 
-.mobile-nav-link-btn:hover {
+.mobile-nav-link-btn:hover,
+.mobile-nav-link-btn:focus {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.18);
   color: #ffffff;
   transform: translateX(4px);
+  text-decoration: none !important;
 }
 
 .mobile-nav-link-btn.active {
@@ -2328,6 +2351,7 @@ body {
   border-color: rgba(var(--neon-rgb, 226, 88, 22), 0.55);
   color: #ffffff;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 16px rgba(var(--neon-rgb, 226, 88, 22), 0.22);
+  text-decoration: none !important;
 }
 
 .mobile-nav-chevron {
@@ -9322,6 +9346,7 @@ body {
   transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
   user-select: none;
+  text-decoration: none !important;
 }
 
 /* Subtle continuous luxury shimmer sweep */
@@ -9347,24 +9372,28 @@ body {
   }
 }
 
-.nav-offers-special-btn:hover {
+.nav-offers-special-btn:hover,
+.nav-offers-special-btn:focus {
   background: linear-gradient(135deg, #ff5200 0%, #ff8000 50%, #ffb400 100%);
   border-color: rgba(255, 255, 255, 0.6);
   box-shadow: 0 6px 26px rgba(255, 87, 34, 0.65), 
               0 0 16px rgba(255, 140, 0, 0.45), 
               inset 0 1px 0 rgba(255, 255, 255, 0.5);
   transform: translateY(-2px) scale(1.03);
+  text-decoration: none !important;
 }
 
 .nav-offers-special-btn:active {
   transform: translateY(0) scale(0.98);
   box-shadow: 0 2px 10px rgba(255, 87, 34, 0.4);
+  text-decoration: none !important;
 }
 
 /* Active State when user is on the /offers page */
 .nav-offers-special-btn.active {
   box-shadow: 0 0 0 2.5px rgba(255, 255, 255, 0.9), 
               0 6px 26px rgba(255, 87, 34, 0.65) !important;
+  text-decoration: none !important;
 }
 
 /* Animated Glowing Flame Icon */
@@ -9590,6 +9619,7 @@ body {
 .offers-view-active .nav-link {
   color: #cbd5e1 !important;
   font-weight: 600 !important;
+  text-decoration: none !important;
 }
 
 .offers-view-active .nav-link:hover,
@@ -9597,6 +9627,7 @@ body {
   color: #ffffff !important;
   background: rgba(255, 255, 255, 0.18) !important;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15) !important;
+  text-decoration: none !important;
 }
 
 .offers-view-active .nav-icon-btn {
@@ -9620,12 +9651,14 @@ body {
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.4) !important;
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 6px 24px rgba(255, 87, 34, 0.6) !important;
+  text-decoration: none !important;
 }
 
 .offers-view-active .nav-offers-special-btn:hover {
   background: linear-gradient(135deg, #ff5200 0%, #ff8000 50%, #ffb400 100%) !important;
   transform: translateY(-2px) scale(1.03) !important;
   box-shadow: 0 0 0 2.5px #ffffff, 0 8px 30px rgba(255, 87, 34, 0.75) !important;
+  text-decoration: none !important;
 }
 
 /* Seamless Navbar Overlay on Subpages (Offers, About, Contact) - No Brown Background */
