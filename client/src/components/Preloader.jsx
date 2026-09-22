@@ -17,7 +17,7 @@ export default function Preloader({ onFinish }) {
     const barFill = preloaderEl.querySelector('.initial-preloader-bar-fill');
     const statusText = preloaderEl.querySelector('.initial-preloader-status');
 
-    // Smoothly progress to completion once React has mounted
+    // Complete the loading bar after the glowing circle completes its draw
     const t1 = setTimeout(() => {
       if (barFill) {
         barFill.style.width = '100%';
@@ -25,19 +25,20 @@ export default function Preloader({ onFinish }) {
       }
       if (statusText) {
         statusText.textContent = 'Bienvenue';
+        statusText.style.color = '#00d2ff';
       }
-    }, 450);
+    }, 1250);
 
-    // Fade out overlay smoothly
+    // Fade out overlay smoothly after the animation sequence completes
     const t2 = setTimeout(() => {
       preloaderEl.classList.add('fade-out');
-    }, 850);
+    }, 1800);
 
     // Remove from layout after fade transition finishes
     const t3 = setTimeout(() => {
       preloaderEl.style.display = 'none';
       if (onFinish) onFinish();
-    }, 1350);
+    }, 2350);
 
     return () => {
       clearTimeout(t1);
