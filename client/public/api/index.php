@@ -1,12 +1,12 @@
 <?php
 /**
  * TechnoTech Reverse Proxy Script
- * Completely hides the backend server URL (papayawhip-tapir-274068.hostingersite.com)
+ * Completely hides the backend server URL (lightgoldenrodyellow-cheetah-417312.hostingersite.com)
  * from visitors and DevTools Network tab.
  */
 
 // Target backend base URL (completely hidden from browser)
-$backendBaseUrl = 'https://papayawhip-tapir-274068.hostingersite.com';
+$backendBaseUrl = getenv('BACKEND_URL') ?: 'https://lightgoldenrodyellow-cheetah-417312.hostingersite.com';
 
 // Handle CORS Preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -276,10 +276,15 @@ if (!empty($requestBody)) {
 // Forward Request Headers
 $forwardHeaders = [];
 $ignoreHeaders = ['host', 'content-length', 'connection', 'accept-encoding'];
+$hasContentType = false;
 
 if (function_exists('getallheaders')) {
     foreach (getallheaders() as $name => $value) {
-        if (!in_array(strtolower($name), $ignoreHeaders)) {
+        $lower = strtolower($name);
+        if (!in_array($lower, $ignoreHeaders)) {
+            if ($lower === 'content-type') {
+                $hasContentType = true;
+            }
             $forwardHeaders[] = "{$name}: {$value}";
         }
     }
@@ -287,14 +292,18 @@ if (function_exists('getallheaders')) {
     foreach ($_SERVER as $name => $value) {
         if (substr($name, 0, 5) == 'HTTP_') {
             $headerName = str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))));
-            if (!in_array(strtolower($headerName), $ignoreHeaders)) {
+            $lower = strtolower($headerName);
+            if (!in_array($lower, $ignoreHeaders)) {
+                if ($lower === 'content-type') {
+                    $hasContentType = true;
+                }
                 $forwardHeaders[] = "{$headerName}: {$value}";
             }
         }
     }
 }
 
-if (isset($_SERVER['CONTENT_TYPE'])) {
+if (!$hasContentType && !empty($_SERVER['CONTENT_TYPE'])) {
     $forwardHeaders[] = 'Content-Type: ' . $_SERVER['CONTENT_TYPE'];
 }
 
@@ -307,7 +316,12 @@ curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_HEADER, true);
 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
+if (!empty($_SERVER['HTTP_USER_AGENT'])) {
+    curl_setopt($ch, CURLOPT_USERAGENT, $_SERVER['HTTP_USER_AGENT']);
+}
 
 // Execute request
 $response = curl_exec($ch);
