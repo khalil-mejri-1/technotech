@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   Sparkles,
   Package,
+  PackageX,
   Palette,
   ChevronUp,
   ChevronDown,
@@ -430,6 +431,7 @@ export default function AdminDashboard({
     price: '',
     originalPrice: '',
     sourceBot: '',
+    isOutOfStock: false,
     images: [],
     plans: [],
   });
@@ -1180,6 +1182,7 @@ export default function AdminDashboard({
       price: 20,
       originalPrice: 30,
       sourceBot: '',
+      isOutOfStock: false,
       displayMode: 'carousel',
       selectedImageIndex: 0,
       images: ['/images/logo.png'],
@@ -1213,6 +1216,7 @@ export default function AdminDashboard({
       price: product.price || '',
       originalPrice: product.originalPrice || '',
       sourceBot: product.sourceBot || '',
+      isOutOfStock: Boolean(product.isOutOfStock),
       displayMode: pDisplayMode,
       selectedImageIndex: pSelectedIdx,
       images: pImages,
@@ -1527,6 +1531,7 @@ export default function AdminDashboard({
         ...formData,
         price: numericPrice,
         originalPrice: numericOriginalPrice,
+        isOutOfStock: Boolean(formData.isOutOfStock),
         images: finalImages.length > 0 ? finalImages : ['/images/logo.png'],
         displayMode: formData.displayMode || (finalImages.length > 1 ? 'carousel' : 'single'),
         selectedImageIndex: safeSelectedImageIndex,
@@ -1638,6 +1643,28 @@ export default function AdminDashboard({
       alert('Erreur lors de la sauvegarde dans la base de données : ' + err.message);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // Instant Quick Toggle for Product Stock Availability (Admin fast switch)
+  const handleToggleProductStock = async (product) => {
+    const productId = product._id || product.id;
+    const newStockStatus = !Boolean(product.isOutOfStock);
+    try {
+      const updatedDoc = await productService.update(productId, {
+        ...product,
+        isOutOfStock: newStockStatus,
+      });
+      const updatedList = products.map((p) => ((p._id || p.id) === productId ? updatedDoc : p));
+      onUpdateProducts(updatedList);
+      notify(
+        newStockStatus
+          ? `⚠️ "${product.name}" est maintenant marqué en Rupture de stock.`
+          : `✅ "${product.name}" est maintenant réactivé En stock.`
+      );
+    } catch (err) {
+      console.error('Erreur mise à jour stock MongoDB :', err);
+      alert('Erreur lors du changement de disponibilité du stock : ' + err.message);
     }
   };
 
@@ -2742,6 +2769,7 @@ export default function AdminDashboard({
                       <th>Prix Actuel</th>
                       <th>Prix d'Origine</th>
                       <th>Options de Durée</th>
+                      <th>Disponibilité / Stock</th>
                       <th>Bot Source (Privé 🔒)</th>
                       <th>Actions</th>
                     </tr>
@@ -2749,7 +2777,7 @@ export default function AdminDashboard({
                   <tbody>
                     {filteredProducts.length === 0 ? (
                       <tr>
-                        <td colSpan="7" className="empty-table-row">
+                        <td colSpan="8" className="empty-table-row">
                           <AlertCircle size={36} color="#94a3b8" />
                           <p>Aucun produit ne correspond à votre recherche</p>
                         </td>
@@ -2815,6 +2843,23 @@ export default function AdminDashboard({
                                   <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Standard</span>
                                 )}
                               </div>
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className={`admin-stock-toggle-btn ${product.isOutOfStock ? 'is-out' : 'is-in'}`}
+                                onClick={() => handleToggleProductStock(product)}
+                                title={
+                                  product.isOutOfStock
+                                    ? "Produit en rupture de stock. Cliquer pour le remettre En stock"
+                                    : "Produit en stock. Cliquer pour le passer en Rupture de stock"
+                                }
+                              >
+                                <span className="stock-toggle-dot" />
+                                <span className="stock-toggle-text">
+                                  {product.isOutOfStock ? 'Rupture de stock' : 'En stock'}
+                                </span>
+                              </button>
                             </td>
                             <td>
                               {product.sourceBot ? (
@@ -2973,6 +3018,54 @@ export default function AdminDashboard({
                   value={formData.badge}
                   onChange={(e) => setFormData({ ...formData, badge: e.target.value })}
                 />
+              </div>
+
+              {/* Stock Status / Disponibilité */}
+              <div className="form-section-box admin-stock-box">
+                <div className="box-title-row">
+                  <div>
+                    <h4 className="box-heading">Disponibilité du produit & Gestion du Stock</h4>
+                    <p className="box-sub">
+                      Gérez la visibilité et l'état de vente de ce produit sur votre boutique.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="stock-toggle-options-grid">
+                  <button
+                    type="button"
+                    className={`stock-select-option ${!formData.isOutOfStock ? 'is-selected in-stock' : ''}`}
+                    onClick={() => setFormData((prev) => ({ ...prev, isOutOfStock: false }))}
+                  >
+                    <div className="stock-option-status-dot in" />
+                    <div className="stock-option-texts">
+                      <div className="stock-option-title">
+                        <span>En stock</span>
+                        <span className="stock-option-tag green">Disponible</span>
+                      </div>
+                      <p className="stock-option-desc">
+                        Disponible immédiatement à la commande avec bouton actif.
+                      </p>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`stock-select-option ${formData.isOutOfStock ? 'is-selected out-of-stock' : ''}`}
+                    onClick={() => setFormData((prev) => ({ ...prev, isOutOfStock: true }))}
+                  >
+                    <div className="stock-option-status-dot out" />
+                    <div className="stock-option-texts">
+                      <div className="stock-option-title">
+                        <span>Rupture de stock</span>
+                        <span className="stock-option-tag red">Épuisé</span>
+                      </div>
+                      <p className="stock-option-desc">
+                        Affiche le badge créatif « Rupture de stock » et désactive la commande.
+                      </p>
+                    </div>
+                  </button>
+                </div>
               </div>
 
               {/* Private Admin Section: Source Bot */}

@@ -13,6 +13,7 @@ export const INITIAL_PRODUCTS = [
     sourceBot: '@AI_Sub_Bot',
     displayMode: 'single',
     selectedImageIndex: 0,
+    isOutOfStock: false,
     images: [
       '/images/black_jacket.png'
     ],
@@ -34,6 +35,7 @@ export const INITIAL_PRODUCTS = [
     sourceBot: '@CanvaEnterprise_Bot',
     displayMode: 'single',
     selectedImageIndex: 0,
+    isOutOfStock: false,
     images: [
       '/images/orange_jacket.png'
     ],
@@ -55,6 +57,7 @@ export const INITIAL_PRODUCTS = [
     sourceBot: '@MS_LicenseKey_Bot',
     displayMode: 'single',
     selectedImageIndex: 0,
+    isOutOfStock: false,
     images: [
       '/images/cream_jacket.png'
     ],
@@ -75,6 +78,7 @@ export const INITIAL_PRODUCTS = [
     sourceBot: 'Atelier Textile Direct',
     displayMode: 'carousel',
     selectedImageIndex: 0,
+    isOutOfStock: false,
     images: [
       '/images/orange_jacket.png',
       '/images/black_jacket.png',

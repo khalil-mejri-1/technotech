@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, ChevronLeft, ChevronRight, Check, Zap, ShieldCheck, Clock } from 'lucide-react';
+import { ShoppingBag, ChevronLeft, ChevronRight, Check, Zap, ShieldCheck, Clock, AlertTriangle, PackageX, Flame } from 'lucide-react';
 import { getImageUrl } from '../config/api.js';
 import CardImageWithSkeleton from './CardImageWithSkeleton.jsx';
 import CustomerReviewsSection from './CustomerReviewsSection.jsx';
@@ -121,19 +121,43 @@ export default function ProductsSection({ products, onAddToCart, whatsappNumber,
                   ? Math.round(((product.originalPrice - displayPrice) / product.originalPrice) * 100)
                   : null;
 
+              const isOutOfStock = Boolean(product.isOutOfStock);
+
               return (
-                <article key={productId} className="white-product-card split-product-card">
+                <article
+                  key={productId}
+                  className={`white-product-card split-product-card ${isOutOfStock ? 'is-out-of-stock-card' : ''}`}
+                >
                   {/* Top Dedicated Image Section */}
                   <div className="card-image-section">
                     <CardImageWithSkeleton
                       src={activeImage}
                       alt={product.name}
-                      className="card-featured-img"
+                      className={`card-featured-img ${isOutOfStock ? 'is-out-of-stock-img' : ''}`}
                     />
+
+                    {/* Creative Out of Stock Ambient Center Overlay */}
+                    {isOutOfStock && (
+                      <div className="card-stock-center-overlay">
+                        <div className="stock-center-badge">
+                          <PackageX size={15} className="stock-center-icon" />
+                          <span>Momentanément Épuisé</span>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Top Floating Controls: Badge and Carousel Navigation */}
                     <div className="card-top-controls">
-                      {product.badge ? (
+                      {isOutOfStock ? (
+                        <div className="card-top-stock-badge">
+                          <span className="stock-ping-dot-wrapper">
+                            <span className="stock-ping-dot" />
+                            <span className="stock-solid-dot" />
+                          </span>
+                          <AlertTriangle size={12} className="stock-badge-icon" />
+                          <span>RUPTURE DE STOCK</span>
+                        </div>
+                      ) : product.badge ? (
                         <span className="card-top-badge">{product.badge}</span>
                       ) : (
                         <span />
@@ -273,30 +297,55 @@ export default function ProductsSection({ products, onAddToCart, whatsappNumber,
                         )}
                       </div>
 
-                      <button
-                        type="button"
-                        className="card-add-cart-btn"
-                        onClick={() => {
-                          const cartProduct = {
-                            id: `${productId}-${activePlan?.duration || 'std'}`,
-                            name: `${product.name} ${activePlan ? `(${activePlan.duration})` : ''}`,
-                            price: displayPrice,
-                            image: activeImage,
-                            size: activePlan?.duration || 'Standard',
-                          };
-                          onAddToCart(cartProduct, activePlan?.duration || 'Standard');
-                        }}
-                      >
-                        <ShoppingBag size={18} />
-                        <span>Commander</span>
-                      </button>
+                      {isOutOfStock ? (
+                        <button
+                          type="button"
+                          className="card-add-cart-btn out-of-stock-btn"
+                          disabled
+                          aria-disabled="true"
+                          title="Ce produit est temporairement en rupture de stock"
+                        >
+                          <PackageX size={17} />
+                          <span>Rupture de stock</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="card-add-cart-btn"
+                          onClick={() => {
+                            const cartProduct = {
+                              id: `${productId}-${activePlan?.duration || 'std'}`,
+                              name: `${product.name} ${activePlan ? `(${activePlan.duration})` : ''}`,
+                              price: displayPrice,
+                              image: activeImage,
+                              size: activePlan?.duration || 'Standard',
+                            };
+                            onAddToCart(cartProduct, activePlan?.duration || 'Standard');
+                          }}
+                        >
+                          <ShoppingBag size={18} />
+                          <span>Commander</span>
+                        </button>
+                      )}
                     </div>
 
-                    {/* Trust guarantee badge */}
-                    <div className="card-guarantee-note">
-                      <ShieldCheck size={14} color="#10b981" />
-                      <span>Activation officielle garantie avec support réactif</span>
-                    </div>
+                    {/* Trust guarantee badge OR Out-of-Stock restock note */}
+                    {isOutOfStock ? (
+                      <div className="card-out-of-stock-notice">
+                        <span className="out-of-stock-fire-tag">
+                          <Flame size={12} className="fire-tag-icon" />
+                          <span>Victime de son succès</span>
+                        </span>
+                        <span className="out-of-stock-sub-text">
+                          Réapprovisionnement très bientôt
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="card-guarantee-note">
+                        <ShieldCheck size={14} color="#10b981" />
+                        <span>Activation officielle garantie avec support réactif</span>
+                      </div>
+                    )}
                   </div>
                 </article>
               );
