@@ -38,7 +38,7 @@ const reviewSchema = new mongoose.Schema(
     },
     customerName: {
       type: String,
-      required: true,
+      default: 'Client Vérifié',
     },
     customerCity: {
       type: String,

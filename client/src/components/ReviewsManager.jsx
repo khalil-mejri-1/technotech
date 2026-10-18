@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   MessageCircle,
   Star,
@@ -133,7 +134,7 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
       platform: 'whatsapp',
       customerName: '',
       customerCity: 'Tunis',
-      customerPhone: '+216 98 ••• ••',
+      customerPhone: '+216 ',
       productName: products[0]?.name || 'ChatGPT Plus — Abonnement Officiel',
       rating: 5,
       date: "Aujourd'hui à " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -204,40 +205,20 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
 
   const handleSaveReview = async (e) => {
     e.preventDefault();
-    if (!formData.customerName.trim()) {
-      alert('Veuillez renseigner le nom du client.');
+    if (!formData.screenshotUrl.trim()) {
+      alert('Veuillez ajouter ou importer une capture d\'écran (image) pour cet avis.');
       return;
-    }
-
-    const messages = [];
-    if (formData.customerMessage.trim()) {
-      messages.push({
-        id: `msg-c-${Date.now()}`,
-        sender: 'customer',
-        text: formData.customerMessage.trim(),
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        status: 'read',
-      });
-    }
-    if (formData.storeReply.trim()) {
-      messages.push({
-        id: `msg-s-${Date.now()}`,
-        sender: 'store',
-        text: formData.storeReply.trim(),
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        status: 'read',
-      });
     }
 
     const reviewPayload = {
       ...(editingReview?._id ? { _id: editingReview._id } : {}),
       id: editingReview ? (editingReview.id || editingReview._id) : `rev-${Date.now()}`,
-      platform: formData.platform,
-      customerName: formData.customerName.trim(),
-      customerCity: formData.customerCity.trim() || 'Tunis',
-      customerPhone: formData.customerPhone.trim() || '+216 98 ••• ••',
+      platform: formData.platform || 'whatsapp',
+      customerName: formData.customerName?.trim() || 'Client Vérifié',
+      customerCity: formData.customerCity?.trim() || 'Tunis',
+      customerPhone: formData.customerPhone?.trim() || '+216 98 ••• ••',
       avatar: formData.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=160&auto=format&fit=crop&q=80',
-      productName: formData.productName.trim(),
+      productName: formData.productName?.trim() || 'Avis Client',
       rating: Number(formData.rating) || 5,
       date: formData.date || "Aujourd'hui à " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       timeStr: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -509,7 +490,7 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
       {/* =====================================================================
           5. Modal Ajouter / Modifier un Avis & Photo (Full Editor)
           ===================================================================== */}
-      {isModalOpen && (
+      {isModalOpen && typeof document !== 'undefined' && createPortal(
         <div
           className="rm-modal-backdrop"
           onClick={() => setIsModalOpen(false)}
@@ -560,75 +541,18 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
                 </div>
               </div>
 
-              {/* Customer Details */}
-              <div className="rm-form-row-2">
-                <div className="rm-form-group">
-                  <label className="rm-label">Nom complet du client * :</label>
-                  <input
-                    type="text"
-                    className="rm-input"
-                    placeholder="Ex : Yassine Ben Salem"
-                    value={formData.customerName}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, customerName: e.target.value }))}
-                    required
-                  />
-                </div>
-
-                <div className="rm-form-group">
-                  <label className="rm-label">
-                    {formData.platform === 'whatsapp' ? 'Numéro de téléphone :' : 'Ville du client :'}
-                  </label>
-                  <input
-                    type="text"
-                    className="rm-input"
-                    placeholder={formData.platform === 'whatsapp' ? '+216 28 ••• •32' : 'Ex : Tunis, Sousse, Sfax...'}
-                    value={formData.platform === 'whatsapp' ? formData.customerPhone : formData.customerCity}
-                    onChange={(e) =>
-                      setFormData((prev) =>
-                        formData.platform === 'whatsapp'
-                          ? { ...prev, customerPhone: e.target.value }
-                          : { ...prev, customerCity: e.target.value }
-                      )
-                    }
-                  />
-                </div>
-              </div>
-
-              {/* Product and Rating */}
-              <div className="rm-form-row-2">
-                <div className="rm-form-group">
-                  <label className="rm-label">Produit concerné :</label>
-                  <select
-                    className="rm-select"
-                    value={formData.productName}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, productName: e.target.value }))}
-                  >
-                    {products.map((p) => (
-                      <option key={p.id || p._id} value={p.name}>
-                        {p.name}
-                      </option>
-                    ))}
-                    <option value="Canva Pro (Formule Spéciale)">Canva Pro (Formule Spéciale)</option>
-                    <option value="ChatGPT Plus Officiel">ChatGPT Plus Officiel</option>
-                    <option value="Windows 11 Pro + Office 365">Windows 11 Pro + Office 365</option>
-                    <option value="Pack Duo IA Avancé">Pack Duo IA Avancé</option>
-                    <option value="CapCut Pro VIP">CapCut Pro VIP</option>
-                    <option value="Autre Service Digital">Autre Service Digital</option>
-                  </select>
-                </div>
-
-                <div className="rm-form-group">
-                  <label className="rm-label">Note attribuée :</label>
-                  <select
-                    className="rm-select"
-                    value={formData.rating}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, rating: Number(e.target.value) }))}
-                  >
-                    <option value={5}>⭐⭐⭐⭐⭐ (5 / 5 - Parfait)</option>
-                    <option value={4}>⭐⭐⭐⭐ (4 / 5 - Très bien)</option>
-                    <option value={3}>⭐⭐⭐ (3 / 5 - Satisfait)</option>
-                  </select>
-                </div>
+              {/* Note attribuée */}
+              <div className="rm-form-group">
+                <label className="rm-label">Note attribuée :</label>
+                <select
+                  className="rm-select"
+                  value={formData.rating}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, rating: Number(e.target.value) }))}
+                >
+                  <option value={5}>⭐⭐⭐⭐⭐ (5 / 5 - Parfait)</option>
+                  <option value={4}>⭐⭐⭐⭐ (4 / 5 - Très bien)</option>
+                  <option value={3}>⭐⭐⭐ (3 / 5 - Satisfait)</option>
+                </select>
               </div>
 
               {/* PHOTO / SCREENSHOT UPLOADER SECTION */}
@@ -714,29 +638,6 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
                 )}
               </div>
 
-              {/* Conversation Messages (Optional if image exists, or used as fallback) */}
-              <div className="rm-form-group">
-                <label className="rm-label">Message du client (texte de la discussion) :</label>
-                <textarea
-                  className="rm-textarea"
-                  rows={2}
-                  placeholder="Ex : Salem khouya, el compte ChatGPT Plus yemchi 10/10 ya3tikom essaha !"
-                  value={formData.customerMessage}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, customerMessage: e.target.value }))}
-                />
-              </div>
-
-              <div className="rm-form-group">
-                <label className="rm-label">Réponse de TechnoTech (support) :</label>
-                <textarea
-                  className="rm-textarea"
-                  rows={2}
-                  placeholder="Ex : Marhba bik khoya ! Saha lik w kol chay garanti 🤝"
-                  value={formData.storeReply}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, storeReply: e.target.value }))}
-                />
-              </div>
-
               {/* Submit Buttons */}
               <div className="rm-modal-footer">
                 <button
@@ -754,20 +655,21 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
                     {isSaving
                       ? 'Enregistrement dans la BD...'
                       : editingReview
-                      ? 'Enregistrer dans la BD'
-                      : 'Ajouter dans la BD'}
+                        ? 'Enregistrer dans la BD'
+                        : 'Ajouter dans la BD'}
                   </span>
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* =====================================================================
           6. Modal Confirmation de Suppression
           ===================================================================== */}
-      {deleteConfirmReview && (
+      {deleteConfirmReview && typeof document !== 'undefined' && createPortal(
         <div
           className="rm-modal-backdrop"
           onClick={() => setDeleteConfirmReview(null)}
@@ -804,13 +706,14 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* =====================================================================
           7. Modal Aperçu Agrandie (Full Screenshot Lightbox)
           ===================================================================== */}
-      {previewModalReview && (
+      {previewModalReview && typeof document !== 'undefined' && createPortal(
         <div
           className="rm-modal-backdrop"
           onClick={() => setPreviewModalReview(null)}
@@ -833,7 +736,8 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
               />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
