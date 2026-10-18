@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, ChevronRight as ArrowRight, ChevronDown, Check, Zap, ShieldCheck, Sparkles, Flame } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronRight as ArrowRight, ChevronDown, Check, Zap, ShieldCheck, Sparkles, Flame, PackageX, AlertTriangle } from 'lucide-react';
 import { INITIAL_HERO_SLIDES } from '../data/productsData.js';
 import { getImageUrl } from '../config/api.js';
 import { analytics } from '../services/analytics.js';
@@ -104,8 +104,14 @@ export default function Hero({
     (p) =>
       (p._id && (p._id === currentSlide.productId || p._id === currentSlide.id)) ||
       (p.id && (p.id === currentSlide.productId || p.id === currentSlide.id)) ||
-      (p.name && currentSlide.name && p.name.trim().toLowerCase() === currentSlide.name.trim().toLowerCase())
+      (p.name && currentSlide.name && (
+        p.name.trim().toLowerCase() === currentSlide.name.trim().toLowerCase() ||
+        p.name.toLowerCase().includes(currentSlide.name.toLowerCase()) ||
+        currentSlide.name.toLowerCase().includes(p.name.toLowerCase())
+      ))
   );
+
+  const isOutOfStock = Boolean(currentProduct?.isOutOfStock || currentSlide?.isOutOfStock);
 
   const plans = currentProduct?.plans || currentSlide.plans || [];
   const activePlan = plans.find((p) => (p.id || p.duration) === selectedPlanId) || (plans.length > 0 ? plans[0] : null);
@@ -270,7 +276,7 @@ export default function Hero({
   const outgoingDesc = outgoingProduct?.description || outgoingSlide?.description;
 
   const handleOrderClick = () => {
-    if (!onAddToCart) return;
+    if (!onAddToCart || isOutOfStock) return;
     const optionName = activePlan ? activePlan.duration : (isApparel ? selectedSize : 'Standard');
     const cartProduct = {
       id: `${currentSlide.productId || currentSlide.id}-${optionName}`,
@@ -372,15 +378,29 @@ export default function Hero({
 
         {/* Hero Actions Group */}
         <div className="hero-actions-group">
-          <button
-            type="button"
-            className="cta-button"
-            onClick={handleOrderClick}
-            id="get-the-look-btn"
-          >
-            <span>COMMANDER MAINTENANT</span>
-            <ArrowRight size={17} strokeWidth={2.8} className="cta-arrow" />
-          </button>
+          {isOutOfStock ? (
+            <button
+              type="button"
+              className="cta-button is-disabled-hero-btn"
+              disabled
+              aria-disabled="true"
+              id="get-the-look-btn"
+              title="Ce produit est actuellement en rupture de stock"
+            >
+              <PackageX size={18} className="hero-out-icon" />
+              <span>RUPTURE DE STOCK</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="cta-button"
+              onClick={handleOrderClick}
+              id="get-the-look-btn"
+            >
+              <span>COMMANDER MAINTENANT</span>
+              <ArrowRight size={17} strokeWidth={2.8} className="cta-arrow" />
+            </button>
+          )}
 
           <a
             href="/offers"
@@ -470,9 +490,14 @@ export default function Hero({
             key={`price-panel-${safeIndex}`}
             className={`hero-price-panel ${isTransitioning ? 'hero-panel-fade-enter' : ''}`}
           >
-            <div className="hero-badge-status">
-              <span className="pulse-dot" style={{ backgroundColor: activeColor }} />
-              <span className="status-label">EN STOCK • ACTIVATION IMMÉDIATE</span>
+            <div className={`hero-badge-status ${isOutOfStock ? 'is-out-of-stock-status' : ''}`}>
+              <span
+                className={`pulse-dot ${isOutOfStock ? 'pulse-dot-out' : ''}`}
+                style={!isOutOfStock ? { backgroundColor: activeColor } : {}}
+              />
+              <span className="status-label">
+                {isOutOfStock ? 'RUPTURE DE STOCK • MOMENTANÉMENT ÉPUISÉ' : 'EN STOCK • ACTIVATION IMMÉDIATE'}
+              </span>
             </div>
 
             <div className="price-main-row">

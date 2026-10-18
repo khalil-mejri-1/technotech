@@ -1584,6 +1584,7 @@ export default function AdminDashboard({
               plans: updatedDoc.plans && updatedDoc.plans.length > 0 ? updatedDoc.plans : [],
               image: slideImg,
               selectedImageIndex: chosenIdx !== undefined ? chosenIdx : 0,
+              isOutOfStock: Boolean(updatedDoc.isOutOfStock),
             };
           });
 
@@ -1627,6 +1628,7 @@ export default function AdminDashboard({
             originalPrice: updatedDoc.originalPrice ? Number(updatedDoc.originalPrice) : '',
             image: formImg,
             selectedImageIndex: chosenIdx !== undefined ? chosenIdx : 0,
+            isOutOfStock: Boolean(updatedDoc.isOutOfStock),
           };
         });
 
@@ -1657,6 +1659,31 @@ export default function AdminDashboard({
       });
       const updatedList = products.map((p) => ((p._id || p.id) === productId ? updatedDoc : p));
       onUpdateProducts(updatedList);
+
+      // Synchronize Hero Slides in real-time
+      if (heroSlides && heroSlides.length > 0 && onUpdateHeroSlides) {
+        let slideChanged = false;
+        const updatedHeroSlides = heroSlides.map((slide) => {
+          const isMatch =
+            (slide.productId && (slide.productId === productId || slide.productId === product.id || slide.productId === product._id)) ||
+            (slide.id && (slide.id === productId || slide.id === product.id || slide.id === product._id)) ||
+            (slide.name && product.name && (
+              slide.name.trim().toLowerCase() === product.name.trim().toLowerCase() ||
+              slide.name.toLowerCase().includes(product.name.toLowerCase()) ||
+              product.name.toLowerCase().includes(slide.name.toLowerCase())
+            ));
+          if (!isMatch) return slide;
+          slideChanged = true;
+          return {
+            ...slide,
+            isOutOfStock: newStockStatus,
+          };
+        });
+        if (slideChanged) {
+          onUpdateHeroSlides(updatedHeroSlides);
+        }
+      }
+
       notify(
         newStockStatus
           ? `⚠️ "${product.name}" est maintenant marqué en Rupture de stock.`
