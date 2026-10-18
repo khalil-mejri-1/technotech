@@ -650,10 +650,10 @@
 .review-lightbox-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.82);
+  background: rgba(0, 0, 0, 0.88);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  z-index: 99999;
+  z-index: 9999999 !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -681,6 +681,44 @@
   flex-direction: column;
 }
 
+/* When viewing a real screenshot in lightbox */
+.review-lightbox-modal.is-screenshot-modal {
+  width: auto;
+  max-width: 92vw;
+  max-height: 92vh;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-screenshot-wrap {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.95), 0 0 40px rgba(0, 0, 0, 0.8);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-height: 88vh;
+  max-width: 90vw;
+}
+
+.lightbox-full-screenshot {
+  display: block;
+  max-width: 88vw;
+  max-height: 86vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
 @keyframes reviewModalPop {
   from { opacity: 0; transform: scale(0.92) translateY(12px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
@@ -688,26 +726,35 @@
 
 .lightbox-close-btn {
   position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 34px;
-  height: 34px;
+  top: -16px;
+  right: -16px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: #0f172a;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 10;
+  z-index: 60;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
   transition: all 0.2s ease;
 }
 
 .lightbox-close-btn:hover {
-  background: #ff4757;
-  border-color: #ff4757;
-  transform: rotate(90deg);
+  background: #ef4444;
+  border-color: #ef4444;
+  transform: scale(1.1);
+}
+
+@media (max-width: 768px) {
+  .lightbox-close-btn {
+    top: 8px;
+    right: 8px;
+    background: rgba(15, 23, 42, 0.85);
+  }
 }
 
 .lightbox-modal-content {

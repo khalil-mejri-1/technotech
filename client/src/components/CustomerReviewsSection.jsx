@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Star,
   ShieldCheck,
@@ -150,6 +151,20 @@ export default function CustomerReviewsSection({
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Close modals on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setSelectedReview(null);
+        setIsAddModalOpen(false);
+      }
+    };
+    if (selectedReview || isAddModalOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedReview, isAddModalOpen]);
 
   const maxIndex = Math.max(0, filteredReviews.length - cardsPerView);
 
@@ -422,9 +437,9 @@ export default function CustomerReviewsSection({
       </div>
 
       {/* ==========================================================================
-          Lightbox Modal: Enlarged Full-View Conversation
+          Lightbox Modal: Enlarged Full-View Conversation or Screenshot
           ========================================================================== */}
-      {selectedReview && (
+      {selectedReview && typeof document !== 'undefined' && createPortal(
         <div
           className="review-lightbox-backdrop"
           onClick={() => setSelectedReview(null)}
@@ -432,7 +447,7 @@ export default function CustomerReviewsSection({
           aria-modal="true"
         >
           <div
-            className="review-lightbox-modal"
+            className={`review-lightbox-modal ${selectedReview.screenshotUrl ? 'is-screenshot-modal' : ''}`}
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -440,18 +455,19 @@ export default function CustomerReviewsSection({
               className="lightbox-close-btn"
               onClick={() => setSelectedReview(null)}
               aria-label="Fermer"
+              title="Fermer"
             >
-              <X size={18} />
+              <X size={20} />
             </button>
 
             <div className="lightbox-modal-content">
               {/* Body */}
               {selectedReview.screenshotUrl ? (
-                <div style={{ padding: '0.75rem', background: '#050811' }}>
+                <div className="lightbox-screenshot-wrap">
                   <img
                     src={selectedReview.screenshotUrl}
                     alt="Capture agrandie"
-                    style={{ width: '100%', maxHeight: '85vh', objectFit: 'contain', borderRadius: '16px', display: 'block' }}
+                    className="lightbox-full-screenshot"
                   />
                 </div>
               ) : (
@@ -498,13 +514,14 @@ export default function CustomerReviewsSection({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ==========================================================================
           Modal: Ajouter un Avis Client (Admin ou Utilisateur)
           ========================================================================== */}
-      {isAddModalOpen && (
+      {isAddModalOpen && typeof document !== 'undefined' && createPortal(
         <div
           className="review-lightbox-backdrop"
           onClick={() => setIsAddModalOpen(false)}
@@ -627,7 +644,8 @@ export default function CustomerReviewsSection({
               </button>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </section>
     <div className="reviews-section-divider" />
