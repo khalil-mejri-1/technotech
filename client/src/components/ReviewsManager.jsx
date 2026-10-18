@@ -351,48 +351,7 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
         </div>
       </div>
 
-      {/* 2. Counter Stats Row */}
-      <div className="rm-stats-grid">
-        <div className="rm-stat-card">
-          <div className="rm-stat-icon star-icon">
-            <Star size={22} fill="#ffa502" />
-          </div>
-          <div className="rm-stat-info">
-            <span className="rm-stat-num">{reviews.length}</span>
-            <span className="rm-stat-label">Total Avis & Captures</span>
-          </div>
-        </div>
 
-        <div className="rm-stat-card">
-          <div className="rm-stat-icon wa-icon">
-            <WhatsAppIcon size={22} />
-          </div>
-          <div className="rm-stat-info">
-            <span className="rm-stat-num">{reviews.filter((r) => r.platform === 'whatsapp').length}</span>
-            <span className="rm-stat-label">Avis WhatsApp</span>
-          </div>
-        </div>
-
-        <div className="rm-stat-card">
-          <div className="rm-stat-icon fb-icon">
-            <MessengerIcon size={22} />
-          </div>
-          <div className="rm-stat-info">
-            <span className="rm-stat-num">{reviews.filter((r) => r.platform === 'facebook').length}</span>
-            <span className="rm-stat-label">Avis Facebook</span>
-          </div>
-        </div>
-
-        <div className="rm-stat-card">
-          <div className="rm-stat-icon img-icon">
-            <Camera size={22} />
-          </div>
-          <div className="rm-stat-info">
-            <span className="rm-stat-num">{reviews.filter((r) => Boolean(r.screenshotUrl)).length}</span>
-            <span className="rm-stat-label">Captures d'écran Réelles</span>
-          </div>
-        </div>
-      </div>
 
       {/* 3. Search & Filter Bar */}
       <div className="rm-toolbar-card">
