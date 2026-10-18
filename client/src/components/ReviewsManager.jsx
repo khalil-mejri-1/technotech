@@ -62,7 +62,6 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [platformFilter, setPlatformFilter] = useState('all'); // 'all' | 'whatsapp' | 'facebook' | 'screenshots'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
   const [isUploadingImg, setIsUploadingImg] = useState(false);
@@ -117,19 +116,16 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
       if (uniqueKey && seen.has(uniqueKey)) return false;
       if (uniqueKey) seen.add(uniqueKey);
 
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
       const matchesSearch =
-        rev.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        rev.productName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (rev.messages && rev.messages.some((m) => m.text?.toLowerCase().includes(searchQuery.toLowerCase())));
+        rev.customerName?.toLowerCase().includes(q) ||
+        rev.productName?.toLowerCase().includes(q) ||
+        (rev.messages && rev.messages.some((m) => m.text?.toLowerCase().includes(q)));
 
-      if (!matchesSearch) return false;
-
-      if (platformFilter === 'whatsapp') return rev.platform === 'whatsapp';
-      if (platformFilter === 'facebook') return rev.platform === 'facebook';
-      if (platformFilter === 'screenshots') return Boolean(rev.screenshotUrl);
-      return true;
+      return matchesSearch;
     });
-  }, [reviews, searchQuery, platformFilter]);
+  }, [reviews, searchQuery]);
 
   const handleOpenAddModal = () => {
     setEditingReview(null);
@@ -373,43 +369,6 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
               <X size={15} />
             </button>
           )}
-        </div>
-
-        <div className="rm-filter-pills">
-          <button
-            type="button"
-            className={`rm-pill-btn ${platformFilter === 'all' ? 'active' : ''}`}
-            onClick={() => setPlatformFilter('all')}
-          >
-            <span>Tous ({reviews.length})</span>
-          </button>
-
-          <button
-            type="button"
-            className={`rm-pill-btn wa-pill ${platformFilter === 'whatsapp' ? 'active' : ''}`}
-            onClick={() => setPlatformFilter('whatsapp')}
-          >
-            <WhatsAppIcon size={15} />
-            <span>WhatsApp ({reviews.filter((r) => r.platform === 'whatsapp').length})</span>
-          </button>
-
-          <button
-            type="button"
-            className={`rm-pill-btn fb-pill ${platformFilter === 'facebook' ? 'active' : ''}`}
-            onClick={() => setPlatformFilter('facebook')}
-          >
-            <MessengerIcon size={15} />
-            <span>Facebook ({reviews.filter((r) => r.platform === 'facebook').length})</span>
-          </button>
-
-          <button
-            type="button"
-            className={`rm-pill-btn img-pill ${platformFilter === 'screenshots' ? 'active' : ''}`}
-            onClick={() => setPlatformFilter('screenshots')}
-          >
-            <Camera size={15} />
-            <span>Captures ({reviews.filter((r) => Boolean(r.screenshotUrl)).length})</span>
-          </button>
         </div>
       </div>
 
