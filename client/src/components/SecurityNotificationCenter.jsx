@@ -389,7 +389,7 @@ export default function SecurityNotificationCenter({
                           <span>Code testé :</span>
                         </span>
                         <span className="security-masked-code">
-                          {notif.attemptedCode || '******'}
+                          {String(notif.attemptedCode || '').replace(/\\s*\\(\\d+\\s*chiffres\\)/gi, '').trim() || 'Non renseigné'}
                         </span>
                       </div>
 

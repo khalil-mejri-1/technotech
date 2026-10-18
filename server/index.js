@@ -41,7 +41,7 @@ app.use(async (req, res, next) => {
 
 // Routes
 app.get('/', (req, res) => {
-  res.send('TechnoTech API is running...');
+  res.send('TechnoTech API is running 18/10/2026...');
 });
 
 app.use('/api/technotech', technotechRoutes);

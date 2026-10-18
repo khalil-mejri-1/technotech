@@ -25,16 +25,17 @@ export default function Navbar({
         setIsScrolled(false);
       }
 
-      // Track active section between BOUTIQUE (top hero) and CATALOGUE (products section)
+      // Track active section between BOUTIQUE (top hero), AVIS CLIENTS, and CATALOGUE (products section)
       if (currentPath === '/') {
-        const catalogEl = document.getElementById('store-products-section');
-        if (catalogEl) {
-          const rect = catalogEl.getBoundingClientRect();
-          if (rect.top <= 280) {
-            setActiveSection('catalog');
-          } else {
-            setActiveSection('home');
-          }
+        const catalogHeadingEl = document.getElementById('products-catalog-heading');
+        const reviewsEl = document.getElementById('avis-clients-section');
+
+        if (catalogHeadingEl && catalogHeadingEl.getBoundingClientRect().top <= 280) {
+          setActiveSection('catalog');
+        } else if (reviewsEl && reviewsEl.getBoundingClientRect().top <= 320) {
+          setActiveSection('reviews');
+        } else {
+          setActiveSection('home');
         }
       }
     };
@@ -74,22 +75,35 @@ export default function Navbar({
 
   const navItems = [
     { id: 'home', label: 'BOUTIQUE', path: '/' },
-    { id: 'catalog', label: 'CATALOGUE', path: '/' },
+    { id: 'reviews', label: 'AVIS CLIENTS', path: '/#avis-clients-section' },
+    { id: 'catalog', label: 'CATALOGUE', path: '/#store-products-section' },
     { id: 'about', label: 'À PROPOS', path: '/about' },
     { id: 'contact', label: 'CONTACT', path: '/contact' },
   ];
 
   const handleNavClick = (item) => {
-    if (item.id === 'catalog') {
+    if (item.id === 'reviews') {
+      setActiveSection('reviews');
+      if (currentPath !== '/') {
+        if (onNavigate) onNavigate('/');
+        setTimeout(() => {
+          const el = document.getElementById('avis-clients-section');
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }, 200);
+      } else {
+        const el = document.getElementById('avis-clients-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else if (item.id === 'catalog') {
       setActiveSection('catalog');
       if (currentPath !== '/') {
         if (onNavigate) onNavigate('/');
         setTimeout(() => {
-          const el = document.getElementById('store-products-section');
+          const el = document.getElementById('products-catalog-heading') || document.getElementById('store-products-section');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
         }, 200);
       } else {
-        const el = document.getElementById('store-products-section');
+        const el = document.getElementById('products-catalog-heading') || document.getElementById('store-products-section');
         if (el) el.scrollIntoView({ behavior: 'smooth' });
       }
     } else if (item.id === 'home') {
@@ -146,8 +160,16 @@ export default function Navbar({
             {navItems.map((item) => (
               <a
                 key={item.id}
-                href={item.id === 'catalog' ? '/#store-products-section' : item.path}
-                className={`nav-link ${isItemActive(item) ? 'active' : ''}`}
+                href={
+                  item.id === 'catalog'
+                    ? '/#store-products-section'
+                    : item.id === 'reviews'
+                    ? '/#avis-clients-section'
+                    : item.path
+                }
+                className={`nav-link ${isItemActive(item) ? 'active' : ''} ${
+                  item.id === 'reviews' ? 'nav-link-reviews' : ''
+                }`}
                 onClick={(e) => {
                   e.preventDefault();
                   handleNavClick(item);
@@ -280,7 +302,13 @@ export default function Navbar({
               return (
                 <a
                   key={item.id}
-                  href={item.id === 'catalog' ? '/#store-products-section' : item.path}
+                  href={
+                    item.id === 'catalog'
+                      ? '/#store-products-section'
+                      : item.id === 'reviews'
+                      ? '/#avis-clients-section'
+                      : item.path
+                  }
                   className={`mobile-nav-link-btn ${isActive ? 'active' : ''}`}
                   onClick={(e) => {
                     e.preventDefault();
@@ -288,7 +316,10 @@ export default function Navbar({
                     setMobileMenuOpen(false);
                   }}
                 >
-                  <span className="mobile-nav-link-text">{item.label}</span>
+                  <span className="mobile-nav-link-text">
+                    {item.id === 'reviews' ? '⭐ ' : ''}
+                    {item.label}
+                  </span>
                   <ChevronRight size={16} className="mobile-nav-chevron" />
                 </a>
               );

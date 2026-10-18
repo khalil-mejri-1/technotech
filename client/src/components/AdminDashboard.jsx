@@ -44,7 +44,8 @@ import {
   Key,
   MessageCircle,
   Phone,
-  Link2
+  Link2,
+  Star
 } from 'lucide-react';
 import { INITIAL_PRODUCTS } from '../data/productsData.js';
 import { productService } from '../services/productService.js';
@@ -55,6 +56,8 @@ import { getImageUrl } from '../config/api.js';
 import { resolveOfferItemImage } from '../data/offersData.js';
 import OrdersManager, { playOrderChime } from './OrdersManager.jsx';
 import LinksManager from './LinksManager.jsx';
+import ReviewsManager from './ReviewsManager.jsx';
+import { getStoredReviews } from '../data/reviewsData.js';
 import { securityService } from '../services/securityService.js';
 import SecurityNotificationCenter, { playSecurityAlertChime } from './SecurityNotificationCenter.jsx';
 
@@ -89,6 +92,31 @@ export default function AdminDashboard({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusNotice, setStatusNotice] = useState(null);
   const [availableLinksCount, setAvailableLinksCount] = useState(0);
+  const [reviewsCount, setReviewsCount] = useState(() => {
+    try {
+      return getStoredReviews().length;
+    } catch (e) {
+      return 6;
+    }
+  });
+
+  // Background polling / sync for reviews count
+  useEffect(() => {
+    const handleSync = (e) => {
+      if (e?.detail && Array.isArray(e.detail)) {
+        setReviewsCount(e.detail.length);
+      } else {
+        try {
+          setReviewsCount(getStoredReviews().length);
+        } catch (err) {}
+      }
+    };
+    handleSync();
+    window.addEventListener('technotech_reviews_updated', handleSync);
+    return () => {
+      window.removeEventListener('technotech_reviews_updated', handleSync);
+    };
+  }, [activeTab]);
 
   // Background polling for available links count badge
   useEffect(() => {
@@ -1885,6 +1913,20 @@ export default function AdminDashboard({
               </span>
             )}
           </button>
+
+          <button
+            type="button"
+            className={`admin-tab-item ${activeTab === 'reviews' ? 'active' : ''}`}
+            onClick={() => setActiveTab('reviews')}
+          >
+            <Star size={17} />
+            <span>Avis & Captures Clients</span>
+            {reviewsCount > 0 && (
+              <span className="tab-count-badge reviews-badge" title={`${reviewsCount} avis et captures client(s)`}>
+                {reviewsCount}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
@@ -2074,6 +2116,17 @@ export default function AdminDashboard({
             ================================================================ */}
         {activeTab === 'links' && (
           <LinksManager products={products} notify={notify} />
+        )}
+
+        {/* ================================================================
+            CUSTOMER REVIEWS & SCREENSHOTS MANAGEMENT VIEW (قسم إدارة آراء وصور العملاء)
+            ================================================================ */}
+        {activeTab === 'reviews' && (
+          <ReviewsManager
+            products={products}
+            notify={notify}
+            onReviewsChange={(next) => setReviewsCount(next.length)}
+          />
         )}
 
         {/* ================================================================

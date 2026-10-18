@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { ShoppingBag, ChevronLeft, ChevronRight, Check, Zap, ShieldCheck, Clock } from 'lucide-react';
 import { getImageUrl } from '../config/api.js';
 import CardImageWithSkeleton from './CardImageWithSkeleton.jsx';
+import CustomerReviewsSection from './CustomerReviewsSection.jsx';
 import { analytics } from '../services/analytics.js';
 
-export default function ProductsSection({ products, onAddToCart }) {
+export default function ProductsSection({ products, onAddToCart, whatsappNumber, onNavigate }) {
   // Store selected duration plan for each product ID
   const [selectedPlans, setSelectedPlans] = useState({});
   // Store active image index for each product ID
@@ -59,8 +60,18 @@ export default function ProductsSection({ products, onAddToCart }) {
       {/* Main Section Content on Crisp White Background */}
       <div className="white-section-container">
         <div className="white-section-content">
+          {/* Section Avis Clients - Située complètement sous la section sombre du Hero */}
+          <CustomerReviewsSection
+            whatsappNumber={whatsappNumber}
+            onAddToCart={onAddToCart}
+            products={products}
+            onNavigate={onNavigate}
+          />
+
+          <div className="reviews-section-divider" />
+
           {/* Header Section */}
-          <div className="section-header-area">
+          <div className="section-header-area" id="products-catalog-heading">
             <div className="section-badge-pill">
               <Zap size={14} className="icon-pulse" />
               <span>PRODUITS DIGITAUX & ABONNEMENTS OFFICIELS</span>

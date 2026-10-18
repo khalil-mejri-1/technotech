@@ -6071,6 +6071,19 @@ body {
   border-color: #38bdf8;
 }
 
+.tab-count-badge.reviews-badge {
+  background: rgba(255, 165, 2, 0.18);
+  color: #ffa502;
+  border: 1px solid rgba(255, 165, 2, 0.35);
+  font-weight: 800;
+}
+
+.admin-tab-item.active .tab-count-badge.reviews-badge {
+  background: #ffa502;
+  color: #0b0f19;
+  border-color: #ffa502;
+}
+
 /* Luxury high-visibility unseen notification badge */
 .tab-count-badge.orders-badge.unseen-alert {
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
