@@ -13,8 +13,15 @@ export const reviewService = {
       if (!res.ok) throw new Error(`HTTP error ${res.status}`);
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
-        saveStoredReviews(data);
-        return data;
+        const seen = new Set();
+        const unique = data.filter((item) => {
+          const key = item.id || item._id;
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        saveStoredReviews(unique);
+        return unique;
       }
       return getStoredReviews();
     } catch (err) {

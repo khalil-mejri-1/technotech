@@ -274,7 +274,7 @@ router.delete('/offers/:offerId', async (req, res) => {
 // Customer Reviews & Screenshots Endpoints (Avis & Captures Clients)
 // ==========================================
 
-// 1. Get all customer reviews (auto-seed from default if empty)
+// 1. Get all customer reviews (auto-seed from default if empty and deduplicate)
 router.get('/reviews', async (req, res) => {
   try {
     let reviews = await Review.find().sort({ order: 1, createdAt: -1 });
@@ -285,6 +285,24 @@ router.get('/reviews', async (req, res) => {
           order: i,
         }));
         reviews = await Review.insertMany(initial);
+      }
+    } else {
+      // Deduplicate reviews in database if duplicate records were inserted
+      const seenIds = new Set();
+      const duplicatesToDelete = [];
+      const uniqueReviews = [];
+      for (const rev of reviews) {
+        const key = rev.id || String(rev._id);
+        if (seenIds.has(key)) {
+          duplicatesToDelete.push(rev._id);
+        } else {
+          seenIds.add(key);
+          uniqueReviews.push(rev);
+        }
+      }
+      if (duplicatesToDelete.length > 0) {
+        await Review.deleteMany({ _id: { $in: duplicatesToDelete } });
+        reviews = uniqueReviews;
       }
     }
     res.json(reviews || []);

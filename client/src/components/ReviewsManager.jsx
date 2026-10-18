@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   MessageCircle,
   Star,
@@ -109,20 +109,27 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
 
   const fileInputRef = useRef(null);
 
-  // Filter reviews
-  const filteredReviews = reviews.filter((rev) => {
-    const matchesSearch =
-      rev.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      rev.productName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (rev.messages && rev.messages.some((m) => m.text?.toLowerCase().includes(searchQuery.toLowerCase())));
+  // Filter reviews with strict deduplication
+  const filteredReviews = useMemo(() => {
+    const seen = new Set();
+    return reviews.filter((rev) => {
+      const uniqueKey = rev.id || (rev._id ? String(rev._id) : null);
+      if (uniqueKey && seen.has(uniqueKey)) return false;
+      if (uniqueKey) seen.add(uniqueKey);
 
-    if (!matchesSearch) return false;
+      const matchesSearch =
+        rev.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        rev.productName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (rev.messages && rev.messages.some((m) => m.text?.toLowerCase().includes(searchQuery.toLowerCase())));
 
-    if (platformFilter === 'whatsapp') return rev.platform === 'whatsapp';
-    if (platformFilter === 'facebook') return rev.platform === 'facebook';
-    if (platformFilter === 'screenshots') return Boolean(rev.screenshotUrl);
-    return true;
-  });
+      if (!matchesSearch) return false;
+
+      if (platformFilter === 'whatsapp') return rev.platform === 'whatsapp';
+      if (platformFilter === 'facebook') return rev.platform === 'facebook';
+      if (platformFilter === 'screenshots') return Boolean(rev.screenshotUrl);
+      return true;
+    });
+  }, [reviews, searchQuery, platformFilter]);
 
   const handleOpenAddModal = () => {
     setEditingReview(null);
@@ -466,14 +473,14 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
           </div>
         ) : (
           <div className="rm-cards-grid">
-            {filteredReviews.map((review) => {
+            {filteredReviews.map((review, index) => {
               const isWa = review.platform === 'whatsapp';
               const hasScreenshot = Boolean(review.screenshotUrl);
               const previewMsg = review.messages?.find((m) => m.sender === 'customer')?.text || 'Discussion client confirmée.';
 
               return (
                 <div
-                  key={review.id || review._id}
+                  key={review._id ? String(review._id) : (review.id ? `${review.id}-${index}` : `rm-rev-${index}`)}
                   className={`rm-item-card ${isWa ? 'wa-card' : 'fb-card'}`}
                 >
                   {/* Card Header */}
