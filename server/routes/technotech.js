@@ -304,6 +304,31 @@ router.get('/reviews', async (req, res) => {
   }
 });
 
+// 2a. Batch append multiple customer reviews (without deleting existing records)
+router.post('/reviews/batch', async (req, res) => {
+  try {
+    const list = Array.isArray(req.body) ? req.body : [req.body];
+    if (list.length === 0) {
+      return res.status(400).json({ error: 'Aucun avis fourni' });
+    }
+    const highest = await Review.findOne().sort({ order: -1 });
+    const startOrder = highest && highest.order !== undefined ? highest.order + 1 : 0;
+
+    const clean = list.map((item, index) => {
+      const { _id, createdAt, updatedAt, __v, ...rest } = item;
+      return {
+        ...rest,
+        id: rest.id || `rev-${Date.now()}-${index}`,
+        order: rest.order !== undefined ? rest.order : startOrder + index,
+      };
+    });
+    const inserted = await Review.insertMany(clean);
+    res.status(201).json(inserted);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 2. Create or batch save customer reviews
 router.post('/reviews', async (req, res) => {
   try {
