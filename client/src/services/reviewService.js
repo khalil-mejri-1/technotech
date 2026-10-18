@@ -80,6 +80,36 @@ export const reviewService = {
   },
 
   /**
+   * Save multiple customer reviews at once to MongoDB (Batch Append)
+   */
+  async saveMany(reviewsList) {
+    if (!Array.isArray(reviewsList) || reviewsList.length === 0) return [];
+    try {
+      const res = await fetch(`${REVIEWS_ENDPOINT}/batch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(reviewsList),
+      });
+      if (res.ok) {
+        const inserted = await res.json();
+        const current = getStoredReviews();
+        const updated = [...inserted, ...current];
+        saveStoredReviews(updated);
+        return inserted;
+      }
+    } catch (err) {
+      console.warn('Erreur batch save BD :', err.message);
+    }
+    // Fallback: save one by one
+    const results = [];
+    for (const r of reviewsList) {
+      const saved = await this.save(r);
+      results.push(saved);
+    }
+    return results;
+  },
+
+  /**
    * Helper to sync local storage and trigger real-time window events
    */
   _syncLocal(savedItem, isUpdate, originalId) {

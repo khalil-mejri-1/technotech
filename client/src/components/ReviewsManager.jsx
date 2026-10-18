@@ -66,6 +66,9 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
   const [isUploadingImg, setIsUploadingImg] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(null);
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [urlInput, setUrlInput] = useState('');
   const [deleteConfirmReview, setDeleteConfirmReview] = useState(null);
   const [previewModalReview, setPreviewModalReview] = useState(null);
 
@@ -130,6 +133,9 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
 
   const handleOpenAddModal = () => {
     setEditingReview(null);
+    setSelectedImages([]);
+    setUrlInput('');
+    setUploadProgress(null);
     setFormData({
       platform: 'whatsapp',
       customerName: '',
@@ -140,14 +146,17 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
       date: "Aujourd'hui à " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       screenshotUrl: '',
       avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=160&auto=format&fit=crop&q=80',
-      customerMessage: '3aslema khoya, el compte yemchi 10/10 ya3tikom essaha ! 🔥',
-      storeReply: 'Marhba bik avec grand plaisir ! N’hésite pas si tu as besoin de quoi que ce soit 🙏✨',
+      customerMessage: '',
+      storeReply: '',
     });
     setIsModalOpen(true);
   };
 
   const handleOpenEditModal = (review) => {
     setEditingReview(review);
+    setSelectedImages(review.screenshotUrl ? [review.screenshotUrl] : []);
+    setUrlInput('');
+    setUploadProgress(null);
     const custMsg = review.messages?.find((m) => m.sender === 'customer')?.text || '';
     const storeMsg = review.messages?.find((m) => m.sender === 'store')?.text || '';
 
@@ -167,81 +176,168 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
     setIsModalOpen(true);
   };
 
-  // Upload Screenshot or Photo file
+  // Upload Multiple Screenshots or Photos
   const handleFileUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    if (!file.type.startsWith('image/')) {
-      alert('Veuillez sélectionner un fichier image valide (PNG, JPG, WEBP).');
+    const validFiles = files.filter((f) => f.type.startsWith('image/'));
+    if (validFiles.length === 0) {
+      alert('Veuillez sélectionner des fichiers image valides (PNG, JPG, WEBP).');
       return;
     }
 
     try {
       setIsUploadingImg(true);
-      const reader = new FileReader();
-      reader.onload = async () => {
-        const base64 = reader.result;
+      setUploadProgress({ current: 0, total: validFiles.length });
+
+      const newUrls = [];
+      for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i];
+        setUploadProgress({ current: i + 1, total: validFiles.length });
+
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
         try {
-          // Attempt upload to permanent CDN
-          const uploadedUrl = await productService.uploadBase64(base64, `review-${Date.now()}-${file.name}`);
-          setFormData((prev) => ({ ...prev, screenshotUrl: uploadedUrl }));
-          if (notify) notify('Image téléversée avec succès ! 📸');
+          const uploadedUrl = await productService.uploadBase64(base64, `review-${Date.now()}-${i}-${file.name}`);
+          newUrls.push(uploadedUrl || base64);
         } catch (uploadErr) {
-          // Fallback to base64 if remote service is unavailable
-          setFormData((prev) => ({ ...prev, screenshotUrl: base64 }));
-          if (notify) notify('Image chargée localement !');
-        } finally {
-          setIsUploadingImg(false);
+          newUrls.push(base64);
         }
-      };
-      reader.readAsDataURL(file);
+      }
+
+      setSelectedImages((prev) => [...prev, ...newUrls]);
+      if (notify) {
+        notify(
+          validFiles.length > 1
+            ? `${validFiles.length} images téléversées avec succès ! 📸`
+            : 'Image téléversée avec succès ! 📸'
+        );
+      }
     } catch (err) {
-      console.error('Erreur chargement image:', err);
-      alert('Erreur lors du traitement de l’image: ' + err.message);
+      console.error('Erreur chargement images:', err);
+      alert('Erreur lors du traitement des images: ' + err.message);
+    } finally {
       setIsUploadingImg(false);
+      setUploadProgress(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  const handleAddUrlImages = () => {
+    if (!urlInput.trim()) return;
+    const urls = urlInput
+      .split(/[\n,\s]+/)
+      .map((u) => u.trim())
+      .filter((u) => u.length > 0 && (u.startsWith('http://') || u.startsWith('https://') || u.startsWith('data:image/')));
+
+    if (urls.length === 0) {
+      alert('Veuillez entrer une ou plusieurs URL valides d’images (ex: https://...).');
+      return;
+    }
+
+    setSelectedImages((prev) => [...prev, ...urls]);
+    setUrlInput('');
+    if (notify) {
+      notify(
+        urls.length > 1
+          ? `${urls.length} images ajoutées depuis l'URL ! 🔗`
+          : 'Image ajoutée depuis l’URL ! 🔗'
+      );
+    }
+  };
+
+  const handleRemoveImage = (indexToRemove) => {
+    setSelectedImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
   const handleSaveReview = async (e) => {
     e.preventDefault();
-    if (!formData.screenshotUrl.trim()) {
-      alert('Veuillez ajouter ou importer une capture d\'écran (image) pour cet avis.');
+    if (selectedImages.length === 0) {
+      alert('Veuillez ajouter au moins une capture d\'écran (image) pour cet avis.');
       return;
     }
 
-    const reviewPayload = {
-      ...(editingReview?._id ? { _id: editingReview._id } : {}),
-      id: editingReview ? (editingReview.id || editingReview._id) : `rev-${Date.now()}`,
-      platform: formData.platform || 'whatsapp',
-      customerName: formData.customerName?.trim() || 'Client Vérifié',
-      customerCity: formData.customerCity?.trim() || 'Tunis',
-      customerPhone: formData.customerPhone?.trim() || '+216 98 ••• ••',
-      avatar: formData.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=160&auto=format&fit=crop&q=80',
-      productName: formData.productName?.trim() || 'Avis Client',
-      rating: Number(formData.rating) || 5,
-      date: formData.date || "Aujourd'hui à " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      timeStr: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      verified: true,
-      badgeText: formData.platform === 'whatsapp' ? 'Client WhatsApp ✅' : 'Client Facebook ✅',
-      screenshotUrl: formData.screenshotUrl ? formData.screenshotUrl.trim() : null,
-      messages: messages.length > 0 ? messages : (editingReview?.messages || []),
-    };
-
     setIsSaving(true);
     try {
-      await reviewService.save(reviewPayload);
-      const nextReviews = getStoredReviews();
-      setReviews(nextReviews);
-      if (onReviewsChange) onReviewsChange(nextReviews);
-      setIsModalOpen(false);
-      setEditingReview(null);
-      if (notify) {
-        notify(
-          editingReview
-            ? 'Avis et photo enregistrés avec succès dans la base de données ! ✨'
-            : 'Nouvel avis et photo enregistrés dans la base de données ! 🚀'
-        );
+      if (editingReview) {
+        const reviewPayload = {
+          ...(editingReview._id ? { _id: editingReview._id } : {}),
+          id: editingReview.id || editingReview._id,
+          platform: formData.platform || 'whatsapp',
+          customerName: formData.customerName?.trim() || 'Client Vérifié',
+          customerCity: formData.customerCity?.trim() || 'Tunis',
+          customerPhone: formData.customerPhone?.trim() || '+216 98 ••• ••',
+          avatar: formData.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=160&auto=format&fit=crop&q=80',
+          productName: formData.productName?.trim() || 'Avis Client',
+          rating: Number(formData.rating) || 5,
+          date: formData.date || "Aujourd'hui à " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timeStr: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          verified: true,
+          badgeText: formData.platform === 'whatsapp' ? 'Client WhatsApp ✅' : 'Client Facebook ✅',
+          screenshotUrl: selectedImages[0] ? selectedImages[0].trim() : null,
+          messages: editingReview.messages || [],
+        };
+        await reviewService.save(reviewPayload);
+        const nextReviews = getStoredReviews();
+        setReviews(nextReviews);
+        if (onReviewsChange) onReviewsChange(nextReviews);
+        setIsModalOpen(false);
+        setEditingReview(null);
+        if (notify) notify('Avis modifié avec succès dans la base de données ! ✨');
+      } else if (selectedImages.length === 1) {
+        const reviewPayload = {
+          id: `rev-${Date.now()}`,
+          platform: formData.platform || 'whatsapp',
+          customerName: formData.customerName?.trim() || 'Client Vérifié',
+          customerCity: formData.customerCity?.trim() || 'Tunis',
+          customerPhone: formData.customerPhone?.trim() || '+216 98 ••• ••',
+          avatar: formData.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=160&auto=format&fit=crop&q=80',
+          productName: formData.productName?.trim() || 'Avis Client',
+          rating: Number(formData.rating) || 5,
+          date: formData.date || "Aujourd'hui à " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timeStr: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          verified: true,
+          badgeText: formData.platform === 'whatsapp' ? 'Client WhatsApp ✅' : 'Client Facebook ✅',
+          screenshotUrl: selectedImages[0].trim(),
+          messages: [],
+        };
+        await reviewService.save(reviewPayload);
+        const nextReviews = getStoredReviews();
+        setReviews(nextReviews);
+        if (onReviewsChange) onReviewsChange(nextReviews);
+        setIsModalOpen(false);
+        if (notify) notify('Nouvel avis et photo enregistrés dans la base de données ! 🚀');
+      } else {
+        const baseDate = formData.date || "Aujourd'hui à " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const reviewsList = selectedImages.map((imgUrl, idx) => ({
+          id: `rev-${Date.now()}-${idx}`,
+          platform: formData.platform || 'whatsapp',
+          customerName: formData.customerName?.trim() || 'Client Vérifié',
+          customerCity: formData.customerCity?.trim() || 'Tunis',
+          customerPhone: formData.customerPhone?.trim() || '+216 98 ••• ••',
+          avatar: formData.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=160&auto=format&fit=crop&q=80',
+          productName: formData.productName?.trim() || 'Avis Client',
+          rating: Number(formData.rating) || 5,
+          date: baseDate,
+          timeStr: timeNow,
+          verified: true,
+          badgeText: formData.platform === 'whatsapp' ? 'Client WhatsApp ✅' : 'Client Facebook ✅',
+          screenshotUrl: imgUrl.trim(),
+          messages: [],
+        }));
+        await reviewService.saveMany(reviewsList);
+        const nextReviews = getStoredReviews();
+        setReviews(nextReviews);
+        if (onReviewsChange) onReviewsChange(nextReviews);
+        setIsModalOpen(false);
+        if (notify) notify(`${reviewsList.length} avis et photos enregistrés avec succès dans la base de données ! 🚀`);
       }
     } catch (err) {
       console.error('Erreur enregistrement BD:', err);
@@ -555,28 +651,33 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
                 </select>
               </div>
 
-              {/* PHOTO / SCREENSHOT UPLOADER SECTION */}
+              {/* PHOTO / SCREENSHOT UPLOADER SECTION (MULTI-IMAGE SUPPORT) */}
               <div className="rm-form-group rm-upload-section-card">
                 <div className="rm-upload-header-row">
                   <div>
                     <label className="rm-label rm-label-bold">
                       <Camera size={16} />
-                      <span>Image ou Capture d’écran (Screenshot)</span>
+                      <span>Captures d’écran & Photos (Sélection Multiple)</span>
+                      {selectedImages.length > 0 && (
+                        <span className="rm-images-count-badge">
+                          {selectedImages.length} image{selectedImages.length > 1 ? 's' : ''}
+                        </span>
+                      )}
                     </label>
                     <span className="rm-upload-sub">
-                      Téléversez une vraie capture WhatsApp/Messenger ou collez un lien URL d’image.
+                      Sélectionnez plusieurs captures WhatsApp/Messenger à la fois ou collez des liens URL.
                     </span>
                   </div>
 
-                  {formData.screenshotUrl && (
+                  {selectedImages.length > 0 && (
                     <button
                       type="button"
                       className="rm-remove-img-btn"
-                      onClick={() => setFormData((prev) => ({ ...prev, screenshotUrl: '' }))}
-                      title="Retirer la capture d’écran"
+                      onClick={() => setSelectedImages([])}
+                      title="Tout retirer"
                     >
                       <Trash2 size={13} />
-                      <span>Retirer l’image</span>
+                      <span>Tout effacer</span>
                     </button>
                   )}
                 </div>
@@ -588,6 +689,7 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
                     ref={fileInputRef}
                     onChange={handleFileUpload}
                     accept="image/*"
+                    multiple
                     style={{ display: 'none' }}
                   />
 
@@ -600,39 +702,107 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
                     {isUploadingImg ? (
                       <>
                         <Loader2 size={16} className="btn-spin" />
-                        <span>Téléversement en cours...</span>
+                        <span>
+                          {uploadProgress
+                            ? `Téléversement (${uploadProgress.current}/${uploadProgress.total})...`
+                            : 'Téléversement en cours...'}
+                        </span>
                       </>
                     ) : (
                       <>
                         <Upload size={16} />
-                        <span>Choisir une image depuis l’appareil</span>
+                        <span>Choisir des images (plusieurs autorisées)</span>
                       </>
                     )}
                   </button>
 
                   <span className="rm-upload-or">ou</span>
 
-                  <input
-                    type="url"
-                    className="rm-input rm-url-input"
-                    placeholder="Coller l’URL directe de l’image (ex: https://i.ibb.co/...)"
-                    value={formData.screenshotUrl}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, screenshotUrl: e.target.value }))}
-                  />
+                  <div className="rm-url-input-group">
+                    <input
+                      type="url"
+                      className="rm-input rm-url-input"
+                      placeholder="Coller URL(s) d’image (séparées par espace ou virgule)"
+                      value={urlInput}
+                      onChange={(e) => setUrlInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddUrlImages();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="rm-url-add-btn"
+                      onClick={handleAddUrlImages}
+                      disabled={!urlInput.trim()}
+                      title="Ajouter l'image"
+                    >
+                      <Plus size={15} />
+                      <span>Ajouter</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* Live Preview if Image is present */}
-                {formData.screenshotUrl && (
-                  <div className="rm-live-img-preview-box">
-                    <img
-                      src={formData.screenshotUrl}
-                      alt="Aperçu capture"
-                      className="rm-live-preview-img"
-                    />
-                    <div className="rm-live-preview-info">
-                      <span className="rm-preview-ok">
-                        <Check size={14} /> Image prête à être affichée
+                {/* Upload progress indicator */}
+                {isUploadingImg && uploadProgress && (
+                  <div className="rm-upload-progress-box">
+                    <div className="rm-upload-progress-bar">
+                      <div
+                        className="rm-upload-progress-fill"
+                        style={{
+                          width: `${Math.round((uploadProgress.current / uploadProgress.total) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="rm-upload-progress-text">
+                      Traitement de l’image {uploadProgress.current} sur {uploadProgress.total}...
+                    </span>
+                  </div>
+                )}
+
+                {/* Thumbnails Gallery */}
+                {selectedImages.length > 0 && (
+                  <div className="rm-thumbnails-container">
+                    <div className="rm-thumbnails-header">
+                      <span className="rm-thumb-title">
+                        Images prêtes pour l'enregistrement ({selectedImages.length}) :
                       </span>
+                    </div>
+                    <div className="rm-thumbnails-grid">
+                      {selectedImages.map((imgUrl, index) => (
+                        <div key={`${imgUrl}-${index}`} className="rm-thumbnail-item">
+                          <img
+                            src={imgUrl}
+                            alt={`Capture #${index + 1}`}
+                            className="rm-thumb-img"
+                          />
+                          <div className="rm-thumb-overlay">
+                            <span className="rm-thumb-index">#{index + 1}</span>
+                            <button
+                              type="button"
+                              className="rm-thumb-remove-btn"
+                              onClick={() => handleRemoveImage(index)}
+                              title="Retirer cette image"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Add more button in the grid */}
+                      <button
+                        type="button"
+                        className="rm-thumb-add-more"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploadingImg}
+                        title="Ajouter encore des images"
+                      >
+                        <Plus size={22} />
+                        <span>Ajouter</span>
+                      </button>
                     </div>
                   </div>
                 )}
@@ -649,15 +819,28 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
                   Annuler
                 </button>
 
-                <button type="submit" className="rm-btn primary save-btn" disabled={isSaving}>
-                  {isSaving ? <Loader2 size={17} className="btn-spin" /> : <Check size={17} />}
-                  <span>
-                    {isSaving
-                      ? 'Enregistrement dans la BD...'
-                      : editingReview
-                        ? 'Enregistrer dans la BD'
-                        : 'Ajouter dans la BD'}
-                  </span>
+                <button
+                  type="submit"
+                  className="rm-btn primary save-btn"
+                  disabled={isSaving || selectedImages.length === 0}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 size={17} className="btn-spin" />
+                      <span>Enregistrement dans la BD...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check size={17} />
+                      <span>
+                        {editingReview
+                          ? 'Enregistrer dans la BD'
+                          : selectedImages.length > 1
+                            ? `Enregistrer les ${selectedImages.length} avis dans la BD`
+                            : 'Ajouter dans la BD'}
+                      </span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
