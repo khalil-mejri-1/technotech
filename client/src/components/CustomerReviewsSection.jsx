@@ -316,7 +316,7 @@ export default function CustomerReviewsSection({
                     <div className="chat-user-info-group">
                       <div className="chat-user-avatar-wrap">
                         <img
-                          src={review.avatar || '/images/logo.png'}
+                          src={(review.avatar && !review.avatar.includes('unsplash')) ? review.avatar : '/images/logo.png'}
                           alt={review.customerName}
                           className="chat-user-avatar"
                           loading="lazy"
@@ -499,7 +499,7 @@ export default function CustomerReviewsSection({
                 <div className="chat-user-info-group">
                   <div className="chat-user-avatar-wrap">
                     <img
-                      src={selectedReview.avatar || '/images/logo.png'}
+                      src={(selectedReview.avatar && !selectedReview.avatar.includes('unsplash')) ? selectedReview.avatar : '/images/logo.png'}
                       alt={selectedReview.customerName}
                       className="chat-user-avatar"
                     />

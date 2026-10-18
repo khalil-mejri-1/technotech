@@ -105,7 +105,7 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
     rating: 5,
     date: '',
     screenshotUrl: '',
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=160&auto=format&fit=crop&q=80',
+    avatar: null,
     customerMessage: '',
     storeReply: 'Merci beaucoup pour votre confiance ! ✨ L’équipe TechnoTech reste à votre disposition.',
   });
@@ -145,7 +145,7 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
       rating: 5,
       date: "Aujourd'hui à " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       screenshotUrl: '',
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=160&auto=format&fit=crop&q=80',
+      avatar: null,
       customerMessage: '',
       storeReply: '',
     });
@@ -169,7 +169,7 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
       rating: review.rating || 5,
       date: review.date || "Aujourd'hui à " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       screenshotUrl: review.screenshotUrl || '',
-      avatar: review.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=160&auto=format&fit=crop&q=80',
+      avatar: review.avatar || null,
       customerMessage: custMsg,
       storeReply: storeMsg,
     });
@@ -273,7 +273,7 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
           customerName: formData.customerName?.trim() || 'Client Vérifié',
           customerCity: formData.customerCity?.trim() || 'Tunis',
           customerPhone: formData.customerPhone?.trim() || '+216 98 ••• ••',
-          avatar: formData.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=160&auto=format&fit=crop&q=80',
+          avatar: null,
           productName: formData.productName?.trim() || 'Avis Client',
           rating: Number(formData.rating) || 5,
           date: formData.date || "Aujourd'hui à " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -297,7 +297,7 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
           customerName: formData.customerName?.trim() || 'Client Vérifié',
           customerCity: formData.customerCity?.trim() || 'Tunis',
           customerPhone: formData.customerPhone?.trim() || '+216 98 ••• ••',
-          avatar: formData.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=160&auto=format&fit=crop&q=80',
+          avatar: null,
           productName: formData.productName?.trim() || 'Avis Client',
           rating: Number(formData.rating) || 5,
           date: formData.date || "Aujourd'hui à " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -322,7 +322,7 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
           customerName: formData.customerName?.trim() || 'Client Vérifié',
           customerCity: formData.customerCity?.trim() || 'Tunis',
           customerPhone: formData.customerPhone?.trim() || '+216 98 ••• ••',
-          avatar: formData.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=160&auto=format&fit=crop&q=80',
+          avatar: null,
           productName: formData.productName?.trim() || 'Avis Client',
           rating: Number(formData.rating) || 5,
           date: baseDate,
@@ -484,11 +484,6 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
                   {/* Card Header */}
                   <div className="rm-card-header">
                     <div className="rm-user-identity">
-                      <img
-                        src={review.avatar || '/images/logo.png'}
-                        alt={review.customerName}
-                        className="rm-user-img"
-                      />
                       <div className="rm-user-meta">
                         <div className="rm-name-row">
                           <span className="rm-client-name">{review.customerName}</span>
