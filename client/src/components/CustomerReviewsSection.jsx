@@ -497,36 +497,6 @@ export default function CustomerReviewsSection({
                 </div>
               )}
             </div>
-
-            {/* Lightbox Footer Actions */}
-            <div className="lightbox-actions-footer">
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#ffffff' }}>
-                  {selectedReview.productName}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '3px', marginTop: '2px' }}>
-                  {[...Array(selectedReview.rating || 5)].map((_, i) => (
-                    <Star key={i} size={12} fill="#ffa502" color="#ffa502" />
-                  ))}
-                  <span style={{ fontSize: '0.72rem', color: '#ffa502', marginLeft: '4px', fontWeight: 700 }}>
-                    5.0 / 5.0
-                  </span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className="lightbox-order-btn"
-                onClick={() => {
-                  setSelectedReview(null);
-                  const el = document.getElementById('store-products-section');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                <ShoppingBag size={15} />
-                <span>Commander ce service</span>
-              </button>
-            </div>
           </div>
         </div>
       )}
