@@ -311,47 +311,7 @@ export default function CustomerReviewsSection({
                     <span>5G • 100%</span>
                   </div>
 
-                  {/* Top Chat Header */}
-                  <div className={`phone-chat-header ${isWa ? 'wa-header' : 'fb-header'}`}>
-                    <div className="chat-user-info-group">
-                      <div className="chat-user-avatar-wrap">
-                        <img
-                          src={(review.avatar && !review.avatar.includes('unsplash')) ? review.avatar : '/images/logo.png'}
-                          alt={review.customerName}
-                          className="chat-user-avatar"
-                          loading="lazy"
-                        />
-                        <span className="chat-online-dot" />
-                      </div>
-                      <div className="chat-meta-texts">
-                        <div className="chat-user-name-row">
-                          <span className="chat-user-name">{review.customerName}</span>
-                          {review.verified && (
-                            <CheckCheck size={14} className="verified-icon" title="Client Vérifié" />
-                          )}
-                        </div>
-                        <span className="chat-status-sub">
-                          {isWa ? (review.customerPhone || 'En ligne') : (review.customerCity ? `${review.customerCity} • Actif(ve)` : 'Actif(ve)')}
-                        </span>
-                      </div>
-                    </div>
 
-                    <div className="chat-header-actions">
-                      {isWa ? (
-                        <>
-                          <Video size={17} />
-                          <Phone size={16} />
-                          <WhatsAppLogo size={18} />
-                        </>
-                      ) : (
-                        <>
-                          <Phone size={16} />
-                          <Video size={17} />
-                          <MessengerLogo size={18} />
-                        </>
-                      )}
-                    </div>
-                  </div>
 
                   {/* Chat Content Body or Screenshot Image */}
                   {hasScreenshot ? (
@@ -490,50 +450,13 @@ export default function CustomerReviewsSection({
             </button>
 
             <div className="lightbox-modal-content">
-              {/* Phone Header in Modal */}
-              <div
-                className={`phone-chat-header ${
-                  selectedReview.platform === 'whatsapp' ? 'wa-header' : 'fb-header'
-                }`}
-              >
-                <div className="chat-user-info-group">
-                  <div className="chat-user-avatar-wrap">
-                    <img
-                      src={(selectedReview.avatar && !selectedReview.avatar.includes('unsplash')) ? selectedReview.avatar : '/images/logo.png'}
-                      alt={selectedReview.customerName}
-                      className="chat-user-avatar"
-                    />
-                    <span className="chat-online-dot" />
-                  </div>
-                  <div className="chat-meta-texts">
-                    <div className="chat-user-name-row">
-                      <span className="chat-user-name">{selectedReview.customerName}</span>
-                      <CheckCheck size={14} className="verified-icon" />
-                    </div>
-                    <span className="chat-status-sub">
-                      {selectedReview.platform === 'whatsapp'
-                        ? `${selectedReview.customerPhone || 'En ligne'} • Avis Certifié ✅`
-                        : `${selectedReview.customerCity || 'Tunis'} • Discussion Officielle`}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="chat-header-actions">
-                  {selectedReview.platform === 'whatsapp' ? (
-                    <WhatsAppLogo size={20} />
-                  ) : (
-                    <MessengerLogo size={20} />
-                  )}
-                </div>
-              </div>
-
               {/* Body */}
               {selectedReview.screenshotUrl ? (
-                <div style={{ padding: '1rem', background: '#050811' }}>
+                <div style={{ padding: '0.75rem', background: '#050811' }}>
                   <img
                     src={selectedReview.screenshotUrl}
                     alt="Capture agrandie"
-                    style={{ width: '100%', borderRadius: '16px', display: 'block' }}
+                    style={{ width: '100%', maxHeight: '85vh', objectFit: 'contain', borderRadius: '16px', display: 'block' }}
                   />
                 </div>
               ) : (
