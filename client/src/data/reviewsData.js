@@ -312,7 +312,14 @@ export const getStoredReviews = () => {
     if (!raw) return INITIAL_REVIEWS;
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length === 0) return INITIAL_REVIEWS;
-    return parsed;
+    const seen = new Set();
+    const unique = parsed.filter((r) => {
+      const k = r.id || r._id;
+      if (!k || seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+    return unique.length > 0 ? unique : INITIAL_REVIEWS;
   } catch {
     return INITIAL_REVIEWS;
   }
@@ -321,9 +328,16 @@ export const getStoredReviews = () => {
 export const saveStoredReviews = (reviews) => {
   try {
     if (Array.isArray(reviews)) {
-      localStorage.setItem(STORAGE_KEY_REVIEWS, JSON.stringify(reviews));
+      const seen = new Set();
+      const unique = reviews.filter((r) => {
+        const k = r.id || r._id;
+        if (!k || seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+      localStorage.setItem(STORAGE_KEY_REVIEWS, JSON.stringify(unique));
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('technotech_reviews_updated', { detail: reviews }));
+        window.dispatchEvent(new CustomEvent('technotech_reviews_updated', { detail: unique }));
       }
     }
   } catch (e) {

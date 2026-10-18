@@ -105,18 +105,25 @@ export default function CustomerReviewsSection({
   const cleanDigits = String(whatsappNumber || '96086581').replace(/\D/g, '');
   const fullIntlPhone = cleanDigits.startsWith('216') ? cleanDigits : `216${cleanDigits}`;
 
-  // Filter reviews
+  // Filter reviews with strict deduplication
   const filteredReviews = useMemo(() => {
-    if (activeFilter === 'whatsapp') {
-      return reviews.filter((r) => r.platform === 'whatsapp');
-    }
-    if (activeFilter === 'facebook') {
-      return reviews.filter((r) => r.platform === 'facebook');
-    }
-    if (activeFilter === 'screenshots') {
-      return reviews.filter((r) => Boolean(r.screenshotUrl));
-    }
-    return reviews;
+    const seen = new Set();
+    return reviews.filter((r) => {
+      const uniqueKey = r.id || (r._id ? String(r._id) : null);
+      if (uniqueKey && seen.has(uniqueKey)) return false;
+      if (uniqueKey) seen.add(uniqueKey);
+
+      if (activeFilter === 'whatsapp') {
+        return r.platform === 'whatsapp';
+      }
+      if (activeFilter === 'facebook') {
+        return r.platform === 'facebook';
+      }
+      if (activeFilter === 'screenshots') {
+        return Boolean(r.screenshotUrl);
+      }
+      return true;
+    });
   }, [reviews, activeFilter]);
 
   // Window resize to calculate cards per view (4 for desktop >1200px, 3 for 860-1200px, 2 for 580-860px, 1 for mobile)
@@ -282,13 +289,13 @@ export default function CustomerReviewsSection({
               transform: `translateX(-${currentIndex * (100 / cardsPerView)}%)`,
             }}
           >
-            {filteredReviews.map((review) => {
+            {filteredReviews.map((review, index) => {
               const isWa = review.platform === 'whatsapp';
               const hasScreenshot = Boolean(review.screenshotUrl);
 
               return (
                 <article
-                  key={review.id}
+                  key={review._id ? String(review._id) : (review.id ? `${review.id}-${index}` : `crs-rev-${index}`)}
                   className={`review-phone-card ${isWa ? 'is-wa' : 'is-fb'}`}
                   onClick={() => setSelectedReview(review)}
                 >
