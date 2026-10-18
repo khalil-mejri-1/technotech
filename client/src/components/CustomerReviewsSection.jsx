@@ -368,13 +368,8 @@ export default function CustomerReviewsSection({
                     </div>
                   )}
 
-                  {/* Card Bottom: Product Purchased & 5-Star Rating */}
+                  {/* Card Bottom: 5-Star Rating & Zoom Action */}
                   <div className="phone-card-footer">
-                    <div className="purchased-prod-tag" title={review.productName}>
-                      <ShoppingBag size={14} className="prod-tag-icon" />
-                      <span>{review.productName}</span>
-                    </div>
-
                     <div className="card-rating-stars">
                       {[...Array(review.rating || 5)].map((_, i) => (
                         <Star key={i} size={13} fill="#ffa502" color="#ffa502" />

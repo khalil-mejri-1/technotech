@@ -539,10 +539,9 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
                     )}
                   </div>
 
-                  {/* Card Footer: Product & Actions */}
+                  {/* Card Footer: Rating & Actions */}
                   <div className="rm-card-footer">
                     <div className="rm-prod-row">
-                      <span className="rm-prod-label">{review.productName}</span>
                       <div className="rm-rating-row">
                         {[...Array(review.rating || 5)].map((_, i) => (
                           <Star key={i} size={12} fill="#ffa502" color="#ffa502" />
