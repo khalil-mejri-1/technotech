@@ -274,36 +274,29 @@ router.delete('/offers/:offerId', async (req, res) => {
 // Customer Reviews & Screenshots Endpoints (Avis & Captures Clients)
 // ==========================================
 
-// 1. Get all customer reviews (auto-seed from default if empty and deduplicate)
+// 1. Get all customer reviews (without auto-seeding default reviews)
 router.get('/reviews', async (req, res) => {
   try {
     let reviews = await Review.find().sort({ order: 1, createdAt: -1 });
     if (!reviews || reviews.length === 0) {
-      if (Array.isArray(DEFAULT_REVIEWS) && DEFAULT_REVIEWS.length > 0) {
-        const initial = DEFAULT_REVIEWS.map((r, i) => ({
-          ...r,
-          order: i,
-        }));
-        reviews = await Review.insertMany(initial);
+      return res.json([]);
+    }
+    // Deduplicate reviews in database if duplicate records were inserted
+    const seenIds = new Set();
+    const duplicatesToDelete = [];
+    const uniqueReviews = [];
+    for (const rev of reviews) {
+      const key = rev.id || String(rev._id);
+      if (seenIds.has(key)) {
+        duplicatesToDelete.push(rev._id);
+      } else {
+        seenIds.add(key);
+        uniqueReviews.push(rev);
       }
-    } else {
-      // Deduplicate reviews in database if duplicate records were inserted
-      const seenIds = new Set();
-      const duplicatesToDelete = [];
-      const uniqueReviews = [];
-      for (const rev of reviews) {
-        const key = rev.id || String(rev._id);
-        if (seenIds.has(key)) {
-          duplicatesToDelete.push(rev._id);
-        } else {
-          seenIds.add(key);
-          uniqueReviews.push(rev);
-        }
-      }
-      if (duplicatesToDelete.length > 0) {
-        await Review.deleteMany({ _id: { $in: duplicatesToDelete } });
-        reviews = uniqueReviews;
-      }
+    }
+    if (duplicatesToDelete.length > 0) {
+      await Review.deleteMany({ _id: { $in: duplicatesToDelete } });
+      reviews = uniqueReviews;
     }
     res.json(reviews || []);
   } catch (err) {
@@ -384,16 +377,11 @@ router.delete('/reviews', async (req, res) => {
   }
 });
 
-// 6. Reset reviews to default
+// 6. Reset reviews (clears all reviews)
 router.post('/reviews/reset', async (req, res) => {
   try {
     await Review.deleteMany({});
-    const initial = DEFAULT_REVIEWS.map((r, i) => ({
-      ...r,
-      order: i,
-    }));
-    const inserted = await Review.insertMany(initial);
-    res.json(inserted);
+    res.json([]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

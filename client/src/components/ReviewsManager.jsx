@@ -76,7 +76,7 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
       try {
         setIsLoading(true);
         const data = await reviewService.getAll();
-        if (isMounted && Array.isArray(data) && data.length > 0) {
+        if (isMounted && Array.isArray(data)) {
           setReviews(data);
           if (onReviewsChange) onReviewsChange(data);
         }
@@ -293,17 +293,17 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
     }
   };
 
-  const handleResetReviews = async () => {
-    if (window.confirm('Voulez-vous réinitialiser tous les avis aux exemples par défaut dans la base de données ?')) {
+  const handleClearAllReviews = async () => {
+    if (window.confirm('Voulez-vous vraiment supprimer TOUS les avis et photos de la base de données ?')) {
       setIsLoading(true);
       try {
-        const resetData = await reviewService.reset();
-        setReviews(resetData);
-        if (onReviewsChange) onReviewsChange(resetData);
-        if (notify) notify('Avis réinitialisés avec succès dans la base de données ! 🔄');
+        await reviewService.deleteAll();
+        setReviews([]);
+        if (onReviewsChange) onReviewsChange([]);
+        if (notify) notify('Tous les avis ont été supprimés avec succès de la base de données ! 🗑️');
       } catch (err) {
-        console.error('Erreur reset BD:', err);
-        alert('Erreur lors de la réinitialisation : ' + err.message);
+        console.error('Erreur suppression BD:', err);
+        alert('Erreur lors de la suppression : ' + err.message);
       } finally {
         setIsLoading(false);
       }
@@ -326,15 +326,18 @@ export default function ReviewsManager({ products = [], notify, onReviewsChange 
         </div>
 
         <div className="rm-header-actions">
-          <button
-            type="button"
-            className="rm-btn secondary"
-            onClick={handleResetReviews}
-            title="Restaurer les avis initiaux"
-          >
-            <RefreshCw size={15} />
-            <span>Réinitialiser</span>
-          </button>
+          {reviews.length > 0 && (
+            <button
+              type="button"
+              className="rm-btn secondary"
+              onClick={handleClearAllReviews}
+              title="Supprimer tous les avis de la base de données"
+              style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+            >
+              <Trash2 size={15} />
+              <span>Tout supprimer</span>
+            </button>
+          )}
 
           <button
             type="button"
