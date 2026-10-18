@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar.jsx';
 import Hero from './components/Hero.jsx';
 import ProductsSection from './components/ProductsSection.jsx';
+import CustomerReviewsSection from './components/CustomerReviewsSection.jsx';
 import AdminDashboard from './components/AdminDashboard.jsx';
 import OffersPage from './components/OffersPage.jsx';
 import Footer from './components/Footer.jsx';
@@ -538,10 +539,12 @@ function App() {
             />
           </div>
 
-          {/* Products Section with White Background & Gradient Transition */}
+          {/* Products Section with White Background, Customer Reviews & Gradient Transition */}
           <ProductsSection
             products={products}
             onAddToCart={handleAddToCart}
+            whatsappNumber={siteSettings?.whatsappNumber}
+            onNavigate={navigateTo}
           />
         </>
       )}

@@ -13,6 +13,8 @@ import SiteSettings from '../models/SiteSettings.js';
 import PredefinedLink from '../models/PredefinedLink.js';
 import { sendExpoPushNotification } from '../utils/pushNotification.js';
 import SecurityNotification from '../models/SecurityNotification.js';
+import Review from '../models/Review.js';
+import { DEFAULT_REVIEWS } from '../data/defaultReviews.js';
 
 const router = express.Router();
 
@@ -263,6 +265,117 @@ router.delete('/offers/:offerId', async (req, res) => {
       $or: [{ ...(isObjId ? { _id: offerId } : { _id: null }) }, { id: offerId }],
     });
     res.json({ message: 'Offre supprimée avec succès', id: offerId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// Customer Reviews & Screenshots Endpoints (Avis & Captures Clients)
+// ==========================================
+
+// 1. Get all customer reviews (auto-seed from default if empty)
+router.get('/reviews', async (req, res) => {
+  try {
+    let reviews = await Review.find().sort({ order: 1, createdAt: -1 });
+    if (!reviews || reviews.length === 0) {
+      if (Array.isArray(DEFAULT_REVIEWS) && DEFAULT_REVIEWS.length > 0) {
+        const initial = DEFAULT_REVIEWS.map((r, i) => ({
+          ...r,
+          order: i,
+        }));
+        reviews = await Review.insertMany(initial);
+      }
+    }
+    res.json(reviews || []);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. Create or batch save customer reviews
+router.post('/reviews', async (req, res) => {
+  try {
+    if (Array.isArray(req.body)) {
+      await Review.deleteMany({});
+      const clean = req.body.map((item, index) => {
+        const { _id, createdAt, updatedAt, __v, ...rest } = item;
+        return {
+          ...rest,
+          id: rest.id || `rev-${Date.now()}-${index}`,
+          order: rest.order !== undefined ? rest.order : index,
+        };
+      });
+      const inserted = await Review.insertMany(clean);
+      return res.json(inserted);
+    }
+
+    const reviewData = req.body;
+    const id = reviewData.id || `rev-${Date.now()}`;
+    const newReview = new Review({
+      ...reviewData,
+      id,
+    });
+    const saved = await newReview.save();
+    res.status(201).json(saved);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. Update a customer review
+router.put('/reviews/:reviewId', async (req, res) => {
+  try {
+    const { reviewId } = req.params;
+    const isObjId = mongoose.Types.ObjectId.isValid(reviewId);
+    const updated = await Review.findOneAndUpdate(
+      { $or: [{ ...(isObjId ? { _id: reviewId } : { _id: null }) }, { id: reviewId }] },
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!updated) {
+      return res.status(404).json({ error: 'Avis introuvable' });
+    }
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 4. Delete a customer review
+router.delete('/reviews/:reviewId', async (req, res) => {
+  try {
+    const { reviewId } = req.params;
+    const isObjId = mongoose.Types.ObjectId.isValid(reviewId);
+    const deleted = await Review.findOneAndDelete({
+      $or: [{ ...(isObjId ? { _id: reviewId } : { _id: null }) }, { id: reviewId }],
+    });
+    res.json({ message: 'Avis supprimé avec succès de la base de données', id: reviewId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 5. Delete all customer reviews
+router.delete('/reviews', async (req, res) => {
+  try {
+    await Review.deleteMany({});
+    res.json({ message: 'Tous les avis ont été supprimés de la base de données' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 6. Reset reviews to default
+router.post('/reviews/reset', async (req, res) => {
+  try {
+    await Review.deleteMany({});
+    const initial = DEFAULT_REVIEWS.map((r, i) => ({
+      ...r,
+      order: i,
+    }));
+    const inserted = await Review.insertMany(initial);
+    res.json(inserted);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
