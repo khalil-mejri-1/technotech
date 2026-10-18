@@ -1830,44 +1830,52 @@ export default function AdminDashboard({
         <div className="admin-tabs-list">
           <button
             type="button"
-            className={`admin-tab-item ${activeTab === 'products' ? 'active' : ''}`}
+            className={`admin-tab-item tab-products ${activeTab === 'products' ? 'active' : ''}`}
             onClick={() => setActiveTab('products')}
           >
-            <Package size={17} />
-            <span>Catalogue des Produits</span>
-            <span className="tab-count-badge">{products.length}</span>
+            <span className="tab-icon-box">
+              <Package size={17} />
+            </span>
+            <span className="tab-label">Catalogue Produits</span>
+            <span className="tab-count-badge products-badge">{products.length}</span>
           </button>
 
           <button
             type="button"
-            className={`admin-tab-item ${activeTab === 'hero' ? 'active' : ''}`}
+            className={`admin-tab-item tab-hero ${activeTab === 'hero' ? 'active' : ''}`}
             onClick={() => setActiveTab('hero')}
           >
-            <Sparkles size={17} />
-            <span>Carrousel de la Page d'Accueil (Hero 3D)</span>
+            <span className="tab-icon-box">
+              <Sparkles size={17} />
+            </span>
+            <span className="tab-label">Carrousel Hero 3D</span>
             <span className="tab-count-badge hero-badge">{heroSlides.length}</span>
           </button>
 
           <button
             type="button"
-            className={`admin-tab-item ${activeTab === 'offers' ? 'active' : ''}`}
+            className={`admin-tab-item tab-offers ${activeTab === 'offers' ? 'active' : ''}`}
             onClick={() => setActiveTab('offers')}
           >
-            <Flame size={17} />
-            <span>Packs & Offres Spéciaux</span>
+            <span className="tab-icon-box">
+              <Flame size={17} />
+            </span>
+            <span className="tab-label">Packs & Offres</span>
             <span className="tab-count-badge offers-badge">{offers.length}</span>
           </button>
 
           <button
             type="button"
-            className={`admin-tab-item ${activeTab === 'orders' ? 'active' : ''} ${unseenOrdersCount > 0 ? 'has-unseen-orders' : ''}`}
+            className={`admin-tab-item tab-orders ${activeTab === 'orders' ? 'active' : ''} ${unseenOrdersCount > 0 ? 'has-unseen-orders' : ''}`}
             onClick={() => {
               setActiveTab('orders');
               markAllOrdersAsSeen(orders);
             }}
           >
-            <ShoppingBag size={17} />
-            <span>Gestion de commande</span>
+            <span className="tab-icon-box">
+              <ShoppingBag size={17} />
+            </span>
+            <span className="tab-label">Commandes</span>
             {unseenOrdersCount > 0 ? (
               <span
                 className="tab-count-badge orders-badge unseen-alert"
@@ -1888,11 +1896,13 @@ export default function AdminDashboard({
 
           <button
             type="button"
-            className={`admin-tab-item ${activeTab === 'security' ? 'active' : ''}`}
+            className={`admin-tab-item tab-security ${activeTab === 'security' ? 'active' : ''}`}
             onClick={() => setActiveTab('security')}
           >
-            <Shield size={17} />
-            <span>Sécurité & Protection</span>
+            <span className="tab-icon-box">
+              <Shield size={17} />
+            </span>
+            <span className="tab-label">Sécurité & Protection</span>
             <span
               className={`tab-count-badge ${securityForm.disableInspect || securityForm.disableRightClick ? 'security-badge-active' : 'security-badge-muted'}`}
             >
@@ -1902,11 +1912,13 @@ export default function AdminDashboard({
 
           <button
             type="button"
-            className={`admin-tab-item ${activeTab === 'links' ? 'active' : ''}`}
+            className={`admin-tab-item tab-links ${activeTab === 'links' ? 'active' : ''}`}
             onClick={() => setActiveTab('links')}
           >
-            <Link2 size={17} />
-            <span>Stock Liens (Gemini Pro)</span>
+            <span className="tab-icon-box">
+              <Link2 size={17} />
+            </span>
+            <span className="tab-label">Stock Liens Gemini</span>
             {availableLinksCount > 0 && (
               <span className="tab-count-badge links-badge" title={`${availableLinksCount} lien(s) disponible(s)`}>
                 {availableLinksCount}
@@ -1916,11 +1928,13 @@ export default function AdminDashboard({
 
           <button
             type="button"
-            className={`admin-tab-item ${activeTab === 'reviews' ? 'active' : ''}`}
+            className={`admin-tab-item tab-reviews ${activeTab === 'reviews' ? 'active' : ''}`}
             onClick={() => setActiveTab('reviews')}
           >
-            <Star size={17} />
-            <span>Avis & Captures Clients</span>
+            <span className="tab-icon-box">
+              <Star size={17} />
+            </span>
+            <span className="tab-label">Avis & Captures</span>
             {reviewsCount > 0 && (
               <span className="tab-count-badge reviews-badge" title={`${reviewsCount} avis et captures client(s)`}>
                 {reviewsCount}
