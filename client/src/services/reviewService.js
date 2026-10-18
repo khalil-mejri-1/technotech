@@ -12,7 +12,7 @@ export const reviewService = {
       const res = await fetch(REVIEWS_ENDPOINT);
       if (!res.ok) throw new Error(`HTTP error ${res.status}`);
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         const seen = new Set();
         const unique = data.filter((item) => {
           const key = item.id || item._id;
@@ -133,14 +133,14 @@ export const reviewService = {
       });
       if (res.ok) {
         const data = await res.json();
-        saveStoredReviews(data);
-        return data;
+        saveStoredReviews(data || []);
+        return data || [];
       }
     } catch (err) {
       console.warn('Reset local des avis :', err.message);
     }
-    saveStoredReviews(INITIAL_REVIEWS);
-    return INITIAL_REVIEWS;
+    saveStoredReviews([]);
+    return [];
   },
 };
 

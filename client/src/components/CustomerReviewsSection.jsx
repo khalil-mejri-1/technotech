@@ -60,7 +60,7 @@ export default function CustomerReviewsSection({
     const fetchReviewsFromDB = async () => {
       try {
         const data = await reviewService.getAll();
-        if (isMounted && Array.isArray(data) && data.length > 0) {
+        if (isMounted && Array.isArray(data)) {
           setReviews(data);
         }
       } catch (err) {
@@ -234,9 +234,14 @@ export default function CustomerReviewsSection({
     });
   };
 
+  if (!reviews || reviews.length === 0) {
+    return null;
+  }
+
   return (
-    <section
-      className="customer-reviews-section"
+    <>
+      <section
+        className="customer-reviews-section"
       id="avis-clients-section"
       aria-label="Avis Clients et Retours d'expérience"
     >
@@ -737,5 +742,7 @@ export default function CustomerReviewsSection({
         </div>
       )}
     </section>
+    <div className="reviews-section-divider" />
+  </>
   );
 }

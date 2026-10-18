@@ -68,8 +68,6 @@ export default function ProductsSection({ products, onAddToCart, whatsappNumber,
             onNavigate={onNavigate}
           />
 
-          <div className="reviews-section-divider" />
-
           {/* Header Section */}
           <div className="section-header-area" id="products-catalog-heading">
             <div className="section-badge-pill">
