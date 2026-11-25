@@ -231,7 +231,12 @@ if (preg_match('#/(?:api/)?(?:technotech/)?admin/verify-totp/?(?:\?.*)?$#i', $re
         return false;
     }
 
-    $secretKey = getenv('ADMIN_TOTP_SECRET') ?: '***REDACTED***';
+    $secretKey = getenv('ADMIN_TOTP_SECRET') ?: '';
+    if ($secretKey === '') {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'ADMIN_TOTP_SECRET not configured']);
+        exit;
+    }
 
     if (php_verify_totp($code, $secretKey)) {
         // Success: Reset failed attempts for this IP

@@ -29,7 +29,7 @@ const siteSettingsSchema = new mongoose.Schema(
     },
     imgbbApiKey: {
       type: String,
-      default: '***REDACTED***',
+      default: '',
     },
   },
   {

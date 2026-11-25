@@ -3,8 +3,8 @@
  * Designed for Google Authenticator compatibility using native Web Crypto API.
  */
 
-// Default Base32 secret key for TechnoTech Admin (A-Z, 2-7)
-export const DEFAULT_ADMIN_TOTP_SECRET = '***REDACTED***';
+// Base32 secret key loaded from environment variable
+export const DEFAULT_ADMIN_TOTP_SECRET = import.meta.env.VITE_ADMIN_TOTP_SECRET || '';
 
 /**
  * Decodes a Base32 string into a Uint8Array.

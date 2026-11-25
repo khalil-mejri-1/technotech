@@ -250,7 +250,7 @@ export default function AdminDashboard({
     disableImageDragging: siteSettings?.disableImageDragging ?? true,
     protectInAdmin: siteSettings?.protectInAdmin ?? false,
     whatsappNumber: siteSettings?.whatsappNumber || '96086581',
-    imgbbApiKey: siteSettings?.imgbbApiKey || import.meta.env.VITE_IMGBB_API_KEY || '***REDACTED***',
+    imgbbApiKey: siteSettings?.imgbbApiKey || import.meta.env.VITE_IMGBB_API_KEY || '',
   });
   const [showImgbbKey, setShowImgbbKey] = useState(false);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -263,7 +263,7 @@ export default function AdminDashboard({
         disableImageDragging: siteSettings.disableImageDragging ?? true,
         protectInAdmin: siteSettings.protectInAdmin ?? false,
         whatsappNumber: siteSettings.whatsappNumber || '96086581',
-        imgbbApiKey: siteSettings.imgbbApiKey || import.meta.env.VITE_IMGBB_API_KEY || '***REDACTED***',
+        imgbbApiKey: siteSettings.imgbbApiKey || import.meta.env.VITE_IMGBB_API_KEY || '',
       });
     }
   }, [siteSettings]);

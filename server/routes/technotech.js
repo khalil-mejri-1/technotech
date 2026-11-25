@@ -42,7 +42,7 @@ const upload = multer({
   limits: { fileSize: 30 * 1024 * 1024 }, // 30MB
 });
 
-const DEFAULT_IMGBB_API_KEY = process.env.IMGBB_API_KEY || '***REDACTED***';
+const DEFAULT_IMGBB_API_KEY = process.env.IMGBB_API_KEY || '';
 
 async function uploadBufferToImgBB(buffer, filename) {
   try {
@@ -435,7 +435,7 @@ router.get('/settings', async (req, res) => {
         disableImageDragging: true,
         protectInAdmin: false,
         whatsappNumber: '96086581',
-        imgbbApiKey: '***REDACTED***',
+        imgbbApiKey: DEFAULT_IMGBB_API_KEY,
       });
     }
     res.json(settings);
@@ -588,7 +588,10 @@ router.post('/orders', async (req, res) => {
       });
     }
 
-    const turnstileSecret = process.env.TURNSTILE_SECRET || '***REDACTED***';
+    const turnstileSecret = process.env.TURNSTILE_SECRET;
+    if (!turnstileSecret) {
+      return res.status(500).json({ error: 'Configuration Turnstile manquante côté serveur.' });
+    }
     const clientIp = getNodeClientIp(req);
 
     let turnstileResult;
@@ -1485,7 +1488,11 @@ router.post('/admin/verify-totp', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Code requis' });
     }
 
-    const isValid = verifyTOTPNode(code.trim(), process.env.ADMIN_TOTP_SECRET || '***REDACTED***');
+    const totpSecret = process.env.ADMIN_TOTP_SECRET;
+    if (!totpSecret) {
+      return res.status(500).json({ success: false, message: 'ADMIN_TOTP_SECRET non configuré côté serveur.' });
+    }
+    const isValid = verifyTOTPNode(code.trim(), totpSecret);
 
     if (isValid) {
       nodeIpBans.delete(ip);

@@ -1,7 +1,7 @@
 import { API_BASE_URL, getImageUrl } from '../config/api.js';
 import { settingsService } from './settingsService.js';
 
-const FALLBACK_IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY || '***REDACTED***';
+const FALLBACK_IMGBB_API_KEY = import.meta.env.VITE_IMGBB_API_KEY || '';
 const IMGBB_UPLOAD_URL = 'https://api.imgbb.com/1/upload';
 
 /**

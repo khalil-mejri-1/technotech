@@ -7,7 +7,7 @@ export const DEFAULT_SITE_SETTINGS = {
   disableImageDragging: true,
   protectInAdmin: false,
   whatsappNumber: '96086581',
-  imgbbApiKey: import.meta.env.VITE_IMGBB_API_KEY || '***REDACTED***',
+  imgbbApiKey: import.meta.env.VITE_IMGBB_API_KEY || '',
 };
 
 export const settingsService = {

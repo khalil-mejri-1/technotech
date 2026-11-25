@@ -100,7 +100,7 @@ export default function CheckoutModal({
             return;
           }
 
-          const sitekey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '***REDACTED***';
+          const sitekey = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
           widgetIdRef.current = window.turnstile.render(turnstileContainerRef.current, {
             sitekey,
             action: 'order',
